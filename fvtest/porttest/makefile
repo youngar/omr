@@ -22,29 +22,33 @@ include $(top_srcdir)/omrmakefiles/configure.mk
 MODULE_NAME := omrporttest
 ARTIFACT_TYPE := cxx_executable
 
+#./aixbaddep/sltest.c
+#./sltestlib/sltest.c
 OBJECTS := \
   argmain \
   fileTest \
   heapTest \
+  j9portTest \
   main \
   memTest \
   omrdumpTest \
   omrerrorTest \
+  omrfilestreamTest \
   omrfileTest \
   omrheapTest \
   omrintrospectTest \
   omrmemTest \
   omrmmapTest \
-  j9portTest \
   omrsignalExtendedTest \
   omrsignalTest \
   omrslTest \
+  omrstrTest \
   omrtimeTest \
-  omrttyTest \
   omrttyExtendedTest \
+  omrttyTest \
   omrvmemTest \
-  si_numcpusTest \
   si \
+  si_numcpusTest \
   testHelpers \
   testProcessHelpers \
   vmemTest
