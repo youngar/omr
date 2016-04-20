@@ -193,6 +193,12 @@ extern "C" {
  */
 @OMR_THR_YIELD_ALG@
 
+
+/**
+ * Defined if omrsig should declare BSD Signal API.
+ */
+@OMR_OMRSIG_HAVE_SIGVEC@
+
 #ifdef __cplusplus
 }
 #endif

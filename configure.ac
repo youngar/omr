@@ -479,6 +479,12 @@ OMRCFG_DEFINE_FLAG([OMRTHREAD_LIB_UNIX],[1],
 	)]
 )
 
+OMRCFG_DEFINE_FLAG([OMR_OMRSIG_HAVE_SIGVEC],[1],
+	  [AC_CHECK_FUNC([sigvec],
+			 [OMRCFG_ENABLE_FLAG([OMR_OMRSIG_HAVE_SIGVEC])],
+			 [OMRCFG_DISABLE_FLAG([OMR_OMRSIG_HAVE_SIGVEC])]
+			 )])
+
 AS_IF([test "$cross_compiling" != "yes"],
 	[# Look for libdwarf.h
 	AC_CHECK_HEADER([libdwarf.h], [],
