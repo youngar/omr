@@ -1561,23 +1561,25 @@ void TR_InlinerBase::rematerializeCallArguments(TR_TransformInlinedFunction & ti
    static char *disableProfiledGuardRemat = feGetEnv("TR_DisableProfiledGuardRemat");
 
    bool suitableForRemat = !comp()->getOption(TR_DisableGuardedCallArgumentRemat) && !comp()->isProfilingCompilation();
-   // Vijay's Inliner change 02
-   if (guard->_kind == TR_NoGuard)
+   if (suitableForRemat)
       {
-      suitableForRemat = false;
-      }
-   else if (guard->_kind == TR_ProfiledGuard)
-      {
-      if (disableProfiledGuardRemat)
+      if (guard->_kind == TR_NoGuard)
          {
          suitableForRemat = false;
          }
-      else
+      else if (guard->_kind == TR_ProfiledGuard)
          {
-         suitableForRemat = getPolicy()->suitableForRemat(comp(), callNode, guard);
-         if (!suitableForRemat)
+         if (disableProfiledGuardRemat)
             {
-            debugTrace(tracer(),"  skipping remat on profiled guard [%p] due to policy decision",guard);
+            suitableForRemat = false;
+            }
+         else
+            {
+            suitableForRemat = getPolicy()->suitableForRemat(comp(), callNode, guard);
+            if (!suitableForRemat)
+               {
+               debugTrace(tracer(),"  skipping remat on profiled guard [%p] due to policy decision",guard);
+               }
             }
          }
       }
@@ -4959,6 +4961,10 @@ bool TR_InlinerBase::inlineCallTarget2(TR_CallStack * callStack, TR_CallTarget *
          int32_t calleeNodeNumber = n->getNumber();
          callerCFG->addNode(n);
          debugTrace(tracer(),"\nAdding callee blocks into caller: callee block %p:%p:%d --> %d (caller block) ",n, n->asBlock(), calleeNodeNumber, n->getNumber());
+         if (!n->asBlock()->isOSRCatchBlock() && !n->asBlock()->isOSRCodeBlock())
+            callerCFG->copyExceptionSuccessors(blockContainingTheCall, n, succAndPredAreNotOSRBlocks);
+         else
+            debugTrace(tracer(),"\ndon't add exception edges from callee OSR block(block_%d) to caller catch blocks\n",n->getNumber());
          callerCFG->copyExceptionSuccessors(blockContainingTheCall, n, succAndPredAreNotOSRBlocks);
          }
       }

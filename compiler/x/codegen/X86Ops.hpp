@@ -612,6 +612,7 @@ typedef enum {
    PMOVZXWD,        // move unsigned short in lower 8 bytes to int
    PMULLD,          // mul int32 and keep low 32 bits
    PADDD,           // add int32 and keep low 32 bits
+   PSHUFBRegReg,    // Shuffle Packed Byte Register, Register
    PSHUFDRegRegImm1,// Shuffle Packed Doublewords Register, Register by Immediate config
    PSHUFDRegMemImm1,// Shuffle Packed Doublewords Register, Memory by Immediate config
    PSRLDQRegImm1,   // shift 128 xmm register
@@ -1387,6 +1388,67 @@ class TR_X86OpCode
    uint8_t *copyBinaryToBuffer(uint8_t *cursor) {return copyBinaryToBuffer(_opCode, cursor);}
 
    uint8_t getOpCodeLength() {return _binaryEncodings[_opCode]._length;}
+
+   uint8_t length(uint8_t rex = 0)
+      {
+      uint8_t len = 0;
+      if (needsSSE42OpcodePrefix() || needs16BitOperandPrefix())
+         {
+         len++; // 66
+         }
+      if (needsRepPrefix() || needsXreleasePrefix() || needsXacquirePrefix() || needsScalarPrefix())
+         {
+         len++; // f3/f2
+         }
+      if (needs64BitOperandPrefix())
+         {
+         rex |= 0x48;
+         }
+      if (rex)
+         {
+         len++;
+         }
+      if (needsSSE42OpcodePrefix())
+         {
+         len++; // 0f
+         }
+      return len + getOpCodeLength();
+      }
+   uint8_t* binary(uint8_t* cur, uint8_t rex = 0)
+      {
+      uint8_t* start = cur;
+      if (needsSSE42OpcodePrefix() || needs16BitOperandPrefix())
+         {
+         *cur++ = 0x66;
+         }
+      if (needsRepPrefix() || needsXreleasePrefix())
+         {
+         *cur++ = 0xf3;
+         }
+      else if (needsXacquirePrefix())
+         {
+         *cur++ = 0xf2;
+         }
+      else if (needsScalarPrefix())
+         {
+         *cur++ = singleFPOp() ? 0xf3 : 0xf2;
+         }
+      if (needs64BitOperandPrefix())
+         {
+         rex |= 0x48;
+         }
+      if (rex)
+         {
+         *cur++ = rex;
+         }
+      if (needsSSE42OpcodePrefix())
+         {
+         *cur++ = 0x0f;
+         }
+      cur = copyBinaryToBuffer(cur);
+      TR_ASSERT(cur-start == length(rex), "Actual binary length should be the same as calculated one");
+      return cur;
+      }
 
    void convertLongBranchToShort()
       { // input must be a long branch in range JA4 - JMP4
