@@ -70,6 +70,18 @@ else()
   message(FATAL_ERROR "Unknown processor: ${CMAKE_PROCESSOR}")
 endif()
 
+#TODO: detect other Operating systems (aix, and zos)
+if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+	set(OMR_HOST_OS "linux")
+elseif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+	set(OMR_HOST_OS "osx")
+elseif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+	set(OMR_HOST_OS "win")
+else()
+	message(FATAL_ERROR "Unsupported OS: ${CMAKE_SYSTEM_NAME}")
+endif()
+
+
 ###
 ### Flags we aren't using
 ###
