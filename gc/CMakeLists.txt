@@ -1,5 +1,17 @@
 project(libomrgc VERSION 0.0.1 LANGUAGES CXX)
 
+add_hookgen(include omrmm.hdf include_core/mmomrhook.h base/mmomrhook_internal.h)
+add_hookgen(base omrmmprivate.hdf base/mmprivatehook.h base/mmprivatehook_internal.h)
+
+
+add_custom_target(omrgc_hookgen
+	DEPENDS
+	include_core/mmomrhook.h
+	base/mmomrhook_internal.h
+	base/mmprivatehook.h
+	base/mmprivatehook_internal.
+)
+
 add_library(omrgc
 		base/AddressOrderedListPopulator.cpp
 		base/AddressOrderedListPopulator.hpp
@@ -220,6 +232,8 @@ add_library(omrgc
 		base/modronapicore.cpp
 		base/modronapicore.hpp
 )
+
+add_dependencies(omrgc omrgc_hookgen)
 
 target_include_directories(omrgc
 	PUBLIC
