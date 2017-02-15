@@ -167,9 +167,11 @@ include_directories(
 )
 
 add_definitions(
-  #-D_XOPEN_SOURCE # TODO: Needed for OSX only (?)
   -DUT_DIRECT_TRACE_REGISTRATION # TODO:  Deal with that stupid jni issue in tracegen
 )
+if(OMR_HOST_OS STREQUAL "osx")
+	add_definitions(-D_XOPEN_SOURCE)
+endif()
 
 configure_file(./omrcfg.CMakeTemplate.h omrcfg.h)
 configure_file(./omrversionstrings.CMakeTemplate.h omrversionstrings.h)
