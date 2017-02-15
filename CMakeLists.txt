@@ -155,7 +155,7 @@ include_directories(
 )
 
 add_definitions(
-  -D_XOPEN_SOURCE # TODO: Needed for OSX only (?)
+  #-D_XOPEN_SOURCE # TODO: Needed for OSX only (?)
   -DUT_DIRECT_TRACE_REGISTRATION # TODO:  Deal with that stupid jni issue in tracegen
 )
 
