@@ -43,6 +43,29 @@ else()
 endif()
 
 
+if(OMR_HOST_OS STREQUAL "linux")
+	add_definitions(
+		-DLINUX
+		-D_REENTRANT
+		-D_FILE_OFFSET_BITS=64
+	)
+endif()
+
+
+if(OMR_ARCH_x86 AND OMR_ENV_DATA64)
+	add_definitions(-DJ9HAMMER)
+endif()
+
+if(OMR_HOST_OS STREQUAL "osx")
+	add_definitions(
+		-DOSX
+		-D_REENTRANT
+		-D_FILE_OFFSET_BITS=64
+		-D_XOPEN_SOURCE
+	)
+endif()
+
+
 ###
 ### Flags we aren't using
 ###
