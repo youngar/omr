@@ -9,7 +9,7 @@ add_custom_target(omrgc_hookgen
 	include_core/mmomrhook.h
 	base/mmomrhook_internal.h
 	base/mmprivatehook.h
-	base/mmprivatehook_internal.
+	base/mmprivatehook_internal.h
 )
 
 add_library(omrgc
