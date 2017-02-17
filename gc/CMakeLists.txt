@@ -1,15 +1,13 @@
 project(libomrgc VERSION 0.0.1 LANGUAGES CXX)
 
-add_hookgen(include omrmm.hdf include_core/mmomrhook.h base/mmomrhook_internal.h)
-add_hookgen(base omrmmprivate.hdf base/mmprivatehook.h base/mmprivatehook_internal.h)
 
-
-add_custom_target(omrgc_hookgen
-	DEPENDS
-	include_core/mmomrhook.h
-	base/mmomrhook_internal.h
-	base/mmprivatehook.h
-	base/mmprivatehook_internal.h
+add_hookgen(include/omrmm.hdf
+	${CMAKE_CURRENT_SOURCE_DIR}/../include_core/mmomrhook.h
+	${CMAKE_CURRENT_SOURCE_DIR}/base/mmomrhook_internal.h
+)
+add_hookgen(base/omrmmprivate.hdf
+	${CMAKE_CURRENT_SOURCE_DIR}/base/mmprivatehook.h
+	${CMAKE_CURRENT_SOURCE_DIR}/base/mmprivatehook_internal.h
 )
 
 add_tracegen(
@@ -247,9 +245,16 @@ add_library(omrgc
 		base/modronapicore.hpp
 		base/ut_j9mm.c
 		base/ut_omrmm.c
+
+		#hookgen generated files
+		${CMAKE_CURRENT_SOURCE_DIR}/base/mmprivatehook.h
+		${CMAKE_CURRENT_SOURCE_DIR}/base/mmprivatehook_internal.h
+		${CMAKE_CURRENT_SOURCE_DIR}/../include_core/mmomrhook.h
+		${CMAKE_CURRENT_SOURCE_DIR}/base/mmomrhook_internal.h
 )
 
-add_dependencies(omrgc omrgc_hookgen)
+
+
 
 target_include_directories(omrgc
 	PUBLIC
