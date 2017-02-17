@@ -28,7 +28,6 @@ addons:
        - ubuntu-toolchain-r-test
        - sourceline: 'ppa:george-edison55/precise-backports'
     packages:
-<<<<<<< HEAD
        - cmake
        - cmake-data
        - libnuma-dev
