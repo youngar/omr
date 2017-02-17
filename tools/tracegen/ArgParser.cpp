@@ -60,6 +60,37 @@ ArgParser::parseOptions(int argc, char *argv[], J9TDFOptions *options)
 				}
 				Port::omrmem_free((void **)&roots);
 			}
+		} else if (StringUtils::startsWithUpperLower(argv[i], "-file")) {
+			i++;
+			if (i >= argc) {
+				FileUtils::printError("File not specified\n");
+				rc = RC_FAILED;
+				goto done;
+			} else {
+				/* Construct linked list of files. */
+				char *files = strdup(argv[i]);
+				char *sepToken = NULL;
+				if (NULL == files) {
+					rc = RC_FAILED;
+					goto done;
+				}
+				sepToken = strtok(files, ",");
+				Path **current = &(options->files);
+
+				while (NULL != sepToken) {
+					*current = (Path *)Port::omrmem_calloc(1, sizeof(Path));
+					if (NULL == *current) {
+						rc = RC_FAILED;
+						goto done;
+					}
+					(*current)->path = strdup(sepToken);
+					(*current)->next = NULL;
+					current = &(*current)->next;
+
+					sepToken = strtok(NULL, ",");
+				}
+				Port::omrmem_free((void **)&files);
+			}
 		} else if (StringUtils::startsWithUpperLower(argv[i], "-threshold")) {
 			i++;
 			if (i >= argc) {
@@ -104,7 +135,7 @@ ArgParser::parseOptions(int argc, char *argv[], J9TDFOptions *options)
 		}
 	}
 
-	if (NULL == options->rootDirectory) {
+	if (NULL == options->rootDirectory && NULL == options->files) {
 		options->rootDirectory = (Path *)Port::omrmem_calloc(1, sizeof(Path));
 		if (NULL == options->rootDirectory) {
 			rc = RC_FAILED;
