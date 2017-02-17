@@ -1,3 +1,17 @@
+add_tracegen(
+	omrti.tdf
+
+	${CMAKE_CURRENT_SOURCE_DIR}/ut_omrti.c
+	${CMAKE_CURRENT_SOURCE_DIR}/ut_omrti.h
+)
+
+add_tracegen(
+	omrvm.tdf
+
+	${CMAKE_CURRENT_SOURCE_DIR}/ut_omrvm.c
+	${CMAKE_CURRENT_SOURCE_DIR}/ut_omrvm.h
+)
+
 add_library(omrcore
 	OMR_Agent.cpp
 	OMR_MethodDictionary.cpp

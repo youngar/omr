@@ -12,6 +12,20 @@ add_custom_target(omrgc_hookgen
 	base/mmprivatehook_internal.h
 )
 
+add_tracegen(
+	base/j9mm.tdf
+
+	${CMAKE_CURRENT_SOURCE_DIR}/base/ut_j9mm.c
+	${CMAKE_CURRENT_SOURCE_DIR}/base/ut_j9mm.h
+)
+
+add_tracegen(
+	base/omrmm.tdf
+
+	${CMAKE_CURRENT_SOURCE_DIR}/base/ut_omrmm.c
+	${CMAKE_CURRENT_SOURCE_DIR}/base/ut_omrmm.h
+)
+
 add_library(omrgc
 		base/AddressOrderedListPopulator.cpp
 		base/AddressOrderedListPopulator.hpp
@@ -231,6 +245,8 @@ add_library(omrgc
 		base/gcutils.cpp
 		base/modronapicore.cpp
 		base/modronapicore.hpp
+		base/ut_j9mm.c
+		base/ut_omrmm.c
 )
 
 add_dependencies(omrgc omrgc_hookgen)

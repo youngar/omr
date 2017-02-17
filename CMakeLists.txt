@@ -120,8 +120,8 @@ add_definitions(
 configure_file(./omrcfg.CMakeTemplate.h omrcfg.h)
 configure_file(./omrversionstrings.CMakeTemplate.h omrversionstrings.h)
 
-add_subdirectory(omr)
 add_subdirectory(tools)
+add_subdirectory(omr)
 add_subdirectory(third_party)
 
 if(OMR_GC)
