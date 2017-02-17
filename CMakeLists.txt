@@ -39,7 +39,7 @@ set(OMR_JIT_VERSION_STRING "<Unknown>" CACHE STRING "") # TODO: Set the version
 ### Versions and stuff
 ###
 
-
+include(cmake/platform.cmake)
 
 ###
 ### Boolean Feature Flags
