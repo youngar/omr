@@ -38,3 +38,15 @@ target_include_directories(trace
 	INTERFACE
 		./
 )
+
+#TODO: this still builds in tree
+#TODO: output can probably be determined from input
+macro(add_tracegen input)
+	add_custom_command(
+		OUTPUT ${ARGN}
+		COMMAND tracegen -treatWarningAsError -generatecfiles -threshold 1 -file ${input}
+		DEPENDS ${input}
+		WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+	)
+endmacro()
+#TODO we still dont do tracemerge properly
