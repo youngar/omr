@@ -88,8 +88,10 @@ set(OMR_PORT_ZOS_CEEHDLRSUPPORT Off CACHE BOOL "TODO: Document")
 set(OMRTHREAD_LIB_AIX Off CACHE BOOL "TODO: Document")
 set(OMRTHREAD_LIB_WIN32 Off CACHE BOOL "TODO: Document")
 set(OMRTHREAD_LIB_ZOS Off CACHE BOOL "TODO: Document")
-set(OMRTHREAD_LIB_UNIX Off CACHE BOOL "TODO: Document")
-set(OMR_THR_TRACING On CACHE BOOL "TODO: Document")
+#TODO forcing this to get unix thread lib to compile
+set(OMRTHREAD_LIB_UNIX On CACHE BOOL "TODO: Document")
+#TODO set to disabled. Stuff fails to compile when its on
+set(OMR_THR_TRACING Off CACHE BOOL "TODO: Document")
 set(OMR_GC_DYNAMIC_CLASS_UNLOADING Off CACHE BOOL "TODO: Document")
 set(OMR_GC_MODRON_COMPACTION Off CACHE BOOL "TODO: Document")
 set(OMR_GC_MODRON_CONCURRENT_MARK Off CACHE BOOL "TODO: Document")
