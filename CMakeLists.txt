@@ -144,6 +144,7 @@ configure_file(./omrcfg.CMakeTemplate.h omrcfg.h)
 configure_file(./omrversionstrings.CMakeTemplate.h omrversionstrings.h)
 
 add_subdirectory(tools)
+add_subdirectory(thread)
 add_subdirectory(port)
 add_subdirectory(util)
 add_subdirectory(omr)
