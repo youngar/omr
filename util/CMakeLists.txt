@@ -1,0 +1,6 @@
+#add_subdirectory(a2e)
+add_subdirectory(avl)
+add_subdirectory(hashtable)
+add_subdirectory(hookable)
+add_subdirectory(omrutil)
+add_subdirectory(pool)
