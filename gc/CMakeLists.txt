@@ -24,6 +24,11 @@ add_tracegen(
 	${CMAKE_CURRENT_SOURCE_DIR}/base/ut_omrmm.h
 )
 
+add_tracegen(
+	verbose/j9vgc.tdf
+	${CMAKE_CURRENT_SOURCE_DIR}/verbose/ut_j9vgc.c
+	${CMAKE_CURRENT_SOURCE_DIR}/verbose/ut_j9vgc.h
+)
 add_library(omrgc
 		base/AddressOrderedListPopulator.cpp
 		base/AddressOrderedListPopulator.hpp
@@ -246,6 +251,58 @@ add_library(omrgc
 		base/ut_j9mm.c
 		base/ut_omrmm.c
 
+		startup/mminitcore.cpp
+		startup/omrgcalloc.cpp
+		startup/omrgcstartup.cpp
+
+		stats/AllocationFailureStats.cpp
+		stats/AllocationStats.cpp
+		stats/CardCleaningStats.cpp
+		stats/ClassUnloadStats.cpp
+		stats/CompactStats.cpp
+		stats/ConcurrentCardTableStats.cpp
+		stats/ConcurrentGCStats.cpp
+		stats/ConcurrentSweepStats.cpp
+		stats/CopyForwardStatsCore.cpp
+		stats/HeapMemorySnapshot.cpp
+		stats/HeapResizeStats.cpp
+		stats/HeapStats.cpp
+		stats/LargeObjectAllocateStats.cpp
+		stats/MarkStats.cpp
+		stats/MetronomeStats.cpp
+		stats/PercolateStats.cpp
+		stats/RootScannerStats.cpp
+		stats/ScavengerCopyScanRatio.cpp
+		stats/ScavengerHotFieldStats.cpp
+		stats/ScavengerStats.cpp
+		stats/SweepStats.cpp
+
+		structs/ForwardedHeader.cpp
+		structs/HashTableIterator.cpp
+		structs/ObjectHeapIterator.cpp
+		structs/ObjectIteratorState.cpp
+		structs/OMRVMThreadListIterator.cpp
+		structs/PoolIterator.cpp
+		structs/SublistFragment.cpp
+		structs/SublistIterator.cpp
+		structs/SublistPool.cpp
+		structs/SublistPuddle.cpp
+		structs/SublistSlotIterator.cpp
+
+		#verbose/j9vgc.tdf
+		verbose/ut_j9vgc.c
+		verbose/VerboseBuffer.cpp
+		verbose/VerboseHandlerOutput.cpp
+		verbose/VerboseManager.cpp
+		verbose/VerboseWriterChain.cpp
+		verbose/VerboseWriter.cpp
+		verbose/VerboseWriterFileLoggingBuffered.cpp
+		verbose/VerboseWriterFileLogging.cpp
+		verbose/VerboseWriterFileLoggingSynchronous.cpp
+		verbose/VerboseWriterHook.cpp
+		verbose/VerboseWriterStreamOutput.cpp
+
+		verbose/handler_standard/VerboseHandlerOutputStandard.cpp
 		#hookgen generated files
 		${CMAKE_CURRENT_SOURCE_DIR}/base/mmprivatehook.h
 		${CMAKE_CURRENT_SOURCE_DIR}/base/mmprivatehook_internal.h
