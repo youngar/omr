@@ -92,12 +92,12 @@
  * Output lots of thread statistics (Pentium only)
  * ifRemoved: Turn off in production VMs
  */
-#cmakedefine OMR_THR_TRACING
+#cmakedefine OMR_THR_TRACING 1
 
-#cmakedefine OMRTHREAD_LIB_AIX
-#cmakedefine OMRTHREAD_LIB_UNIX
-#cmakedefine OMRTHREAD_LIB_WIN32
-#cmakedefine OMRTHREAD_LIB_ZOS
+#cmakedefine OMRTHREAD_LIB_AIX 1
+#cmakedefine OMRTHREAD_LIB_UNIX 1
+#cmakedefine OMRTHREAD_LIB_WIN32 1
+#cmakedefine OMRTHREAD_LIB_ZOS 1
 
 /**
  * This spec targets PPC processors.
