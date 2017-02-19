@@ -50,4 +50,4 @@ script:
   - cd build
   - cmake -Wdev ..
   - cmake --build .
-  - cmake --build . --target test
+  - ctest --output-on-failure
