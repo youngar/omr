@@ -150,6 +150,9 @@ add_subdirectory(util)
 add_subdirectory(omr)
 add_subdirectory(third_party)
 
+#TODO should be wrapped in if()
+add_subdirectory(fvtest)
+
 if(OMR_GC)
   add_subdirectory(gc)
   add_subdirectory("${OMR_GLUE}")
