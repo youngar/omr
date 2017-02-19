@@ -106,6 +106,27 @@ set(OMR_PORT_ASYNC_HANDLER Off CACHE BOOL "TODO: Document")
 
 enable_testing()
 
+function(VPathResolve inlist dirlist outlist)
+    set(output "")
+  foreach(currentFile ${${inlist}})
+    set(fileFound False)
+    #message("Searching for ${currentFile}")
+    foreach(currentDir ${${dirlist}})
+        #message("looking in ${currentDir}")
+        #message("${CMAKE_CURRENT_SOURCE_DIR}/${currentDir}/${currentFile}")
+        if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${currentDir}/${currentFile}")
+            list(APPEND output "${currentDir}/${currentFile}")
+            set(fileFound True)
+            break()
+        endif()
+    endforeach()
+    if(NOT fileFound)
+        message(FATAL_ERROR "Could not find file ${currentFile}")
+    endif()
+  endforeach()
+  set(${outlist} ${output} PARENT_SCOPE)
+endfunction()
+
 include_directories(
   ${PROJECT_BINARY_DIR}
   ./include/
@@ -121,6 +142,7 @@ configure_file(./omrcfg.CMakeTemplate.h omrcfg.h)
 configure_file(./omrversionstrings.CMakeTemplate.h omrversionstrings.h)
 
 add_subdirectory(tools)
+add_subdirectory(port)
 add_subdirectory(omr)
 add_subdirectory(third_party)
 
