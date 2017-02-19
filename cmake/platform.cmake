@@ -52,8 +52,12 @@ if(OMR_HOST_OS STREQUAL "linux")
 endif()
 
 
-if(OMR_ARCH_x86 AND OMR_ENV_DATA64)
-	add_definitions(-DJ9HAMMER)
+if(OMR_ARCH_X86)
+	if(OMR_ENV_DATA64)
+		add_definitions(-DJ9HAMMER)
+	else()
+		add_definitions(-DJ9X86)
+	endif()
 endif()
 
 if(OMR_HOST_OS STREQUAL "osx")
