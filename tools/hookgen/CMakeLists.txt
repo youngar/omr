@@ -11,8 +11,8 @@ target_link_libraries(hookgen pugixml)
 #TODO: Dependecy checking is broken, since it checks for output in build tree rather than src
 function(add_hookgen input)
 	get_filename_component(input_dir "${input}" DIRECTORY)
-	message("Hookgen, Output = ${ARGN}")
-	message("Hookgen, depends = ${CMAKE_CURRENT_SOURCE_DIR}/${input}")
+	#message("Hookgen, Output = ${ARGN}")
+	#message("Hookgen, depends = ${CMAKE_CURRENT_SOURCE_DIR}/${input}")
 	add_custom_command(
 		OUTPUT ${ARGN}
 		COMMAND hookgen ${CMAKE_CURRENT_SOURCE_DIR}/${input}
