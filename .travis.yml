@@ -54,4 +54,4 @@ script:
   - cd build
   - cmake -Wdev ..
   - cmake --build .
-  - ctest --output-on-failure
+  - ctest -V
