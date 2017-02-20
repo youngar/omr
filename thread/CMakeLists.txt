@@ -269,3 +269,8 @@ add_library(j9thrstatic
 	${resolvedPaths}
 	ut_j9thr.c
 )
+
+target_include_directories(j9thrstatic
+	INTERFACE
+	.
+)
