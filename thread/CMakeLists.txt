@@ -274,3 +274,8 @@ target_include_directories(j9thrstatic
 	INTERFACE
 	.
 )
+
+target_link_libraries(j9thrstatic
+	omrutil
+	j9pool
+)
