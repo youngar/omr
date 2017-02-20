@@ -57,6 +57,8 @@ target_link_libraries(omrthreadtest
 	j9hashtable
 	j9avl
 	j9pool
+
+	rt
 )
 
 add_test(threadtest omrthreadtest)
