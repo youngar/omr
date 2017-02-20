@@ -237,7 +237,10 @@ add_library(omrport STATIC
 	${resolvedPaths}
 )
 
-target_link_libraries(omrport j9thrstatic)
+target_link_libraries(omrport
+	j9thrstatic
+	j9hashtable
+)
 
 #TODO hack to get to compile. Need platform checks
 target_link_libraries(omrport dl)
