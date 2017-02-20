@@ -22,4 +22,9 @@ target_include_directories(j9hashtable
 		.
 )
 
-target_link_libraries(j9hashtable PUBLIC omrutil)
+target_link_libraries(j9hashtable
+	PUBLIC
+		omrutil
+		j9avl
+		j9pool
+)
