@@ -23,6 +23,10 @@ sudo: false
 cache: ccache
 
 addons:
+  artifacts:
+    debug: true
+    paths:
+      build/CMakeCache.txt
   apt:
     sources:
        - ubuntu-toolchain-r-test
