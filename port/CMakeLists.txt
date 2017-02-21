@@ -125,8 +125,16 @@ endif()
 list(APPEND OBJECTS omrsyslog.c)
 
 if(OMR_HOST_OS STREQUAL win)
+    #TODO hack to compile mc files
+    enable_language(RC)
+    add_custom_command(
+        OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/win32/omrsyslogmessages.rc
+        COMMAND mc  ${CMAKE_CURRENT_SOURCE_DIR}/win32/omrsyslogmessages.mc
+        DEPENDS win32/omrsyslogmessages.mc
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/win32
+    )
 	#TODO need to handle res files properly
-	list(APPEND OBJECTS omrsyslogmessages.res)
+	#list(APPEND OBJECTS omrsyslogmessages.res)
 endif()
 
 list(APPEND OBJECTS
@@ -224,7 +232,9 @@ set(resolvedPaths "")
 VPathResolve(OBJECTS VPATH resolvedPaths)
 
 #message("Resolved paths = ${resolvedPaths}")
-
+if(OMR_HOST_OS STREQUAL "win")
+    list(APPEND resolvedPaths win32/omrsyslogmessages.rc)
+endif()
 add_tracegen(
 	common/omrport.tdf
 
