@@ -49,6 +49,7 @@ add_executable(omrthreadtest
 #include $(top_srcdir)/omrmakefiles/rules.mk
 
 target_link_libraries(omrthreadtest
+	omrglue
 	omrtestutil
 	omrGtestGlue
 	j9thrstatic
