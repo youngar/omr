@@ -21,15 +21,10 @@ sudo: false
 
 # https://docs.travis-ci.com/user/caching/
 cache: ccache
-
+dist: trusty
 addons:
   apt:
-    sources:
-       - ubuntu-toolchain-r-test
-       - sourceline: 'ppa:george-edison55/precise-backports'
     packages:
-       - cmake
-       - cmake-data
        - libnuma-dev
        - bison
        - gcc-multilib
