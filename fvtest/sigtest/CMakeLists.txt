@@ -4,16 +4,27 @@ add_executable(omrsigtest
 	main.cpp
 )
 
+#TODO: hack for windows. These libraries should be linked on dependants
+if(OMR_HOST_OS STREQUAL "win")
+	target_link_libraries(omrsigtest
+		ws2_32
+		shell32
+		Iphlpapi
+		psapi
+		pdh
+	)
+endif()
+
 #TODO pretty sure omrtestutil only used for headers
 target_link_libraries(omrsigtest
 	omrGtestGlue
 	omrtestutil
-	omrsig
 	j9thrstatic
 	omrport
-
-	rt
+	omrglue
+	omrsig
 )
+
 
 #MODULE_INCLUDES += ../util
 #MODULE_INCLUDES += $(OMR_GTEST_INCLUDES)
