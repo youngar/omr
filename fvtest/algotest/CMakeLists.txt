@@ -31,9 +31,22 @@ target_link_libraries(omralgotest
 )
 
 #TODO hack to get building
+if(NOT OMR_HOST_OS STREQUAL "win")
+	target_link_libraries(omralgotest
+		rt
+	)
+else()
+	target_link_libraries(omralgotest
+		ws2_32
+		shell32
+		Iphlpapi
+		psapi
+		pdh
+		omrglue
+	)
+endif()
 target_link_libraries(omralgotest
 	#iconv
-	rt
 	j9hookstatic
 )
 add_test(algotest omralgotest -avltest:${CMAKE_CURRENT_SOURCE_DIR}/avltest.lst)
