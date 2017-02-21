@@ -22,5 +22,7 @@ target_sources(omrGtestGlue INTERFACE
 target_link_libraries(omrGtestGlue INTERFACE omrGtest)
 
 #TODO there is platform specific stuff here
-target_link_libraries(omrGtest pthread)
+if(NOT OMR_HOST_OS STREQUAL "win")
+	target_link_libraries(omrGtest pthread)
+endif()
 #target_link_libraries(omrGtest INTERFACE omrGtestGlue)
