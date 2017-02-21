@@ -15,25 +15,23 @@
 # Contributors:
 #    Multiple authors (IBM Corp.) - initial implementation and documentation
 ###############################################################################
+os:
+  - linux
+  - osx
 
 language: c++
 sudo: false
 
 # https://docs.travis-ci.com/user/caching/
 cache: ccache
-
+dist: trusty
 addons:
   artifacts:
     debug: true
     paths:
       build/CMakeCache.txt
   apt:
-    sources:
-       - ubuntu-toolchain-r-test
-       - sourceline: 'ppa:george-edison55/precise-backports'
     packages:
-       - cmake
-       - cmake-data
        - libnuma-dev
        - bison
        - gcc-multilib
