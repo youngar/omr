@@ -59,12 +59,10 @@ if(OMR_HOST_OS STREQUAL "linux")
 
 endif()
 
-
-#ifeq (osx,$(OMR_HOST_OS))
-  #vpath % $(THREAD_SRCDIR)osx
-  #vpath % $(THREAD_SRCDIR)unix
-  #MODULE_INCLUDES += $(THREAD_SRCDIR)osx $(THREAD_SRCDIR)unix
-#endif
+if(OMR_HOST_OS STREQUAL "osx")
+	list(APPEND VPATHS osx unix)
+	include_directories(osx unix)
+endif()
 
 #ifeq (aix,$(OMR_HOST_OS))
   #vpath % $(THREAD_SRCDIR)aix
