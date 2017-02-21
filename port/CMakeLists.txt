@@ -176,8 +176,8 @@ endif()
 
 if(OMR_HOST_OS STREQUAL "win")
 	if(OMR_ENV_DATA64)
-		list(APPEND VPATH winamd64)
-		include_directories(winamd64)
+		list(APPEND VPATH win64amd)
+		include_directories(win64amd)
 	endif()
 endif()
 
