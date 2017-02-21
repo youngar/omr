@@ -70,6 +70,33 @@ if(OMR_HOST_OS STREQUAL "osx")
 endif()
 
 
+if(OMR_HOST_OS STREQUAL "win")
+    #TODO: should probably check for MSVC
+    set(OMR_WINVER "0x501")
+    add_definitions(
+        -DWIN32
+        -D_CRT_SECURE_NO_WARNINGS
+        -DCRTAPI1=_cdecl
+        -DCRTAPI2=_cdecl
+        -D_WIN_95
+        -D_WIN32_WINDOWS=0x0500
+        -D_WIN32_DCOM
+        -D_MT
+        -D_WINSOCKAPI_
+        -D_WIN32_WINVER=${OMR_WINVER}
+        -D_WIN32_WINNT=${OMR_WINVER}
+    )
+    if(OMR_ENV_DATA64)
+        add_definitions(
+            -DWIN64
+            -D_AMD64_=1
+         )
+     else()
+        add_definitions(
+            -D_X86_
+         )
+     endif()
+endif()
 ###
 ### Flags we aren't using
 ###
