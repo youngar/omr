@@ -57,10 +57,7 @@
   #endif
 #endif
 
-#ifeq (win,$(OMR_HOST_OS))
-  #OBJECTS += j9getdbghelp$(OBJEXT)
-  #vpath %.c win
-#endif
+
 add_tracegen(
 	utilcore.tdf
 	${CMAKE_CURRENT_SOURCE_DIR}/ut_j9utilcore.c
@@ -86,3 +83,10 @@ add_library(omrutil STATIC
 	xlphelp.c
 	xml.c
 )
+
+if(OMR_HOST_OS STREQUAL "win")
+	target_sources(omrutil
+		PRIVATE
+			win/j9getdbghelp.c
+	)
+endif()
