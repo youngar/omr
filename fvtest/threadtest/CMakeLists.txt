@@ -57,10 +57,19 @@ target_link_libraries(omrthreadtest
 	j9hashtable
 	j9avl
 	j9pool
-
-	rt
 )
-
+if(OMR_HOST_OS STREQUAL "linux")
+    target_link_libraries(omrthreadtest
+        rt)
+elseif(OMR_HOST_OS STREQUAL "win")
+    target_link_libraries(omrthreadtest
+        ws2_32
+        shell32
+        Iphlpapi
+        psapi
+        pdh
+    )
+endif()
 add_test(threadtest omrthreadtest)
 #TODO need to add other execution targets
 #	./omrthreadtest --gtest_also_run_disabled_tests --gtest_filter=ThreadCreateTest.DISABLED_SetAttrThreadWeight
