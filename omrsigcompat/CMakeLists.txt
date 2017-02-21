@@ -2,7 +2,22 @@ add_library(omrsig SHARED
 	omrsig.cpp
 )
 
+#TODO need more comrehensive symbols
+set(exportedSyms
+	omrsig_primary_signal
+	omrsig_handler
+	signal
+)
 
+#for now only export symbols on windows
+if(OMR_HOST_OS STREQUAL "win")
+	file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/omrsig.exportlist" "EXPORTS\n" )
+	foreach(exportSymbol ${exportedSyms})
+		file(APPEND "${CMAKE_CURRENT_BINARY_DIR}/omrsig.exportlist" "${exportSymbol}\n" )
+	endforeach()
+	set_target_properties(omrsig
+		PROPERTIES LINK_FLAGS "-def:${CMAKE_CURRENT_BINARY_DIR}/omrsig.exportlist")
+endif()
 #EXPORT_FUNCTIONS_FILE := omrsig.exportlist
 
 ### Create platform specific exports
