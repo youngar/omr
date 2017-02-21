@@ -81,6 +81,7 @@ typedef struct J9ThreadCustomSpinOptions {
 #endif /* OMR_THR_CUSTOM_SPIN_OPTIONS */
 
 typedef struct J9ThreadTracing {
+	int dummy;
 #if defined(OMR_THR_JLM_HOLD_TIMES)
 	uintptr_t pause_count;
 #endif /* OMR_THR_JLM_HOLD_TIMES */
