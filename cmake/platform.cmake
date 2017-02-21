@@ -4,9 +4,9 @@
 ### Platform flags
 ### TODO: arch flags. Defaulting to x86-64
 
-message("CMAKE_SYSTEM_NAME=${CMAKE_SYSTEM}")
-message("CMAKE_SYSTEM_VERSION=${CMAKE_SYSTEM_VERSION}")
-message("CMAKE_SYSTEM_PROCESSOR=${CMAKE_SYSTEM_PROCESSOR}")
+message(STATUS "CMAKE_SYSTEM_NAME=${CMAKE_SYSTEM}")
+message(STATUS "CMAKE_SYSTEM_VERSION=${CMAKE_SYSTEM_VERSION}")
+message(STATUS "CMAKE_SYSTEM_PROCESSOR=${CMAKE_SYSTEM_PROCESSOR}")
 
 #set(OMR_ARCH_POWER Off Internal "Power CPU Architecture")
 #set(OMR_ARCH_ARM Off Internal "Arm CPU Architecture")
