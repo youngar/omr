@@ -253,7 +253,9 @@ target_link_libraries(omrport
 )
 
 #TODO hack to get to compile. Need platform checks
-target_link_libraries(omrport dl)
+if(NOT OMR_HOST_OS STREQUAL "win")
+	target_link_libraries(omrport dl)
+endif()
 #add_executable(dummy
 #	main.c
 #)
