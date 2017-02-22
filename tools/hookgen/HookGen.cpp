@@ -539,8 +539,6 @@ startHookGen(int argc, char *argv[])
 		goto finish;
 	}
 
-	fprintf(stderr, "Processed %s to create public header %s and private header %s\n", hookGen.getFileName(), hookGen.getPublicFileName(), hookGen.getPrivateFileName());
-
 finish:
 	hookGen.tearDown();
 
