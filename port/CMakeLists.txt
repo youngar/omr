@@ -256,6 +256,11 @@ target_link_libraries(omrport
 if(NOT OMR_HOST_OS STREQUAL "win")
 	target_link_libraries(omrport dl)
 endif()
+
+if(OMR_HOST_OS STREQUAL "osx")
+  target_link_libraries(omrport iconv)
+endif()
+
 #add_executable(dummy
 #	main.c
 #)
