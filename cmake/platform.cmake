@@ -65,7 +65,6 @@ if(OMR_HOST_OS STREQUAL "osx")
 		-DOSX
 		-D_REENTRANT
 		-D_FILE_OFFSET_BITS=64
-		-D_XOPEN_SOURCE
 	)
 endif()
 
