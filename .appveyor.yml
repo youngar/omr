@@ -17,7 +17,9 @@
 ###############################################################################
 
 platform: x64
-configuration: Debug
+configuration: Release
+shallow_clone: true
+clone_depth: 1
 
 environment:
   GTEST_FILTER: '*dump_test_create_dump_*:*NumaSetAffinity:*NumaSetAffinitySuspended'
@@ -28,3 +30,6 @@ before_build:
 build:
   project: omr.sln
   parallel: true
+
+test_script:
+  - ps: ctest -V
