@@ -17,6 +17,14 @@ if(OMR_HOST_OS STREQUAL "win")
 	endforeach()
 	set_target_properties(omrsig
 		PROPERTIES LINK_FLAGS "-def:${CMAKE_CURRENT_BINARY_DIR}/omrsig.exportlist")
+	set(CRT_DLL "MSVC100.dll")
+	#TODO: below assumes we are using debug builds
+	if(MSVC12)
+		set(CRT_DLL "MSVC120d.dll")
+	elseif(MSVC14)
+		set(CRT_DLL "MSVC140d.dll")
+	endif()
+	target_compile_definitions(omrsig PRIVATE -DMSVC_RUNTIME_DLL="${CRT_DLL}")
 endif()
 #EXPORT_FUNCTIONS_FILE := omrsig.exportlist
 
