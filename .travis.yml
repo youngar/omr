@@ -42,6 +42,7 @@ addons:
 
 before_script:
   - ulimit -c unlimited
+  - export GTEST_COLOR=1
   - export GTEST_FILTER=-*dump_test_create_dump_*:*NumaSetAffinity:*NumaSetAffinitySuspended
   # Disable the core dump tests as container based builds don't allow setting
   # core_pattern and don't have apport installed.  This can be removed when
