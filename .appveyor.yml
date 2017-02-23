@@ -27,14 +27,9 @@ environment:
 before_build:
   - ps: cmake -Wdev -G "Visual Studio 14 2015 Win64" .
 
-artifacts:
-  - path: artifacts.zip
-    name: TestArtifacts
 build:
   project: omr.sln
   parallel: true
 
 test_script:
   - ps: ctest -V -C Debug
-  - cmd: 7z a artifacts.zip .
-  - cmd: appveyor PushArtifact artifacts.zip
