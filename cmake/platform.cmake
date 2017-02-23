@@ -129,8 +129,8 @@ if(OMR_HOST_OS STREQUAL "win")
 	set(CMAKE_CXX_FLAGS "${filtered_cxx_flags} ${common_flags}")
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${common_flags}")
 
-	message("CFLAGS = ${CMAKE_C_FLAGS}")
-	message("CXXFLAGS = ${CMAKE_CXX_FLAGS}")
+	message(STATUS "CFLAGS = ${CMAKE_C_FLAGS}")
+	message(STATUS "CXXFLAGS = ${CMAKE_CXX_FLAGS}")
 
 	#Hack up output dir to fix dll dependency issues on windows
 	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
