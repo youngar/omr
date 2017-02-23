@@ -17,7 +17,7 @@
 ###############################################################################
 
 platform: x64
-configuration: Release
+configuration: Debug
 shallow_clone: true
 clone_depth: 1
 
@@ -35,6 +35,6 @@ build:
   parallel: true
 
 test_script:
-  - ps: ctest -V
+  - ps: ctest -V -C Debug
   - cmd: 7z a artifacts.zip .
   - cmd: appveyor PushArtifact artifacts.zip
