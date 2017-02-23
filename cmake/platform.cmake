@@ -70,31 +70,67 @@ endif()
 
 
 if(OMR_HOST_OS STREQUAL "win")
-    #TODO: should probably check for MSVC
-    set(OMR_WINVER "0x501")
-    add_definitions(
-        -DWIN32
-        -D_CRT_SECURE_NO_WARNINGS
-        -DCRTAPI1=_cdecl
-        -DCRTAPI2=_cdecl
-        -D_WIN_95
-        -D_WIN32_WINDOWS=0x0500
-        -D_WIN32_DCOM
-        -D_MT
-        -D_WINSOCKAPI_
-        -D_WIN32_WINVER=${OMR_WINVER}
-        -D_WIN32_WINNT=${OMR_WINVER}
-    )
-    if(OMR_ENV_DATA64)
-        add_definitions(
-            -DWIN64
-            -D_AMD64_=1
-         )
-     else()
-        add_definitions(
-            -D_X86_
-         )
-     endif()
+	#TODO: should probably check for MSVC
+	set(OMR_WINVER "0x501")
+
+	add_definitions(
+		-DWIN32
+		-D_CRT_SECURE_NO_WARNINGS
+		-DCRTAPI1=_cdecl
+		-DCRTAPI2=_cdecl
+		-D_WIN_95
+		-D_WIN32_WINDOWS=0x0500
+		-D_WIN32_DCOM
+		-D_MT
+		-D_WINSOCKAPI_
+		-D_WIN32_WINVER=${OMR_WINVER}
+		-D_WIN32_WINNT=${OMR_WINVER}
+		-D_DLL
+	)
+	if(OMR_ENV_DATA64)
+		add_definitions(
+			-DWIN64
+			-D_AMD64_=1
+		)
+		set(TARGET_MACHINE AMD64)
+	else()
+		add_definitions(
+			-D_X86_
+		)
+		set(TARGET_MACHINE i386)
+	endif()
+	set(opt_flags "/GS-")
+	set(common_flags "-MD -Zm400")
+
+	set(linker_common "-subsystem:console -machine:${TARGET_MACHINE}")
+	if(NOT OMR_ENV_DATA64)
+		set(linker_common "${linker_common} /SAFESEH")
+	endif()
+
+	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${linker_common} /INCREMENTAL:NO /NOLOGO /LARGEADDRESSAWARE wsetargv.obj")
+	if(OMR_ENV_DATA64)
+		#TODO: makefile has this but it seems to break shit
+		#set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /NODEFAULTLIB:MSVCRTD")
+	endif()
+
+	set(CMAKE_SHARED_LIKER_FLAGS "${CMAKE_SHARED_LIKER_FLAGS} /INCREMENTAL:NO /NOLOGO")
+	if(OMR_ENV_DATA64)
+		set(CMAKE_SHARED_LIKER_FLAGS "${CMAKE_SHARED_LIKER_FLAGS} -entry:_DllMainCRTStartup")
+	else()
+		set(CMAKE_SHARED_LIKER_FLAGS "${CMAKE_SHARED_LIKER_FLAGS} -entry:_DllMainCRTStartup@12")
+	endif()
+	#set(CMAKE_C_FLAGS "${common_flags}")
+	#set(CMAKE_CXX_FLAGS "${common_flags}")
+
+
+	#string(REPLACE "/EHSC" "" filtered_c_flags ${CMAKE_C_FLAGS})
+	string(REPLACE "/EHsc" "" filtered_cxx_flags ${CMAKE_CXX_FLAGS})
+	string(REPLACE "/GR" "" filtered_cxx_flags ${filtered_cxx_flags})
+	set(CMAKE_CXX_FLAGS "${filtered_cxx_flags} ${common_flags}")
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${common_flags}")
+
+	message("CFLAGS = ${CMAKE_C_FLAGS}")
+	message("CXXFLAGS = ${CMAKE_CXX_FLAGS}")
 endif()
 ###
 ### Flags we aren't using
