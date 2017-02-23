@@ -14,4 +14,4 @@ target_include_directories(omrutiltest
 	$<TARGET_PROPERTY:omrGtestGlue,INTERFACE_INCLUDE_DIRECTORIES>
 )
 
-add_test(utiltest omrutiltest)
+add_test(NAME utiltest COMMAND omrutiltest)

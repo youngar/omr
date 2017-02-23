@@ -71,7 +71,7 @@ elseif(OMR_HOST_OS STREQUAL "win")
         pdh
     )
 endif()
-add_test(threadtest omrthreadtest)
+add_test(NAME threadtest COMMAND omrthreadtest)
 #TODO need to add other execution targets
 #	./omrthreadtest --gtest_also_run_disabled_tests --gtest_filter=ThreadCreateTest.DISABLED_SetAttrThreadWeight
 #ifneq (,$(findstring linux,$(SPEC)))

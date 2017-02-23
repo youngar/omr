@@ -50,4 +50,4 @@ target_link_libraries(omralgotest
 	j9hookstatic
 )
 
-add_test(algotest omralgotest -avltest:${CMAKE_CURRENT_SOURCE_DIR}/avltest.lst)
+add_test(NAME algotest COMMAND omralgotest -avltest:${CMAKE_CURRENT_SOURCE_DIR}/avltest.lst)
