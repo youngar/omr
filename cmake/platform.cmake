@@ -53,6 +53,7 @@ endif()
 
 
 if(OMR_ARCH_X86)
+	set(OMR_ENV_LITTLE_ENDIAN ON CACHE BOOL "TODO: Document")
 	if(OMR_ENV_DATA64)
 		add_definitions(-DJ9HAMMER)
 	else()
