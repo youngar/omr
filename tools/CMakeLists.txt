@@ -9,9 +9,12 @@ if (NOT CMAKE_CROSSCOMPILING)
 else(NOT CMAKE_CROSSCOMPILING)
 
 	set(OMR_TOOLS_IMPORTFILE "IMPORTFILE-NOTFOUND" CACHE FILEPATH
-  		"Point it to the ImportTools.cmake file of a native build")
-  
-	include(${OMR_TOOLS_IMPORTFILE})
+		"Point it to the ImportTools.cmake file of a native build")
+
+	#Logically we should be importing the file here, however,
+	#burried in the cmake docs, it says imported targets are directory scoped
+	#thus they would be useless if imported here
+	#include(${OMR_TOOLS_IMPORTFILE})
 
 endif(NOT CMAKE_CROSSCOMPILING)
 
