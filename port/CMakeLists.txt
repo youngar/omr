@@ -189,11 +189,56 @@ if(OMR_HOST_OS STREQUAL "win")
 	endif()
 endif()
 
+if(OMR_HOST_OS STREQUAL "aix")
+	#ifdef I5_VERSION
+		#ifeq (1,$(OMR_ENV_DATA64))
+			#vpath % $(PORT_SRCDIR)iseries64
+			#MODULE_INCLUDES += $(PORT_SRCDIR)iseries64
+		#endif
+		#vpath % $(PORT_SRCDIR)iseries
+		#MODULE_INCLUDES += $(PORT_SRCDIR)iseries
+	#endif
+
+	if(OMR_ENV_DATA64)
+	#vpath % $(PORT_SRCDIR)aix64
+	#MODULE_INCLUDES += $(PORT_SRCDIR)aix64
+	endif()
+	#vpath % $(PORT_SRCDIR)aix
+	#MODULE_INCLUDES += $(PORT_SRCDIR)aix
+endif()
+
+
+#endif
 #TODO other platforms port_objects:209
 
 if(OMR_HOST_OS STREQUAL "linux")
-	#TODO other archs (line 228)
-	
+	#ifeq (ppc,$(OMR_HOST_ARCH))
+		#ifeq (1,$(OMR_ENV_DATA64))
+			#ifeq (1,$(OMR_ENV_LITTLE_ENDIAN))
+				#vpath % $(PORT_SRCDIR)linuxppc64le
+				#MODULE_INCLUDES += $(PORT_SRCDIR)linuxppc64le
+			#endif
+			#vpath % $(PORT_SRCDIR)linuxppc64
+			#MODULE_INCLUDES += $(PORT_SRCDIR)linuxppc64
+		#endif
+		#vpath % $(PORT_SRCDIR)linuxppc
+		#MODULE_INCLUDES += $(PORT_SRCDIR)linuxppc
+	#endif
+
+	#ifeq (s390,$(OMR_HOST_ARCH))
+		#ifeq (1,$(OMR_ENV_DATA64))
+			#vpath % $(PORT_SRCDIR)linuxs39064
+			#MODULE_INCLUDES += $(PORT_SRCDIR)linuxs39064
+		#endif
+		#vpath % $(PORT_SRCDIR)linuxs390
+		#MODULE_INCLUDES += $(PORT_SRCDIR)linuxs390
+	#endif
+
+	if(OMR_ARCH_ARM)
+		list(APPEND VPATH linuxarm)
+		include_directories(linuxarm)
+	endif()
+
 	if(OMR_ARCH_X86)
 		if(OMR_ENV_DATA64)
 			list(APPEND VPATH linuxamd64)
@@ -202,9 +247,11 @@ if(OMR_HOST_OS STREQUAL "linux")
 			list(APPEND VPATH linux386)
 			include_directories(linux386)
 		endif()
-		list(APPEND VPATH linux)
-		include_directories(linux)
+
 	endif()
+
+	list(APPEND VPATH linux)
+	include_directories(linux)
 endif()
 
 
