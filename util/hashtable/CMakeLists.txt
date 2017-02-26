@@ -4,12 +4,7 @@
 #    MODULE_CFLAGS += -Wno-unused-value
 #endif
 
-add_tracegen(
-	hashtable.tdf
-
-	${CMAKE_CURRENT_SOURCE_DIR}/ut_hashtable.c
-	${CMAKE_CURRENT_SOURCE_DIR}/ut_hashtable.h
-)
+add_tracegen(hashtable.tdf)
 
 add_library(j9hashtable STATIC
 	hash.c

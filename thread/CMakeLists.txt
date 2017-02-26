@@ -1,9 +1,5 @@
 
-add_tracegen(
-	j9thr.tdf
-	${CMAKE_CURRENT_SOURCE_DIR}/ut_j9thr.c
-	${CMAKE_CURRENT_SOURCE_DIR}/ut_j9thr.h
-)
+add_tracegen(j9thr.tdf)
 
 
 set(OBJECTS "")

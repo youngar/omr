@@ -10,25 +10,10 @@ add_hookgen(base/omrmmprivate.hdf
 	${CMAKE_CURRENT_SOURCE_DIR}/base/mmprivatehook_internal.h
 )
 
-add_tracegen(
-	base/j9mm.tdf
+add_tracegen(base/j9mm.tdf)
+add_tracegen(base/omrmm.tdf)
+add_tracegen(verbose/j9vgc.tdf)
 
-	${CMAKE_CURRENT_SOURCE_DIR}/base/ut_j9mm.c
-	${CMAKE_CURRENT_SOURCE_DIR}/base/ut_j9mm.h
-)
-
-add_tracegen(
-	base/omrmm.tdf
-
-	${CMAKE_CURRENT_SOURCE_DIR}/base/ut_omrmm.c
-	${CMAKE_CURRENT_SOURCE_DIR}/base/ut_omrmm.h
-)
-
-add_tracegen(
-	verbose/j9vgc.tdf
-	${CMAKE_CURRENT_SOURCE_DIR}/verbose/ut_j9vgc.c
-	${CMAKE_CURRENT_SOURCE_DIR}/verbose/ut_j9vgc.h
-)
 add_library(omrgc
 		base/AddressOrderedListPopulator.cpp
 		base/AddressOrderedListPopulator.hpp
@@ -248,8 +233,7 @@ add_library(omrgc
 		base/gcutils.cpp
 		base/modronapicore.cpp
 		base/modronapicore.hpp
-		base/ut_j9mm.c
-		base/ut_omrmm.c
+
 
 		startup/mminitcore.cpp
 		startup/omrgcalloc.cpp
@@ -290,7 +274,6 @@ add_library(omrgc
 		structs/SublistSlotIterator.cpp
 
 		#verbose/j9vgc.tdf
-		verbose/ut_j9vgc.c
 		verbose/VerboseBuffer.cpp
 		verbose/VerboseHandlerOutput.cpp
 		verbose/VerboseManager.cpp
@@ -308,6 +291,10 @@ add_library(omrgc
 		${CMAKE_CURRENT_SOURCE_DIR}/base/mmprivatehook_internal.h
 		${CMAKE_CURRENT_SOURCE_DIR}/../include_core/mmomrhook.h
 		${CMAKE_CURRENT_SOURCE_DIR}/base/mmomrhook_internal.h
+		#tracegen files
+		ut_j9mm.c
+		ut_omrmm.c
+		ut_j9vgc.c
 )
 
 
@@ -316,6 +303,7 @@ add_library(omrgc
 target_include_directories(omrgc
 	PUBLIC
 		.
+		${CMAKE_CURRENT_BINARY_DIR}  #Ideally this should be private, but the glue pulls this in
 		base
 		base/segregated
 		base/standard

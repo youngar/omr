@@ -30,6 +30,9 @@ include(cmake/config.cmake)
 
 enable_testing()
 
+#include current source dir and current bin dir automatically
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+
 function(VPathResolve inlist dirlist outlist)
     set(output "")
   foreach(currentFile ${${inlist}})

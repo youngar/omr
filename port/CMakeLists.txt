@@ -282,15 +282,11 @@ VPathResolve(OBJECTS VPATH resolvedPaths)
 if(OMR_HOST_OS STREQUAL "win")
     list(APPEND resolvedPaths win32/omrsyslogmessages.rc)
 endif()
-add_tracegen(
-	common/omrport.tdf
 
-	${CMAKE_CURRENT_SOURCE_DIR}/common/ut_omrport.c
-	${CMAKE_CURRENT_SOURCE_DIR}/common/ut_omrport.h
-)
+add_tracegen(common/omrport.tdf)
 
 add_library(omrport STATIC 
-	common/ut_omrport.c
+	ut_omrport.c
 	${resolvedPaths}
 )
 

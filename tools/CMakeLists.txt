@@ -33,15 +33,26 @@ function(add_hookgen input)
 	)
 endfunction()
 
-#message(STATUS $<PLAFORM_ID>)
-#TODO: this still builds in tree
-#TODO: output can probably be determined from input
-macro(add_tracegen input)
+
+#TODO: pehaps should detect output by searching for "executable=" line
+#takes extra optional argument name to override output filename
+function(add_tracegen input)
+	get_filename_component(input_dir "${input}" DIRECTORY)
+
+	if(ARGV1)
+		set(base_name "${ARGV1}")
+	else()
+		get_filename_component(base_name "${input}" NAME_WE)
+	endif()
+	#file(TO_CMAKE_PATH "${CMAKE_CURRENT_BINARY_DIR}/${input_dir}/ut_${base_name}" generated_filename)
+	file(TO_CMAKE_PATH "${CMAKE_CURRENT_BINARY_DIR}/ut_${base_name}" generated_filename)
+
 	add_custom_command(
-		OUTPUT ${ARGN}
-		COMMAND $<TARGET_FILE:tracegen> -treatWarningAsError -generatecfiles -threshold 1 -file ${input}
+		OUTPUT "${generated_filename}.c" "${generated_filename}.h" "${generated_filename}.pdat"
+		COMMAND $<TARGET_FILE:tracegen> -w2cd -treatWarningAsError -generatecfiles -threshold 1 -file ${CMAKE_CURRENT_SOURCE_DIR}/${input}
 		DEPENDS ${input}
-		WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 	)
-endmacro()
+endfunction()
+
 #TODO we still dont do tracemerge properly
