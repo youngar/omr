@@ -68,7 +68,13 @@ endif()
 
 if(OMR_ARCH_ARM)
 	set(OMR_ENV_LITTLE_ENDIAN ON CACHE BOOL "todo: Document")
+	add_definitions(
+		-DJ9ARM
+		-DARMGNU
+		-DFIXUP_UNALIGNED
+	)
 endif()
+
 if(OMR_HOST_OS STREQUAL "osx")
 	add_definitions(
 		-DOSX
