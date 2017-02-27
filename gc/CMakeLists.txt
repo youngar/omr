@@ -234,6 +234,65 @@ add_library(omrgc
 		base/modronapicore.cpp
 		base/modronapicore.hpp
 
+		base/segregated/AllocationContextSegregated.cpp
+		base/segregated/ConfigurationSegregated.cpp
+		base/segregated/GlobalAllocationManagerSegregated.cpp
+		base/segregated/HeapRegionDescriptorSegregated.cpp
+		base/segregated/LockingFreeHeapRegionList.cpp
+		base/segregated/LockingHeapRegionQueue.cpp
+		base/segregated/MemoryPoolAggregatedCellList.cpp
+		base/segregated/MemoryPoolSegregated.cpp
+		base/segregated/MemorySubSpaceSegregated.cpp
+		base/segregated/ObjectHeapIteratorSegregated.cpp
+		base/segregated/OverflowSegregated.cpp
+		base/segregated/RegionPoolSegregated.cpp
+		base/segregated/SegregatedAllocationInterface.cpp
+		base/segregated/SegregatedAllocationTracker.cpp
+		base/segregated/SegregatedGC.cpp
+		base/segregated/SegregatedListPopulator.cpp
+		base/segregated/SegregatedMarkingScheme.cpp
+		base/segregated/SegregatedSweepTask.cpp
+		base/segregated/SizeClasses.cpp
+		base/segregated/SweepSchemeSegregated.cpp
+		base/segregated/WorkPacketsSegregated.cpp
+
+		base/standard/CompactFixHeapForWalkTask.cpp
+		base/standard/CompactScheme.cpp
+		base/standard/ConcurrentCardTable.cpp
+		base/standard/ConcurrentCardTableForWC.cpp
+		base/standard/ConcurrentClearNewMarkBitsTask.cpp
+		base/standard/ConcurrentCompleteTracingTask.cpp
+		base/standard/ConcurrentFinalCleanCardsTask.cpp
+		base/standard/ConcurrentGC.cpp
+		base/standard/ConcurrentOverflow.cpp
+		base/standard/ConcurrentPrepareCardTableTask.cpp
+		base/standard/ConcurrentSafepointCallback.cpp
+		base/standard/ConcurrentScanRememberedSetTask.cpp
+		base/standard/ConcurrentScavengeTask.cpp
+		base/standard/ConcurrentSweepScheme.cpp
+		base/standard/ConfigurationFlat.cpp
+		base/standard/ConfigurationGenerational.cpp
+		base/standard/ConfigurationStandard.cpp
+		base/standard/CopyScanCacheChunk.cpp
+		base/standard/CopyScanCacheChunkInHeap.cpp
+		base/standard/CopyScanCacheList.cpp
+		base/standard/CopyScanCacheStandard.cpp
+		base/standard/EnvironmentStandard.cpp
+		base/standard/HeapMemoryPoolIterator.cpp
+		base/standard/HeapRegionDescriptorStandard.cpp
+		base/standard/HeapRegionManagerStandard.cpp
+		base/standard/HeapWalker.cpp
+		base/standard/OverflowStandard.cpp
+		base/standard/ParallelCompactTask.cpp
+		base/standard/ParallelGlobalGC.cpp
+		base/standard/ParallelScavengeTask.cpp
+		base/standard/ParallelSweepScheme.cpp
+		base/standard/PhysicalSubArenaVirtualMemorySemiSpace.cpp
+		base/standard/RSOverflow.cpp
+		base/standard/Scavenger.cpp
+		base/standard/SweepHeapSectioningSegmented.cpp
+		base/standard/WorkPacketsConcurrent.cpp
+		base/standard/WorkPacketsStandard.cpp
 
 		startup/mminitcore.cpp
 		startup/omrgcalloc.cpp
