@@ -1,6 +1,6 @@
 add_hookgen(hooksample.hdf
-	${CMAKE_CURRENT_SOURCE_DIR}/hooksample.h
-	${CMAKE_CURRENT_SOURCE_DIR}/hooksample_internal.h
+	hooksample.h
+	hooksample_internal.h
 )
 
 add_executable(omralgotest

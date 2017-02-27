@@ -2,12 +2,12 @@ project(libomrgc VERSION 0.0.1 LANGUAGES CXX)
 
 
 add_hookgen(include/omrmm.hdf
-	${CMAKE_CURRENT_SOURCE_DIR}/../include_core/mmomrhook.h
-	${CMAKE_CURRENT_SOURCE_DIR}/base/mmomrhook_internal.h
+	mmomrhook.h
+	mmomrhook_internal.h
 )
 add_hookgen(base/omrmmprivate.hdf
-	${CMAKE_CURRENT_SOURCE_DIR}/base/mmprivatehook.h
-	${CMAKE_CURRENT_SOURCE_DIR}/base/mmprivatehook_internal.h
+	mmprivatehook.h
+	mmprivatehook_internal.h
 )
 
 add_tracegen(base/j9mm.tdf)
@@ -287,18 +287,15 @@ add_library(omrgc
 
 		verbose/handler_standard/VerboseHandlerOutputStandard.cpp
 		#hookgen generated files
-		${CMAKE_CURRENT_SOURCE_DIR}/base/mmprivatehook.h
-		${CMAKE_CURRENT_SOURCE_DIR}/base/mmprivatehook_internal.h
-		${CMAKE_CURRENT_SOURCE_DIR}/../include_core/mmomrhook.h
-		${CMAKE_CURRENT_SOURCE_DIR}/base/mmomrhook_internal.h
+		mmprivatehook.h
+		mmprivatehook_internal.h
+		mmomrhook.h
+		mmomrhook_internal.h
 		#tracegen files
 		ut_j9mm.c
 		ut_omrmm.c
 		ut_j9vgc.c
 )
-
-
-
 
 target_include_directories(omrgc
 	PUBLIC

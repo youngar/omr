@@ -19,17 +19,16 @@ else(NOT CMAKE_CROSSCOMPILING)
 endif(NOT CMAKE_CROSSCOMPILING)
 
 
-#TODO: currently output in source tree, should be in build tree
-#TODO: Dependecy checking is broken, since it checks for output in build tree rather than src
 function(add_hookgen input)
-	get_filename_component(input_dir "${input}" DIRECTORY)
-	#message("Hookgen, Output = ${ARGN}")
-	#message("Hookgen, depends = ${CMAKE_CURRENT_SOURCE_DIR}/${input}")
+	#TODO: this is a hack to work arround the fact that hookgen outputs relative to sourcefile rather than to CWD
+	get_filename_component(input_base "${input}" NAME)
 	add_custom_command(
 		OUTPUT ${ARGN}
-		COMMAND hookgen ${CMAKE_CURRENT_SOURCE_DIR}/${input}
+		COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_SOURCE_DIR}/${input}" "${input_base}"
+		COMMAND hookgen "${input_base}"
+		COMMAND ${CMAKE_COMMAND} -E remove -f "${input_base}"
 		DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/${input}"
-		WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/${input_dir}
+		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 	)
 endfunction()
 
