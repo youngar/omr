@@ -1,9 +1,4 @@
-add_tracegen(
-	pool.tdf
-
-	${CMAKE_CURRENT_SOURCE_DIR}/ut_pool.c
-	${CMAKE_CURRENT_SOURCE_DIR}/ut_pool.h
-)
+add_tracegen(pool.tdf)
 
 add_library(j9pool STATIC
 	pool.c

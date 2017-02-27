@@ -17,8 +17,8 @@
 -->
 
 <interface>
-	<publicHeader>../base/mmprivatehook.h</publicHeader>
-	<privateHeader>../base/mmprivatehook_internal.h</privateHeader>
+	<publicHeader>mmprivatehook.h</publicHeader>
+	<privateHeader>mmprivatehook_internal.h</privateHeader>
 	<struct>MM_PrivateHookInterface</struct>
 	<description>Memory manager hookable events to be used internally by GC component</description>
 

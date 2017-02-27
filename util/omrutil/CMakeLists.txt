@@ -57,12 +57,7 @@
   #endif
 #endif
 
-
-add_tracegen(
-	utilcore.tdf
-	${CMAKE_CURRENT_SOURCE_DIR}/ut_j9utilcore.c
-	${CMAKE_CURRENT_SOURCE_DIR}/ut_j9utilcore.h
-)
+add_tracegen(utilcore.tdf j9utilcore)
 
 add_library(omrutil STATIC
 	AtomicFunctions.cpp

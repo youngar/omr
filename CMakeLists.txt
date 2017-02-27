@@ -30,6 +30,9 @@ include(cmake/config.cmake)
 
 enable_testing()
 
+#include current source dir and current bin dir automatically
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+
 function(VPathResolve inlist dirlist outlist)
     set(output "")
   foreach(currentFile ${${inlist}})
@@ -66,9 +69,14 @@ configure_file(./omrcfg.CMakeTemplate.h omrcfg.h)
 configure_file(./omrversionstrings.CMakeTemplate.h omrversionstrings.h)
 
 add_subdirectory(tools)
+# Yeah, its dumb doing this here. Read note in tools/CMakeLists.txt
+if(CMAKE_CROSSCOMPILING)
+	include(${OMR_TOOLS_IMPORTFILE})
+endif()
 add_subdirectory(thread)
 add_subdirectory(port)
 add_subdirectory(util)
+add_subdirectory(omrtrace)
 add_subdirectory(omr)
 add_subdirectory(third_party)
 add_subdirectory(omrsigcompat)

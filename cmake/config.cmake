@@ -3,13 +3,13 @@
 ### Major Feature Flags
 ###
 
-set(OMR_GC On CACHE BOOL "Enable the GC")
-set(OMR_COMPILER Off CACHE BOOL "Enable the compiler")
-set(OMR_JITBUILDER Off CACHE BOOL "Enable building JitBuilder")
-set(OMR_TEST_COMPILER Off CACHE BOOL "Enable building the test compiler")
-set(OMR_PORT On CACHE BOOL "Enable portability library")
-set(OMR_THREAD On CACHE BOOL "Enable thread library")
-set(OMR_OMRSIG On CACHE BOOL "Enable the OMR signal compatibility library")
+set(OMR_GC ON CACHE BOOL "Enable the GC")
+set(OMR_COMPILER OFF CACHE BOOL "Enable the compiler")
+set(OMR_JITBUILDER OFF CACHE BOOL "Enable building JitBuilder")
+set(OMR_TEST_COMPILER OFF CACHE BOOL "Enable building the test compiler")
+set(OMR_PORT ON CACHE BOOL "Enable portability library")
+set(OMR_THREAD ON CACHE BOOL "Enable thread library")
+set(OMR_OMRSIG ON CACHE BOOL "Enable the OMR signal compatibility library")
 # set(OMR_TOOLS On CACHE BOOL "Enable the build tools")
 # TODO: Support building only tools for cross-compilation build
 
