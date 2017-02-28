@@ -304,6 +304,10 @@ if(OMR_HOST_OS STREQUAL "osx")
   target_link_libraries(omrport iconv)
 endif()
 
+if(OMR_HOST_OS STREQUAL "win")
+	target_link_libraries(omrport psapi pdh)
+endif()
+
 #add_executable(dummy
 #	main.c
 #)

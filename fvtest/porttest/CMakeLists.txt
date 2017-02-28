@@ -60,6 +60,12 @@ target_link_libraries(omrporttest
 	omrport
 	omrtestutil
 )
+if(OMR_HOST_OS STREQUAL "win")
+	target_link_libraries(omrporttest
+		ws2_32
+		omrglue
+	)
+endif()
 
 add_library(sltestlib SHARED
 	sltestlib/sltest.c)
