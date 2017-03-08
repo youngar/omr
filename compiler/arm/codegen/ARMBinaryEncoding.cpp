@@ -294,7 +294,9 @@ uint8_t *TR::ARMImmSymInstruction::generateBinaryEncoding()
       else if (label != NULL)
          {
          cg()->addRelocation(new (cg()->trHeapMemory()) TR::LabelRelative24BitRelocation(cursor, label));
+#ifdef J9_PROJECT_SPECIFIC
          ((TR::ARMCallSnippet *)getCallSnippet())->setCallRA(cursor+4);
+#endif
          }
       else
          {
@@ -361,7 +363,6 @@ uint8_t *TR::ARMImmSymInstruction::generateBinaryEncoding()
 
 int32_t TR::ARMImmSymInstruction::estimateBinaryLength(int32_t currentEstimate)
    {
-   // *this   swipeable for debugging purposes
    int32_t length;
    TR::ResolvedMethodSymbol *sym = getSymbolReference()->getSymbol()->getResolvedMethodSymbol();
    TR::Node *node = getNode();

@@ -24,7 +24,9 @@
 #include "codegen/MemoryReference.hpp"
 #include "codegen/RegisterDependency.hpp"
 #include "codegen/UnresolvedDataSnippet.hpp"
+#ifdef J9_PROJECT_SPECIFIC
 #include "codegen/CallSnippet.hpp"
+#endif
 #include "codegen/GCStackMap.hpp"
 #include "codegen/ARMConditionCode.hpp"
 #include "codegen/ARMOperand2.hpp"
@@ -200,7 +202,6 @@ class ARMImmInstruction : public TR::Instruction
 
    void insertImmediateField(uint32_t *instruction)
       {
-      // *this    swipeable for debugging purposes
       *instruction |= _sourceImmediate & 0xffff;
       }
 
@@ -625,7 +626,6 @@ class ARMTrg1Src2Instruction : public TR::Instruction
 
    void insertTargetRegister(uint32_t *instruction, TR_Memory * m)
       {
-      // *this    swipeable for debugging purposes
       TR::Register *treg = getTarget1Register();
       TR::RealRegister *realtreg = 0;
       if(treg)
@@ -653,7 +653,6 @@ class ARMTrg1Src2Instruction : public TR::Instruction
 
    void insertSource1Register(uint32_t *instruction)
       {
-      // *this    swipeable for debugging purposes
       TR::Register *sreg = getSource1Register();
       if(sreg)  // can be null in trg1src1 subclass
          {
@@ -675,7 +674,6 @@ class ARMTrg1Src2Instruction : public TR::Instruction
 
    void insertSource2Operand(uint32_t *instruction)
       {
-      // *this    swipeable for debugging purposes
       getSource2Operand()->setBinaryEncoding(instruction);
       }
 
@@ -1497,7 +1495,6 @@ class ARMMultipleMoveInstruction : public TR::Instruction
 
    void insertMemoryBaseRegister(uint32_t *instruction, TR_Memory * m)
       {
-      // *this    swipeable for debugging purposes
       TR::Register *treg = getMemoryBaseRegister();
       TR::RealRegister *realtreg = 0;
       if(treg)
@@ -1514,7 +1511,6 @@ class ARMMultipleMoveInstruction : public TR::Instruction
 
    void insertRegisterList(uint32_t *instruction)
       {
-      // *this    swipeable for debugging purposes
       *instruction |= (uint32_t) getRegisterList();
       }
 

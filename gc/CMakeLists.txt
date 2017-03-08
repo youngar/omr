@@ -144,6 +144,7 @@ add_library(omrgc
 		base/MemorySubSpaceSemiSpace.hpp
 		base/MemorySubSpaceUniSpace.cpp
 		base/MemorySubSpaceUniSpace.hpp
+		base/ModronAssertions.cpp
 		base/NUMAManager.cpp
 		base/NUMAManager.hpp
 		base/NonVirtualMemory.cpp

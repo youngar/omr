@@ -1857,37 +1857,41 @@ OMR::Z::TreeEvaluator::icmpeqEvaluator(TR::Node * node, TR::CodeGenerator * cg)
          node->getOpCodeValue() == TR::iucmpeq ||
          node->getOpCodeValue() == TR::acmpeq)
       {
-      TR::Node* firstChild = node->getFirstChild();
-      TR::Node* secondChild = node->getSecondChild();
-      if (node->getOpCodeValue() != TR::acmpeq &&
-          TR::Compiler->target.is64Bit() &&
-          firstChild->getOpCodeValue() == TR::iand &&
-          firstChild->getSecondChild()->getOpCodeValue() == TR::iconst &&
-          secondChild->getOpCodeValue() == TR::iconst &&
-          secondChild->getInt() == 0 &&
-          performTransformation(cg->comp(), "O^O CODE GENERATION:  ===>   Use RXSBG to perform icmpeq  <==\n"))
+      // RXSBG only supported on z10+
+      if (cg->getS390ProcessorInfo()->supportsArch(TR_S390ProcessorInfo::TR_z10))
          {
-         int64_t val1 = node->getFirstChild()->getSecondChild()->getInt();
-         if ((val1 & (val1 - 1)) == 0)
+         TR::Node* firstChild = node->getFirstChild();
+         TR::Node* secondChild = node->getSecondChild();
+         if (node->getOpCodeValue() != TR::acmpeq &&
+             TR::Compiler->target.is64Bit() &&
+             firstChild->getOpCodeValue() == TR::iand &&
+             firstChild->getSecondChild()->getOpCodeValue() == TR::iconst &&
+             secondChild->getOpCodeValue() == TR::iconst &&
+             secondChild->getInt() == 0 &&
+             performTransformation(cg->comp(), "O^O CODE GENERATION:  ===>   Use RXSBG to perform icmpeq  <==\n"))
             {
-            int32_t rotBy = (leadingZeroes(val1) + 1) & 0x3f; // 0-63
-            TR::Register *source = NULL;
-            if (firstChild->getRegister() == NULL)
+            int64_t val1 = node->getFirstChild()->getSecondChild()->getInt();
+            if ((val1 & (val1 - 1)) == 0)
                {
-               source = cg->evaluate(firstChild->getFirstChild());
-               cg->recursivelyDecReferenceCount(firstChild);
+               int32_t rotBy = (leadingZeroes(val1) + 1) & 0x3f; // 0-63
+               TR::Register *source = NULL;
+               if (firstChild->getRegister() == NULL)
+                  {
+                  source = cg->evaluate(firstChild->getFirstChild());
+                  cg->recursivelyDecReferenceCount(firstChild);
+                  }
+               else
+                  {
+                  source = cg->evaluate(firstChild);
+                  cg->decReferenceCount(firstChild);
+                  }
+               TR::Register *target = cg->allocateRegister();
+               generateRIInstruction(cg, TR::InstOpCode::LHI, node, target, 1);
+               generateRIEInstruction(cg, TR::InstOpCode::RXSBG, node, target, source, 63, 128+63, rotBy);
+               node->setRegister(target);
+               cg->decReferenceCount(secondChild);
+               return target;
                }
-            else
-               {
-               source = cg->evaluate(firstChild);
-               cg->decReferenceCount(firstChild);
-               }
-            TR::Register *target = cg->allocateRegister();
-            generateRIInstruction(cg, TR::InstOpCode::LHI, node, target, 1);
-            generateRIEInstruction(cg, TR::InstOpCode::RXSBG, node, target, source, 63, 128+63, rotBy);
-            node->setRegister(target);
-            cg->decReferenceCount(secondChild);
-            return target;
             }
          }
 
@@ -2879,7 +2883,6 @@ TR::Register *OMR::Z::TreeEvaluator::evaluateNULLCHKWithPossibleResolve(TR::Node
           cursor->setThrowsImplicitException();
           cursor->setExceptBranchOp();
           cg->setCanExceptByTrap(true);
-          cursor->setJITExit();
           cursor->setNeedsGCMap(0x0000FFFF);
           if (TR::Compiler->target.isZOS())
              killRegisterIfNotLocked(cg, TR::RealRegister::GPR4, cursor);
@@ -2920,7 +2923,6 @@ TR::Register *OMR::Z::TreeEvaluator::evaluateNULLCHKWithPossibleResolve(TR::Node
             appendTo = generateS390BranchInstruction(cg, TR::InstOpCode::BRC, TR::InstOpCode::COND_BERC, node, snippetLabel, appendTo);
             TR::Instruction *brInstr = appendTo;
             brInstr->setExceptBranchOp();
-            brInstr->setJITExit();
             }
          else
             {
@@ -2957,7 +2959,17 @@ TR::Register *OMR::Z::TreeEvaluator::evaluateNULLCHKWithPossibleResolve(TR::Node
                {
                targetRegister = n->getRegister();
                cg->evaluate(reference);
-               cmpOpCode = (n->getOpCode().getSize() > 4)? TR::InstOpCode::CG: TR::InstOpCode::C;
+               
+               // For concurrent scavange the source is loaded and shifted by the guarded load, thus we need to use CG
+               // here for a non-zero compressedrefs shift value
+               if (TR::Compiler->target.cpu.getS390SupportsGuardedStorageFacility())
+                  {
+                  cmpOpCode = TR::InstOpCode::getCmpOpCode();
+                  }
+               else
+                  {
+                  cmpOpCode = (n->getOpCode().getSize() > 4)? TR::InstOpCode::CG: TR::InstOpCode::C;
+                  }
                }
             else
                {
@@ -2968,7 +2980,6 @@ TR::Register *OMR::Z::TreeEvaluator::evaluateNULLCHKWithPossibleResolve(TR::Node
             appendTo = generateS390CompareAndBranchInstruction(cg, cmpOpCode, node, targetRegister, NULLVALUE, branchOpCond, snippetLabel, false, true, appendTo);
             TR::Instruction * cursor = appendTo;
             cursor->setExceptBranchOp();
-            cursor->setJITExit();
             }
 
          }
@@ -3047,7 +3058,6 @@ TR::Register *OMR::Z::TreeEvaluator::evaluateNULLCHKWithPossibleResolve(TR::Node
          {
          faultingInstruction->setNeedsGCMap(0x0000FFFF);
          faultingInstruction->setThrowsImplicitNullPointerException();
-         faultingInstruction->setJITExit();
          cg->setCanExceptByTrap(true);
 
          TR_Debug * debugObj = cg->getDebug();
@@ -3204,6 +3214,20 @@ void OMR::Z::TreeEvaluator::createDAACondDeps(TR::Node * node, TR::RegisterDepen
       case TR::InstOpCode::CVBG:
       case TR::InstOpCode::CVBY:
       case TR::InstOpCode::CP:
+      // Vector packed decimals
+      case TR::InstOpCode::VAP:
+      case TR::InstOpCode::VCP:
+      case TR::InstOpCode::VCVB:
+      case TR::InstOpCode::VCVBG:
+      case TR::InstOpCode::VCVD:
+      case TR::InstOpCode::VCVDG:
+      case TR::InstOpCode::VDP:
+      case TR::InstOpCode::VMP:
+      case TR::InstOpCode::VPKZ:
+      case TR::InstOpCode::VPSOP:
+      case TR::InstOpCode::VRP:
+      case TR::InstOpCode::VSRP:
+      case TR::InstOpCode::VSP:
          break;
       default:
          TR_ASSERT(0, "Target Instruction is not used by DAA.\n");
@@ -3214,47 +3238,96 @@ void OMR::Z::TreeEvaluator::createDAACondDeps(TR::Node * node, TR::RegisterDepen
       {
       case TR::Instruction::IsRX: //CVB, CVD
          {
-         TR::S390RXInstruction * instr = (TR::S390RXInstruction *)daaInstr;
+         TR::S390RXInstruction * instr = static_cast<TR::S390RXInstruction *>(daaInstr);
          TR::MemoryReference * mr = instr->getMemoryReference();
 
          TR::TreeEvaluator::addToRegDep(daaDeps, instr->getRegisterOperand(1), false);
          if (mr)
-         {
-               TR::TreeEvaluator::addToRegDep(daaDeps, (TR::Register *)mr->getBaseRegister(), false);
-               TR::TreeEvaluator::addToRegDep(daaDeps, (TR::Register *)mr->getIndexRegister(), false);
-         }
-
+            {
+            TR::TreeEvaluator::addToRegDep(daaDeps, static_cast<TR::Register *>(mr->getBaseRegister()), false);
+            TR::TreeEvaluator::addToRegDep(daaDeps, static_cast<TR::Register *>(mr->getIndexRegister()), false);
+            }
          break;
          }
       case TR::Instruction::IsRXY: //CVBY, CVBG
          {
-         TR::S390RXYInstruction * instr = (TR::S390RXYInstruction *)daaInstr;
+         TR::S390RXYInstruction * instr = static_cast<TR::S390RXYInstruction *>(daaInstr);
          TR::MemoryReference * mr = instr->getMemoryReference();
 
          TR::TreeEvaluator::addToRegDep(daaDeps, instr->getRegisterOperand(1), true);
          if (mr)
             {
-               TR::TreeEvaluator::addToRegDep(daaDeps, (TR::Register *)mr->getBaseRegister(), true);
-               TR::TreeEvaluator::addToRegDep(daaDeps, (TR::Register *)mr->getIndexRegister(), true);
+            TR::TreeEvaluator::addToRegDep(daaDeps, static_cast<TR::Register *>(mr->getBaseRegister()), true);
+            TR::TreeEvaluator::addToRegDep(daaDeps, static_cast<TR::Register *>(mr->getIndexRegister()), true);
             }
             break;
          }
       case TR::Instruction::IsSS2: //ZAP, Arithmetics
          {
-         TR::S390SS2Instruction * instr = (TR::S390SS2Instruction *)daaInstr;
+         TR::S390SS2Instruction * instr = static_cast<TR::S390SS2Instruction *>(daaInstr);
          TR::MemoryReference * mr1 = instr->getMemoryReference ();
          TR::MemoryReference * mr2 = instr->getMemoryReference2();
 
          if (mr1)
             {
-               TR::TreeEvaluator::addToRegDep(daaDeps, (TR::Register *)mr1->getBaseRegister(), false);
-               TR::TreeEvaluator::addToRegDep(daaDeps, (TR::Register *)mr1->getIndexRegister(), false);
+            TR::TreeEvaluator::addToRegDep(daaDeps, static_cast<TR::Register *>(mr1->getBaseRegister()), false);
+            TR::TreeEvaluator::addToRegDep(daaDeps, static_cast<TR::Register *>(mr1->getIndexRegister()), false);
             }
 
          if (mr2)
             {
-               TR::TreeEvaluator::addToRegDep(daaDeps, (TR::Register *)mr2->getBaseRegister(), false);
-               TR::TreeEvaluator::addToRegDep(daaDeps, (TR::Register *)mr2->getIndexRegister(), false);
+            TR::TreeEvaluator::addToRegDep(daaDeps, static_cast<TR::Register *>(mr2->getBaseRegister()), false);
+            TR::TreeEvaluator::addToRegDep(daaDeps, static_cast<TR::Register *>(mr2->getIndexRegister()), false);
+            }
+         break;
+         }
+      case TR::Instruction::IsVRIf: // VAP,VDP, VMP, VSP, VRP, [VMSP, VSDP unused]
+         {
+         TR::TreeEvaluator::addToRegDep(daaDeps, daaInstr->getRegisterOperand(1), false);
+         TR::TreeEvaluator::addToRegDep(daaDeps, daaInstr->getRegisterOperand(2), false);
+         TR::TreeEvaluator::addToRegDep(daaDeps, daaInstr->getRegisterOperand(3), false);
+         break;
+         }
+      case TR::Instruction::IsVRIg: // VPSOP, VSRP
+         {
+         TR::TreeEvaluator::addToRegDep(daaDeps, daaInstr->getRegisterOperand(1), false);
+         TR::TreeEvaluator::addToRegDep(daaDeps, daaInstr->getRegisterOperand(2), false);
+         break;
+         }
+      case TR::Instruction::IsVRIi: // VCVD, VCVDG
+         {
+         TR::TreeEvaluator::addToRegDep(daaDeps, daaInstr->getRegisterOperand(1), false);
+         TR::TreeEvaluator::addToRegDep(daaDeps, daaInstr->getRegisterOperand(2), false);
+         break;
+         }
+      case TR::Instruction::IsVRRg: // VTP
+         {
+         TR::TreeEvaluator::addToRegDep(daaDeps, daaInstr->getRegisterOperand(1), false);
+         break;
+         }
+      case TR::Instruction::IsVRRh: // VCP
+         {
+         TR::TreeEvaluator::addToRegDep(daaDeps, daaInstr->getRegisterOperand(1), false);
+         TR::TreeEvaluator::addToRegDep(daaDeps, daaInstr->getRegisterOperand(2), false);
+         break;
+         }
+      case TR::Instruction::IsVRRi: // VCVB, VCVBG
+         {
+         TR::TreeEvaluator::addToRegDep(daaDeps, daaInstr->getRegisterOperand(1), false);
+         TR::TreeEvaluator::addToRegDep(daaDeps, daaInstr->getRegisterOperand(2), false);
+         break;
+         }
+      case TR::Instruction::IsVSI:  // VPKZ, VUPKZ
+         {
+         TR::S390VSIInstruction * instr = static_cast<TR::S390VSIInstruction *>(daaInstr);
+         TR::MemoryReference * mr1 = instr->getMemoryReference();
+
+         TR::TreeEvaluator::addToRegDep(daaDeps, daaInstr->getRegisterOperand(1), false);
+
+         if (mr1)
+            {
+            TR::TreeEvaluator::addToRegDep(daaDeps, static_cast<TR::Register *>(mr1->getBaseRegister()), false);
+            TR::TreeEvaluator::addToRegDep(daaDeps, static_cast<TR::Register *>(mr1->getIndexRegister()), false);
             }
          break;
          }
@@ -3262,7 +3335,7 @@ void OMR::Z::TreeEvaluator::createDAACondDeps(TR::Node * node, TR::RegisterDepen
          TR_ASSERT(0, "Inconsistent DAA Instruction format.\n");
          break;
       }
-}
+   }
 
 TR::Node* OMR::Z::TreeEvaluator::DAAAddressPointer(TR::Node* callNode, TR::CodeGenerator* cg)
    {

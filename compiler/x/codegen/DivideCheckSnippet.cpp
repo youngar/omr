@@ -32,7 +32,6 @@
 
 uint8_t *TR::X86DivideCheckSnippet::emitSnippetBody()
    {
-   // *this    swipeable for debugging purposes
    uint8_t *buffer = cg()->getBinaryBufferCursor();
    getSnippetLabel()->setCodeLocation(buffer);
 
@@ -41,14 +40,8 @@ uint8_t *TR::X86DivideCheckSnippet::emitSnippetBody()
 
    // CMP realDivisorReg, -1
    //
-   uint8_t rexPrefix = 0;
-   if (TR::Compiler->target.is64Bit())
-      {
-      rexPrefix = realDivisorReg->rexBits(TR::RealRegister::REX_B, false);
-      if (_divOp.isLong())
-         rexPrefix |= TR::RealRegister::REX | TR::RealRegister::REX_W;
-      }
-   buffer = TR_X86OpCode(CMP4RegImms).binary(buffer, rexPrefix);
+   uint8_t rexPrefix = TR::Compiler->target.is64Bit() ? realDivisorReg->rexBits(TR::RealRegister::REX_B, false) : 0;
+   buffer = TR_X86OpCode(CMPRegImms(_divOp.isLong())).binary(buffer, rexPrefix);
    realDivisorReg->setRMRegisterFieldInModRM(buffer-1);
    *buffer++ = -1;
 
@@ -99,7 +92,6 @@ uint8_t *TR::X86DivideCheckSnippet::emitSnippetBody()
 void
 TR_Debug::print(TR::FILE *pOutFile, TR::X86DivideCheckSnippet  * snippet) // TODO:FIX THIS!!!
    {
-   // *this    swipeable for debugging purposes
    if (pOutFile == NULL)
       return;
 

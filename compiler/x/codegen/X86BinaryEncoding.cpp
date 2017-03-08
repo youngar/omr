@@ -179,11 +179,12 @@ uint8_t getMemoryBarrierBinaryLengthLowerBound(int32_t barrier, TR::CodeGenerato
 
 uint8_t *OMR::X86::Instruction::generateBinaryEncoding()
    {
-   // *this    swipeable for debugging purposes
    uint8_t *instructionStart = self()->cg()->getBinaryBufferCursor();
    uint8_t *cursor           = instructionStart;
-   // TODO:AMD64: If opcode is RET and previous instruction is a branch or
-   // label, use REP RET encoding.  See hammer opt guide section 6.2.
+   if (self()->getOpCode().needsRepPrefix())
+      {
+      *cursor++ = 0xf3;
+      }
    cursor = self()->getOpCode().binary(cursor, self()->rexBits());
    self()->setBinaryLength(cursor - instructionStart);
    self()->setBinaryEncoding(instructionStart);
@@ -193,8 +194,7 @@ uint8_t *OMR::X86::Instruction::generateBinaryEncoding()
 
 int32_t OMR::X86::Instruction::estimateBinaryLength(int32_t currentEstimate)
    {
-   // *this    swipeable for debugging purposes
-   self()->setEstimatedBinaryLength(self()->getOpCode().length(self()->rexBits()));
+   self()->setEstimatedBinaryLength(self()->getOpCode().length(self()->rexBits()) + (self()->getOpCode().needsRepPrefix() ? 1 : 0));
    return currentEstimate + self()->getEstimatedBinaryLength();
    }
 
@@ -396,7 +396,6 @@ TR::X86LabelInstruction::addMetaDataForCodeAddress(uint8_t *cursor)
 
 uint8_t *TR::X86LabelInstruction::generateBinaryEncoding()
    {
-   // *this    swipeable for debugging purposes
 
    uint8_t *instructionStart = cg()->getBinaryBufferCursor();
    TR::LabelSymbol *label = getLabelSymbol();
@@ -577,7 +576,6 @@ TR::X86LabelInstruction::enlarge(
 int32_t TR::X86LabelInstruction::estimateBinaryLength(int32_t currentEstimate)
    {
    TR::Compilation *comp = cg()->comp();
-   // *this    swipeable for debugging purposes
    if (getOpCode().isBranchOp())
       {
       uint32_t immediateLength = 1;
@@ -661,7 +659,6 @@ TR::X86FenceInstruction::addMetaDataForCodeAddress(uint8_t *cursor)
 
 uint8_t *TR::X86FenceInstruction::generateBinaryEncoding()
    {
-   // *this    swipeable for debugging purposes
    uint8_t *instructionStart = cg()->getBinaryBufferCursor();
    int i;
 
@@ -723,7 +720,6 @@ uint8_t TR::X86RestoreVMThreadInstruction::getBinaryLengthLowerBound()
 
 uint8_t *TR::X86RestoreVMThreadInstruction::generateBinaryEncoding()
    {
-   // *this    swipeable for debugging purposes
    uint8_t *instructionStart = cg()->getBinaryBufferCursor();
    uint8_t *cursor           = instructionStart;
 
@@ -944,7 +940,6 @@ TR::X86ImmInstruction::addMetaDataForCodeAddress(uint8_t *cursor)
 
 uint8_t *TR::X86ImmInstruction::generateBinaryEncoding()
    {
-   // *this    swipeable for debugging purposes
    uint8_t *instructionStart = cg()->getBinaryBufferCursor();
    uint8_t *cursor           = instructionStart;
    cursor = getOpCode().binary(cursor, self()->rexBits());
@@ -993,7 +988,6 @@ uint8_t TR::X86ImmInstruction::getBinaryLengthLowerBound()
 
 int32_t TR::X86ImmInstruction::estimateBinaryLength(int32_t currentEstimate)
    {
-   // *this    swipeable for debugging purposes
    uint32_t immediateLength = 1;
    if (getOpCode().hasIntImmediate())
       {
@@ -1029,7 +1023,6 @@ TR::X86ImmSnippetInstruction::addMetaDataForCodeAddress(uint8_t *cursor)
 
 uint8_t *TR::X86ImmSnippetInstruction::generateBinaryEncoding()
    {
-   // *this    swipeable for debugging purposes
    uint8_t *instructionStart = cg()->getBinaryBufferCursor();
    uint8_t *cursor = instructionStart;
    cursor = getOpCode().binary(cursor, self()->rexBits());
@@ -1076,7 +1069,6 @@ uint8_t *TR::X86ImmSnippetInstruction::generateBinaryEncoding()
 
 int32_t TR::X86ImmSymInstruction::estimateBinaryLength(int32_t currentEstimate)
    {
-   // *this    swipeable for debugging purposes
 
    currentEstimate = TR::X86ImmInstruction::estimateBinaryLength(currentEstimate);
 
@@ -1205,7 +1197,6 @@ TR::X86ImmSymInstruction::addMetaDataForCodeAddress(uint8_t *cursor)
 
 uint8_t *TR::X86ImmSymInstruction::generateBinaryEncoding()
    {
-   // *this    swipeable for debugging purposes
    uint8_t *instructionStart = cg()->getBinaryBufferCursor();
    uint8_t *cursor = instructionStart;
    TR::Compilation *comp = cg()->comp();
@@ -1391,7 +1382,6 @@ uint8_t *TR::X86ImmSymInstruction::generateBinaryEncoding()
 
 uint8_t *TR::X86RegInstruction::generateBinaryEncoding()
    {
-   // *this    swipeable for debugging purposes
    uint8_t *instructionStart = cg()->getBinaryBufferCursor();
    uint8_t *cursor           = instructionStart;
    cursor = generateRepeatedRexPrefix(cursor);
@@ -1416,7 +1406,6 @@ uint8_t TR::X86RegInstruction::getBinaryLengthLowerBound()
 
 int32_t TR::X86RegInstruction::estimateBinaryLength(int32_t currentEstimate)
    {
-   // *this    swipeable for debugging purposes
    TR_X86OpCode  &opCode = getOpCode();
    setEstimatedBinaryLength(opCode.length(self()->rexBits()) + rexRepeatCount());
    return currentEstimate + getEstimatedBinaryLength();
@@ -1455,7 +1444,6 @@ TR::X86RegInstruction::enlarge(int32_t requestedEnlargementSize, int32_t maxEnla
 
 uint8_t *TR::X86RegRegInstruction::generateBinaryEncoding()
    {
-   // *this    swipeable for debugging purposes
    uint8_t *instructionStart = cg()->getBinaryBufferCursor();
    uint8_t *cursor           = instructionStart;
    cursor = generateRepeatedRexPrefix(cursor);
@@ -1588,7 +1576,6 @@ TR::X86RegImmInstruction::addMetaDataForCodeAddress(uint8_t *cursor)
 
 uint8_t *TR::X86RegImmInstruction::generateBinaryEncoding()
    {
-   // *this    swipeable for debugging purposes
    uint8_t *instructionStart = cg()->getBinaryBufferCursor();
    uint8_t *cursor = instructionStart;
    TR::Compilation *comp = cg()->comp();
@@ -1638,7 +1625,6 @@ uint8_t TR::X86RegImmInstruction::getBinaryLengthLowerBound()
 
 int32_t TR::X86RegImmInstruction::estimateBinaryLength(int32_t currentEstimate)
    {
-   // *this    swipeable for debugging purposes
    uint32_t immediateLength = 1;
    if (getOpCode().hasIntImmediate())
       {
@@ -1736,7 +1722,6 @@ TR::X86RegImmSymInstruction::addMetaDataForCodeAddress(uint8_t *cursor)
 
 uint8_t *TR::X86RegImmSymInstruction::generateBinaryEncoding()
    {
-   // *this    swipeable for debugging purposes
    uint8_t *instructionStart = cg()->getBinaryBufferCursor();
    uint8_t *cursor           = instructionStart;
    TR::Compilation *comp = cg()->comp();
@@ -1781,7 +1766,6 @@ void TR::X86RegRegImmInstruction::addMetaDataForCodeAddress(uint8_t *cursor)
 
 uint8_t *TR::X86RegRegImmInstruction::generateBinaryEncoding()
    {
-   // *this    swipeable for debugging purposes
    uint8_t *instructionStart = cg()->getBinaryBufferCursor();
    uint8_t *cursor = instructionStart;
    cursor = getOpCode().binary(cursor, self()->rexBits());
@@ -1833,7 +1817,6 @@ uint8_t TR::X86RegRegImmInstruction::getBinaryLengthLowerBound()
 
 int32_t TR::X86RegRegImmInstruction::estimateBinaryLength(int32_t currentEstimate)
    {
-   // *this    swipeable for debugging purposes
    uint32_t immediateLength = 1;
    if (getOpCode().hasIntImmediate())
       {
@@ -1853,7 +1836,6 @@ int32_t TR::X86RegRegImmInstruction::estimateBinaryLength(int32_t currentEstimat
 
 uint8_t *TR::X86MemInstruction::generateBinaryEncoding()
    {
-   // *this    swipeable for debugging purposes
    uint8_t *instructionStart = cg()->getBinaryBufferCursor();
    uint8_t *cursor           = instructionStart;
 
@@ -1995,7 +1977,6 @@ TR::X86MemImmInstruction::addMetaDataForCodeAddress(uint8_t *cursor)
 
 uint8_t *TR::X86MemImmInstruction::generateBinaryEncoding()
    {
-   // *this    swipeable for debugging purposes
    uint8_t *instructionStart = cg()->getBinaryBufferCursor();
    uint8_t *cursor           = instructionStart;
    setBinaryEncoding(instructionStart);
@@ -2217,7 +2198,6 @@ uint8_t *TR::X86MemImmSymInstruction::generateBinaryEncoding()
 
 uint8_t *TR::X86MemRegInstruction::generateBinaryEncoding()
    {
-   // *this    swipeable for debugging purposes
    uint8_t *instructionStart = cg()->getBinaryBufferCursor();
    uint8_t *cursor           = instructionStart;
 
@@ -2266,7 +2246,6 @@ void TR::X86MemRegImmInstruction::addMetaDataForCodeAddress(uint8_t *cursor)
 
 uint8_t *TR::X86MemRegImmInstruction::generateBinaryEncoding()
    {
-   // *this    swipeable for debugging purposes
    uint8_t *instructionStart = cg()->getBinaryBufferCursor();
    uint8_t *cursor           = instructionStart;
 
@@ -2565,7 +2544,6 @@ int32_t TR::X86RegMemImmInstruction::estimateBinaryLength(int32_t currentEstimat
 
 uint8_t *TR::X86FPRegInstruction::generateBinaryEncoding()
    {
-   // *this    swipeable for debugging purposes
    uint8_t *instructionStart = cg()->getBinaryBufferCursor();
    uint8_t *cursor           = instructionStart;
    cursor = getOpCode().binary(cursor, self()->rexBits());
@@ -2581,7 +2559,6 @@ uint8_t *TR::X86FPRegInstruction::generateBinaryEncoding()
 
 uint8_t *TR::X86FPRegRegInstruction::generateBinaryEncoding()
    {
-   // *this    swipeable for debugging purposes
    uint8_t *instructionStart = cg()->getBinaryBufferCursor();
    uint8_t *cursor           = instructionStart;
    cursor = getOpCode().binary(cursor, self()->rexBits());
@@ -2599,7 +2576,6 @@ uint8_t *TR::X86FPRegRegInstruction::generateBinaryEncoding()
 
 uint8_t *TR::X86FPST0ST1RegRegInstruction::generateBinaryEncoding()
    {
-   // *this    swipeable for debugging purposes
    uint8_t *instructionStart = cg()->getBinaryBufferCursor();
    uint8_t *cursor           = instructionStart;
    cursor = getOpCode().binary(cursor, self()->rexBits());
@@ -2614,7 +2590,6 @@ uint8_t *TR::X86FPST0ST1RegRegInstruction::generateBinaryEncoding()
 
 uint8_t *TR::X86FPArithmeticRegRegInstruction::generateBinaryEncoding()
    {
-   // *this    swipeable for debugging purposes
    uint8_t *instructionStart = cg()->getBinaryBufferCursor();
    uint8_t *cursor           = instructionStart;
    cursor = getOpCode().binary(cursor, self()->rexBits());
@@ -2645,7 +2620,6 @@ uint8_t *TR::X86FPArithmeticRegRegInstruction::generateBinaryEncoding()
 
 uint8_t *TR::X86FPST0STiRegRegInstruction::generateBinaryEncoding()
    {
-   // *this    swipeable for debugging purposes
    uint8_t *instructionStart = cg()->getBinaryBufferCursor();
    uint8_t *cursor           = instructionStart;
    cursor = getOpCode().binary(cursor, self()->rexBits());
@@ -2664,7 +2638,6 @@ uint8_t *TR::X86FPST0STiRegRegInstruction::generateBinaryEncoding()
 
 uint8_t *TR::X86FPSTiST0RegRegInstruction::generateBinaryEncoding()
    {
-   // *this    swipeable for debugging purposes
    uint8_t *instructionStart = cg()->getBinaryBufferCursor();
    uint8_t *cursor           = instructionStart;
    cursor = getOpCode().binary(cursor, self()->rexBits());
@@ -2683,7 +2656,6 @@ uint8_t *TR::X86FPSTiST0RegRegInstruction::generateBinaryEncoding()
 
 uint8_t *TR::X86FPCompareRegRegInstruction::generateBinaryEncoding()
    {
-   // *this    swipeable for debugging purposes
    uint8_t *instructionStart = cg()->getBinaryBufferCursor();
    uint8_t *cursor           = instructionStart;
    cursor = getOpCode().binary(cursor, self()->rexBits());
@@ -2702,7 +2674,6 @@ uint8_t *TR::X86FPCompareRegRegInstruction::generateBinaryEncoding()
 
 uint8_t *TR::X86FPRegMemInstruction::generateBinaryEncoding()
    {
-   // *this    swipeable for debugging purposes
    uint8_t *instructionStart = cg()->getBinaryBufferCursor();
    uint8_t *cursor           = instructionStart;
 
@@ -2734,7 +2705,6 @@ uint8_t TR::X86FPRegMemInstruction::getBinaryLengthLowerBound()
 
 uint8_t *TR::X86FPMemRegInstruction::generateBinaryEncoding()
    {
-   // *this    swipeable for debugging purposes
    uint8_t *instructionStart = cg()->getBinaryBufferCursor();
    uint8_t *cursor           = instructionStart;
 
@@ -2925,7 +2895,6 @@ uint8_t TR::AMD64RegImm64Instruction::getBinaryLengthLowerBound()
 
 int32_t TR::AMD64RegImm64Instruction::estimateBinaryLength(int32_t currentEstimate)
    {
-   // *this    swipeable for debugging purposes
    setEstimatedBinaryLength(getOpCode().length(self()->rexBits()) + 8);
    return currentEstimate + getEstimatedBinaryLength();
    }

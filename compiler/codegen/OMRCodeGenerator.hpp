@@ -401,11 +401,6 @@ class OMR_EXTENSIBLE CodeGenerator
    bool afterRA() { return _afterRA; }
    TR::CodeGenPhase& getCodeGeneratorPhase() {return _codeGenPhase;}
 
-
-   // called to assign/map TOC slots for constant items. If any platform chooses to use TOC mechanism,
-   // its codeGen should override this method. Also, any maintenance/details are up to the specific platform.
-   void mapTOCEntries() {} // no virt, default
-
    void prepareNodeForInstructionSelection(TR::Node*node);
    void remapGCIndicesInInternalPtrFormat();
    void processRelocations();
@@ -757,8 +752,6 @@ class OMR_EXTENSIBLE CodeGenerator
 
    uint8_t *getBinaryBufferCursor() {return _binaryBufferCursor;}
    uint8_t *setBinaryBufferCursor(uint8_t *b) { return (_binaryBufferCursor = b); }
-   uint8_t *getCrossPoint() {return _crossPoint;}
-   uint8_t *setCrossPoint(uint8_t *b) {return (_crossPoint = b);}
 
    uint8_t *alignBinaryBufferCursor();
 
@@ -1867,7 +1860,6 @@ class OMR_EXTENSIBLE CodeGenerator
    uint8_t *_warmCodeEnd;
    uint8_t *_coldCodeStart;
    uint8_t *_binaryBufferCursor;
-   uint8_t *_crossPoint;
    TR::SparseBitVector _extendedToInt64GlobalRegisters;
 
    TR_BitVector *_liveButMaybeUnreferencedLocals;

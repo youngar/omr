@@ -94,7 +94,6 @@ TR_S390BinaryAnalyser::genericAnalyser(TR::Node * root,
                                        TR::InstOpCode::Mnemonic memToRegOpCode,
                                        TR::InstOpCode::Mnemonic copyOpCode)
    {
-   // *this    swipeable for debugging purposes
    TR::Node * firstChild;
    TR::Node * secondChild;
    firstChild = root->getFirstChild();
@@ -121,10 +120,8 @@ TR_S390BinaryAnalyser::genericAnalyser(TR::Node * root,
    bool is16BitMemory2Operand = false;
    if (secondChild->getOpCodeValue() == TR::s2i &&
        secondChild->getFirstChild()->getOpCodeValue() == TR::sloadi &&
-       secondChild->getRegister() == NULL  &&
-       secondChild->getFirstChild()->getRegister() == NULL &&
-       secondChild->getReferenceCount() == 1 &&
-       secondChild->getFirstChild()->getReferenceCount() == 1)
+       secondChild->isSingleRefUnevaluated() &&
+       secondChild->getFirstChild()->isSingleRefUnevaluated())
       {
       bool supported = true;
 
@@ -272,7 +269,6 @@ TR_S390BinaryAnalyser::genericAnalyser(TR::Node * root,
 void
 TR_S390BinaryAnalyser::longSubtractAnalyser(TR::Node * root)
    {
-   // *this    swipeable for debugging purposes
    TR::Node * firstChild;
    TR::Node * secondChild;
    TR::Instruction * cursor = NULL;
@@ -308,6 +304,20 @@ TR_S390BinaryAnalyser::longSubtractAnalyser(TR::Node * root)
 
    setInputs(firstChild, firstRegister, secondChild, secondRegister,
              false, false, comp);
+
+   /**  Attempt to use SGH to subtract halfword (64 <- 16).
+    * The second child is a halfword from memory */
+   bool is16BitMemory2Operand = false;
+   if (TR::Compiler->target.cpu.getS390SupportsZNext() &&
+       secondChild->getOpCodeValue() == TR::s2l &&
+       secondChild->getFirstChild()->getOpCodeValue() == TR::sloadi &&
+       secondChild->isSingleRefUnevaluated() &&
+       secondChild->getFirstChild()->isSingleRefUnevaluated())
+      {
+      setMem2();
+      memToRegOpCode = TR::InstOpCode::SGH;
+      is16BitMemory2Operand = true;
+      }
 
    if (getEvalChild1())
       {
@@ -364,12 +374,18 @@ TR_S390BinaryAnalyser::longSubtractAnalyser(TR::Node * root)
          {
          TR_ASSERT(  !getInvalid(), "TR_S390BinaryAnalyser::invalid case\n");
 
-         TR::MemoryReference * longMR = generateS390MemoryReference(secondChild, cg());
+         TR::Node* baseAddrNode = is16BitMemory2Operand ? secondChild->getFirstChild() : secondChild;
+         TR::MemoryReference * longMR = generateS390MemoryReference(baseAddrNode, cg());
 
          generateRXInstruction(cg(), memToRegOpCode, root, firstRegister, longMR);
 
          longMR->stopUsingMemRefRegister(cg());
          root->setRegister(firstRegister);
+
+         if(is16BitMemory2Operand)
+            {
+            cg()->decReferenceCount(secondChild->getFirstChild());
+            }
          }
 
       }

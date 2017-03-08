@@ -461,14 +461,27 @@ TR_S390ProcessorInfo::checkZ13()
    }
 
 ////////////////////////////////////////////////////////////////////////////////
+// TR_S90ProcessorInfo::checkZNext: returns true if it's zNext, otherwise false.
+////////////////////////////////////////////////////////////////////////////////
+bool
+TR_S390ProcessorInfo::checkZNext()
+   {
+   return TR::Compiler->target.cpu.getS390SupportsZNext();
+   }
+
+////////////////////////////////////////////////////////////////////////////////
 //  TR_S90ProcessorInfo::getProcessor: returns the TR_s390gpX for current processorInfo
 ////////////////////////////////////////////////////////////////////////////////
 TR_Processor
 TR_S390ProcessorInfo::getProcessor()
    {
    TR_Processor result = TR_s370gp7;
-   
-   if (supportsArch(TR_S390ProcessorInfo::TR_z13))
+
+   if (supportsArch(TR_S390ProcessorInfo::TR_zNext))
+      {
+      result = TR_s370gp12;
+      }
+   else if (supportsArch(TR_S390ProcessorInfo::TR_z13))
    	{
       result = TR_s370gp11;
       }
@@ -528,6 +541,8 @@ OMR::Z::CodeGenerator::CodeGenerator()
    TR::Compilation *comp = self()->comp();
    _cgFlags = 0;
 
+   _evalCompressionSequence = false;
+
    // Initialize Linkage for Code Generator
    self()->initializeLinkage();
 
@@ -570,6 +585,12 @@ OMR::Z::CodeGenerator::CodeGenerator()
             traceMsg(comp, "disablez13");
             break;
             }
+         case 6:
+            {
+            _processorInfo.disableArch(TR_S390ProcessorInfo::TR_zNext);
+            traceMsg(comp, "RandomGen: Setting disabling zNext processor architecture.");
+            break;
+            }
          }
       }
 
@@ -588,10 +609,15 @@ OMR::Z::CodeGenerator::CodeGenerator()
       {
       _processorInfo.disableArch(TR_S390ProcessorInfo::TR_zEC12);
       }
-      
+
    if (comp->getOption(TR_DisableZ13))
       {
       _processorInfo.disableArch(TR_S390ProcessorInfo::TR_z13);
+      }
+
+   if (comp->getOption(TR_DisableZNext))
+      {
+      _processorInfo.disableArch(TR_S390ProcessorInfo::TR_zNext);
       }
 
    _unlatchedRegisterList =
@@ -680,8 +706,11 @@ OMR::Z::CodeGenerator::CodeGenerator()
       {
       self()->setSupportsVirtualGuardNOPing();
       }
-   self()->setSupportsArraySet();
-   self()->setSupportsArraySetToZero();
+   if (!comp->getOption(TR_DisableArraySetOpts))
+      {
+      self()->setSupportsArraySet();
+      self()->setSupportsArraySetToZero();
+      }
    self()->setSupportsArrayCmp();
    self()->setSupportsArrayCmpSign();
    if (!comp->compileRelocatableCode())
@@ -1411,7 +1440,6 @@ OMR::Z::CodeGenerator::insertPad(TR::Node * theNode, TR::Instruction * insertion
 void
 OMR::Z::CodeGenerator::beginInstructionSelection()
    {
-   // *this    swipeable for debugging purposes
    TR::ResolvedMethodSymbol * methodSymbol = self()->comp()->getJittedMethodSymbol();
    TR::Node * startNode = self()->comp()->getStartTree()->getNode();
    TR::Instruction * cursor = NULL;
@@ -1471,7 +1499,6 @@ OMR::Z::CodeGenerator::endInstructionSelection()
 void
 OMR::Z::CodeGenerator::doInstructionSelection()
    {
-   // *this    swipeable for debugging purposes
 
    _outgoingArgLevelDuringTreeEvaluation = self()->getLinkage()->getNumberOfAllocatedOutgoingArgumentAreas();
 
@@ -2465,10 +2492,6 @@ OMR::Z::CodeGenerator::upgradeToHPRInstruction(TR::Instruction * inst)
          s390NewInst->setThrowsImplicitException();
       if (s390Inst->isOutOfLineEX())
          s390NewInst->setOutOfLineEX();
-      if (s390Inst->isJITEntry())
-         s390NewInst->setJITEntry();
-      if (s390Inst->isJITExit())
-         s390NewInst->setJITExit();
       if (s390Inst->isStartInternalControlFlow())
          s390NewInst->setStartInternalControlFlow();
       if (s390Inst->isEndInternalControlFlow())
@@ -2655,7 +2678,6 @@ OMR::Z::CodeGenerator::prepareRegistersForAssignment()
 void
 OMR::Z::CodeGenerator::doRegisterAssignment(TR_RegisterKinds kindsToAssign)
    {
-   // *this    swipeable for debugging purposes
    TR::Instruction * prevInstruction, * nextInstruction;
 
 #ifdef DEBUG
@@ -3302,7 +3324,6 @@ TR_S390Peephole::ICMReduction()
          {
          icm->setNeedsGCMap(0x0000FFFF);
          icm->setThrowsImplicitNullPointerException();
-         icm->setJITExit();
          icm->setGCMap(load->getGCMap());
 
          TR_Debug * debugObj = _cg->getDebug();
@@ -6200,6 +6221,18 @@ OMR::Z::CodeGenerator::generateScratchRegisterManager(int32_t capacity)
    return new (self()->trHeapMemory()) TR_S390ScratchRegisterManager(capacity, self());
    }
 
+// TODO (GuardedStorage)
+void
+OMR::Z::CodeGenerator::setEvalCompressionSequence(bool val)
+   {
+   _evalCompressionSequence= val;
+   }
+bool
+OMR::Z::CodeGenerator::isEvalCompressionSequence()
+   {
+   return _evalCompressionSequence;
+   }
+
 void
 OMR::Z::CodeGenerator::doBinaryEncoding()
    {
@@ -6297,22 +6330,6 @@ OMR::Z::CodeGenerator::doBinaryEncoding()
          }
 
       data.estimate = data.cursorInstruction->estimateBinaryLength(data.estimate);
-
-      // If this is the last warm instruction, remember the estimated size up to
-      // this point and add a buffer to the estimated size so that branches
-      // between warm and cold instructions will be forced to be long branches.
-      // The size is rounded up to a multiple of 8 so that double-alignments in
-      // the cold section will have the same amount of padding for the estimate
-      // and the actual code allocation.
-      //
-      if (data.cursorInstruction->isLastWarmInstruction() && !self()->comp()->getOption(TR_AOT) && self()->comp()->getOption(TR_EnableTieredCodeCache))
-         {
-         // Estimate Warm Snippets.
-         data.estimate = self()->setEstimatedLocationsForSnippetLabels(data.estimate, true);
-         warmEstimate = ((data.estimate)+7) & ~7;
-         data.estimate = warmEstimate + MIN_DISTANCE_BETWEEN_WARM_AND_COLD_CODE;
-         }
-
       data.cursorInstruction = data.cursorInstruction->getNext();
       }
 
@@ -6454,23 +6471,6 @@ OMR::Z::CodeGenerator::doBinaryEncoding()
             if (!self()->comp()->getOptions()->getOption(TR_DisableGuardedCountingRecompilations) &&
                 TR::Options::getCmdLineOptions()->allowRecompilation())
              self()->comp()->getSymRefTab()->findOrCreateStartPCSymbolRef()->getSymbol()->getStaticSymbol()->setStaticAddress(self()->getBinaryBufferCursor());
-            }
-
-         // If this is the last warm instruction, save info about the warm code range
-         // and set up to generate code in the cold code range.
-         //
-         if (data.cursorInstruction->isLastWarmInstruction() && !self()->comp()->getOption(TR_AOT) && self()->allowSplitWarmAndColdBlocks()
-               && self()->comp()->getOption(TR_EnableTieredCodeCache))
-            {
-            self()->emitSnippets(true);
-            self()->setWarmCodeEnd(self()->getBinaryBufferCursor());
-            self()->setColdCodeStart(coldCode);
-            self()->setBinaryBufferCursor(coldCode);
-
-            // Adjust the accumulated length error so that distances within the cold
-            // code are calculated properly using the estimated code locations.
-            //
-            self()->addAccumulatedInstructionLengthError(self()->getWarmCodeEnd()-coldCode+MIN_DISTANCE_BETWEEN_WARM_AND_COLD_CODE);
             }
 
          data.cursorInstruction = data.cursorInstruction->getNext();
@@ -7338,7 +7338,6 @@ OMR::Z::CodeGenerator::allocateClobberableRegister(TR::Register *srcRegister)
 TR::Register *
 OMR::Z::CodeGenerator::gprClobberEvaluate(TR::Node * node, bool force_copy, bool ignoreRefCount)
    {
-   // *this    swipeable for debugging purposes
    TR::Instruction * cursor = NULL;
 
    TR_Debug * debugObj = self()->getDebug();
@@ -7485,7 +7484,6 @@ OMR::Z::CodeGenerator::gprClobberEvaluate(TR::Node * node, bool force_copy, bool
 TR::Register *
 OMR::Z::CodeGenerator::fprClobberEvaluate(TR::Node * node)
    {
-   // *this    swipeable for debugging purposes
 
    TR::Register *srcRegister = self()->evaluate(node);
    if (!self()->canClobberNodesRegister(node))
@@ -7957,7 +7955,6 @@ TR_S390OutOfLineCodeSection * OMR::Z::CodeGenerator::findS390OutOfLineCodeSectio
 TR::S390ConstantDataSnippet *
 OMR::Z::CodeGenerator::findOrCreateConstant(TR::Node * node, void * c, uint16_t size, bool isWarm)
    {
-   // *this    swipeable for debugging purposes
    CS2::HashIndex hi;
    TR_S390ConstantDataSnippetKey key;
    key.c      = c;
@@ -8025,7 +8022,6 @@ OMR::Z::CodeGenerator::createConstantInstruction(TR::CodeGenerator * cg, TR::Nod
 TR::S390ConstantDataSnippet *
 OMR::Z::CodeGenerator::CreateConstant(TR::Node * node, void * c, uint16_t size, bool writable)
    {
-   // *this    swipeable for debugging purposes
 
    if (writable)
       {
@@ -8070,7 +8066,6 @@ OMR::Z::CodeGenerator::addDataConstantSnippet(TR::S390ConstantDataSnippet * snip
 int32_t
 OMR::Z::CodeGenerator::setEstimatedOffsetForConstantDataSnippets(int32_t targetAddressSnippetSize, bool isWarm)
    {
-   // *this    swipeable for debugging purposes
    TR::S390ConstantDataSnippet * cursor;
    bool first;
    int32_t size;
@@ -8151,7 +8146,6 @@ OMR::Z::CodeGenerator::setEstimatedOffsetForConstantDataSnippets(int32_t targetA
 int32_t
 OMR::Z::CodeGenerator::setEstimatedLocationsForDataSnippetLabels(int32_t estimatedSnippetStart, bool isWarm)
    {
-   // *this    swipeable for debugging purposes
    TR::S390ConstantDataSnippet * cursor;
    bool first;
    int32_t size;
@@ -8239,7 +8233,6 @@ OMR::Z::CodeGenerator::setEstimatedLocationsForDataSnippetLabels(int32_t estimat
 void
 OMR::Z::CodeGenerator::emitDataSnippets(bool isWarm)
    {
-   // *this    swipeable for debugging purposes
    // If you change logic here, be sure to do similar change in
    // the method : TR::S390ConstantDataSnippet *OMR::Z::CodeGenerator::getFirstConstantData()
 
@@ -8383,7 +8376,6 @@ OMR::Z::CodeGenerator::create64BitLiteralPoolSnippet(TR::DataType dt, int64_t va
 TR::Linkage *
 OMR::Z::CodeGenerator::createLinkage(TR_LinkageConventions lc)
    {
-   // *this    swipeable for debugging purposes
    TR::Linkage * linkage;
    TR::Compilation *comp = self()->comp();
    switch (lc)
@@ -8612,7 +8604,6 @@ OMR::Z::CodeGenerator::getFirstConstantData()
 int32_t
 OMR::Z::CodeGenerator::setEstimatedOffsetForTargetAddressSnippets()
    {
-   // *this    swipeable for debugging purposes
    int32_t estimatedOffset = 0;
 
    for (auto iterator = _targetList.begin(); iterator != _targetList.end(); ++iterator)
@@ -8635,7 +8626,6 @@ OMR::Z::CodeGenerator::setEstimatedOffsetForTargetAddressSnippets()
 int32_t
 OMR::Z::CodeGenerator::setEstimatedLocationsForTargetAddressSnippetLabels(int32_t estimatedSnippetStart, bool isWarm)
    {
-   // *this    swipeable for debugging purposes
    self()->setEstimatedSnippetStart(estimatedSnippetStart);
    // Conservatively add maximum padding to get to 8 byte alignment.
    estimatedSnippetStart += 6;
@@ -8653,7 +8643,6 @@ OMR::Z::CodeGenerator::setEstimatedLocationsForTargetAddressSnippetLabels(int32_
 void
 OMR::Z::CodeGenerator::emitTargetAddressSnippets(bool isWarm)
    {
-   // *this    swipeable for debugging purposes
    uint8_t * codeOffset;
    int8_t size = 8;
 
@@ -9721,7 +9710,6 @@ OMR::Z::CodeGenerator::copyRestrictedVirtual(TR::Register * virtReg, TR::Node *n
 void
 OMR::Z::CodeGenerator::dumpDataSnippets(TR::FILE *outFile, bool isWarm)
    {
-   // *this    swipeable for debugging purposes
 
    if (outFile == NULL)
       {
@@ -9789,7 +9777,6 @@ OMR::Z::CodeGenerator::dumpDataSnippets(TR::FILE *outFile, bool isWarm)
 void
 OMR::Z::CodeGenerator::dumpTargetAddressSnippets(TR::FILE *outFile, bool isWarm)
    {
-   // *this    swipeable for debugging purposes
 
    if (outFile == NULL)
       {

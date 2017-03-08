@@ -65,7 +65,7 @@ Key: Value
 ```
 
 When a commit has related issues or commits, explain the relation in the message
-body. you should also leave an `Issue` tag in the footer. For example:
+body. You should also leave an `Issue` tag in the footer. For example:
 
 ```
 This patch eliminates the race condition in issue #1234.
@@ -112,7 +112,7 @@ Signed-off-by: Robert Young <rwy0717@gmail.com>
 ```
 
 The first line is meaningful and imperative. The body contains enough
-information that the reader understands the why and how of the commit, and it's
+information that the reader understands the why and how of the commit, and its
 relation to any issues. The issue is properly tagged and the commit is signed
 off.
 

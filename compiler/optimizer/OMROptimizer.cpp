@@ -412,6 +412,7 @@ const OptimizationStrategy loopCanonicalizationOpts[] =
    { loopVersionerGroup                   },
    { deadTreesElimination                 }, // remove dead anchors created by check removal (versioning)
    //{ loopStrider                        }, // use canonicalized loop to insert initializations
+   { treeSimplification                   }, // remove unreachable blocks (with nullchecks etc.) left by LoopVersioner
    { fieldPrivatization                   }, // use canonicalized loop to privatize fields
    { treeSimplification                   }, // might fold expressions created by versioning/induction variables
    { loopSpecializerGroup, IfEnabledAndLoops            }, // specialize the versioned loop if possible
@@ -535,7 +536,6 @@ static const OptimizationStrategy ilgenStrategyOpts[] =
    { coldBlockMarker                               },
    { allocationSinking,             IfNews         },
    { invariantArgumentPreexistence, IfNotClassLoadPhaseAndNotProfiling },
-   { exceptionAsyncCheckInsertion                  },
    { osrDefAnalysis                                },
    { osrLiveRangeAnalysis                          },
 #endif
@@ -2210,7 +2210,6 @@ void OMR::Optimizer::enableAllLocalOpts()
 
 int32_t OMR::Optimizer::doStructuralAnalysis()
    {
-   // *this    swipeable for debugging purposes
 
    // Only perform structural analysis if there may be loops in the method
    //
@@ -2237,7 +2236,6 @@ int32_t OMR::Optimizer::doStructuralAnalysis()
 
 int32_t OMR::Optimizer::changeContinueLoopsToNestedLoops()
    {
-   // *this    swipeable for debugging purposes
    TR_RegionStructure *rootStructure = comp()->getFlowGraph()->getStructure()->asRegion();
    if (rootStructure && rootStructure->changeContinueLoopsToNestedLoops(rootStructure))
       {

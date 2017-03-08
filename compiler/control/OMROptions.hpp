@@ -147,7 +147,7 @@ enum TR_CompilationOptions
    TR_DisableAbstractInlining    = 0x00010000 + 1,
    TR_DisableHierarchyInlining   = 0x00020000 + 1,
    TR_DisableDirectMemoryOps     = 0x00040000 + 1,
-   TR_EnableX86AdvancedMemorySet = 0x00100000 + 1,
+   TR_DisableArraySetOpts        = 0x00100000 + 1,
    TR_TraceLiveMonitorMetadata   = 0x00200000 + 1,
    TR_DisableAllocationInlining  = 0x00400000 + 1,
    TR_DisableInlineCheckCast     = 0x00800000 + 1,
@@ -207,7 +207,7 @@ enum TR_CompilationOptions
    TR_Enable390AccessRegs                 = 0x00020000 + 3,
    TR_SoftFailOnAssume                    = 0x00040000 + 3,
    TR_DisableNewBlockOrdering             = 0x00080000 + 3,
-   //Availabe                             = 0x00100000 + 3,
+   TR_DisableZNext                        = 0x00100000 + 3,
    TR_DisableDynamicLoopTransfer          = 0x00200000 + 3,
    TR_TraceNodeFlags                      = 0x00400000 + 3,
    TR_DisableNewBVA                       = 0x00800000 + 3,
@@ -336,7 +336,7 @@ enum TR_CompilationOptions
    TR_EnableHCR                           = 0x04000000 + 7, // enable hot code replacement
    TR_DisableTOCForConsts                 = 0x08000000 + 7,
    TR_UseLowPriorityQueueDuringCLP        = 0x10000000 + 7,
-   // Available                           = 0x20000000 + 7,
+   TR_DisableVectorBCD                    = 0x20000000 + 7,
    TR_EnableTrivialStoreSinking           = 0x40000000 + 7,
    // Available                           = 0x80000000 + 7,
 
@@ -733,7 +733,7 @@ enum TR_CompilationOptions
    TR_DisableRedundantBCDSignElimination              = 0x00080000 + 21,
    // Available                                       = 0x00100000 + 21,
    TR_AllowVPRangeNarrowingBasedOnDeclaredType        = 0x00200000 + 21,
-   TR_EnableTieredCodeCache                           = 0x00400000 + 21,
+   // Available                                       = 0x00400000 + 21,
    // Available                                       = 0x00800000 + 21,
    TR_DisableConverterReducer                         = 0x01000000 + 21,
    // Available                                       = 0x02000000 + 21,
@@ -1981,6 +1981,15 @@ public:
    static bool isQuickstartDetected() { return _quickstartDetected; }
    void disableCHOpts(); // disable CHOpts, but also IPA and prex which depend on the chtable
 
+protected:
+   void  jitPreProcess();
+   bool  fePreProcess(void *base);
+   bool  jitPostProcess();
+   bool  fePostProcessAOT(void *base);
+   bool  fePostProcessJIT(void *base);
+   bool  jitLatePostProcess(TR::OptionSet *optionSet, void *jitConfig);
+   bool  feLatePostProcess(void *base, TR::OptionSet *optionSet);
+
 private:
    friend class OMR::Compilation;
    friend class ::TR_Debug;
@@ -2031,13 +2040,6 @@ private:
 
           bool  showOptionsInEffect();
           bool  showPID();
-   void  jitPreProcess();
-   bool  fePreProcess(void *base);
-   bool  jitPostProcess();
-   bool  fePostProcessAOT(void *base);
-   bool  fePostProcessJIT(void *base);
-   bool  jitLatePostProcess(TR::OptionSet *optionSet, void *jitConfig);
-   bool  feLatePostProcess(void *base, TR::OptionSet *optionSet);
 
    void setAOTCompile(bool isAOT);
    bool getAOTCompile();

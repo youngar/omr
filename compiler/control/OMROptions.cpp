@@ -235,6 +235,7 @@ TR::OptionTable OMR::Options::_jitOptions[] = {
    {"disableAOTWarmRunThroughputImprovement", "O\tdisable change iprofiler entry choosing heuristic to improve aot warm run throughput",                      SET_OPTION_BIT(TR_DisableAOTWarmRunThroughputImprovement), "F"},
    {"disableArch11PackedToDFP",           "O\tdisable arch(11) packed to DFP conversion instructions",            SET_OPTION_BIT(TR_DisableArch11PackedToDFP), "F",},
    {"disableArrayCopyOpts",               "O\tdisable array copy optimiations",                SET_OPTION_BIT(TR_DisableArrayCopyOpts), "F"},
+   {"disableArraySetOpts",                "O\tdisable array set optimiations",                 SET_OPTION_BIT(TR_DisableArraySetOpts), "F"},
    {"disableArraySetStoreElimination",     "O\tdisable arrayset store elimination",                SET_OPTION_BIT(TR_DisableArraysetStoreElimination), "F"},
    {"disableArrayStoreCheckOpts",          "O\tdisable array store check optimizations",SET_OPTION_BIT(TR_DisableArrayStoreCheckOpts), "F"},
    {"disableAsyncCheckInsertion",         "O\tdisable insertion of async checks in large loopless methods", TR::Options::disableOptimization, asyncCheckInsertion, 0, "F" },
@@ -544,6 +545,7 @@ TR::OptionTable OMR::Options::_jitOptions[] = {
    {"disableUTF16BEEncoder",              "M\tdisable inlining of UTF16 Big Endian encoder", SET_OPTION_BIT(TR_DisableUTF16BEEncoder), "F"},
    {"disableValueProfiling",              "O\tdisable value profiling",                        SET_OPTION_BIT(TR_DisableValueProfiling), "F"},
    {"disableVariablePrecisionDAA",        "O\tdisable variable precision DAA optimizations",   SET_OPTION_BIT(TR_DisableVariablePrecisionDAA), "F"},
+   {"disableVectorBCD",                   "O\tdisable vector instructions for DAA BCD intrinsics ", SET_OPTION_BIT(TR_DisableVectorBCD), "F"},
    {"disableVectorRegGRA",                "O\tdisable global register allocation for vector regs",   SET_OPTION_BIT(TR_DisableVectorRegGRA), "F"},
    {"disableVerification",                "O\tdisable verification of internal data structures between passes", SET_OPTION_BIT(TR_DisableVerification), "F"},
    {"disableVirtualGuardHeadMerger",      "O\tdisable virtual guard head merger",              TR::Options::disableOptimization, virtualGuardHeadMerger, 0, "P"},
@@ -566,6 +568,7 @@ TR::OptionTable OMR::Options::_jitOptions[] = {
    {"disableZealousCodegenOpts",          "O\tdisable use of zealous codegen optimizations.", SET_OPTION_BIT(TR_DisableZealousCodegenOpts), "F"},
    {"disableZHelix",                      "O\tdisable zEC12 support",                          SET_OPTION_BIT(TR_DisableZHelix), "F"},
    {"disableZImplicitNullChecks",         "O\tdisable implicit null checks on 390",            SET_OPTION_BIT(TR_DisableZImplicitNullChecks), "F"},
+   {"disableZNext",                       "O\tdisable zNext support",                        SET_OPTION_BIT(TR_DisableZNext), "F"},
    {"disableZonedToDFPReduction",         "O\tdisable strength reduction of zoned decimal arithmetic to DFP arithmetic",   SET_OPTION_BIT(TR_DisableZonedToDFPReduction), "F"},
    {"dltMostOnce",                        "O\tprevent DLT compilation of a method at more than one bytecode index.", SET_OPTION_BIT(TR_DLTMostOnce), "F"},
    {"dltOptLevel=cold",                   "O\tforce DLT compilation at cold level",            TR::Options::set32BitValue, offsetof(OMR::Options, _dltOptLevel), cold, "P"},
@@ -722,7 +725,6 @@ TR::OptionTable OMR::Options::_jitOptions[] = {
    {"enableSpecializedEpilogues",         "O\tapply restore non-volatiles selectively",         SET_OPTION_BIT(TR_EnableSpecializedEpilogues), "F"},
    {"enableTailCallOpt",                  "R\tenable tall call optimization in peephole", SET_OPTION_BIT(TR_EnableTailCallOpt), "F"},
    {"enableThisLiveRangeExtension",       "R\tenable this live range extesion to the end of the method", SET_OPTION_BIT(TR_EnableThisLiveRangeExtension), "F"},
-   {"enableTieredCodeCache",              "D\tseparate code cache into cold and warm",   SET_OPTION_BIT(TR_EnableTieredCodeCache), "F", NOT_IN_SUBSET},
    {"enableTreePatternMatching",          "O\tEnable opts that use the TR_Pattern framework", RESET_OPTION_BIT(TR_DisableTreePatternMatching), "F"},
    {"enableTrivialStoreSinking",          "O\tenable trivial store sinking", SET_OPTION_BIT(TR_EnableTrivialStoreSinking), "F"},
    {"enableTrueRegisterModel",            "C\tUse true liveness model in local RA instead of Future Use Count", SET_OPTION_BIT(TR_EnableTrueRegisterModel), "F"},
@@ -733,7 +735,6 @@ TR::OptionTable OMR::Options::_jitOptions[] = {
    {"enableVirtualPersistentMemory",      "M\tenable persistent memory to be allocated using virtual memory allocators",
                                           SET_OPTION_BIT(TR_EnableVirtualPersistentMemory), "F", NOT_IN_SUBSET},
    {"enableVpicForResolvedVirtualCalls",  "O\tenable PIC for resolved virtual calls",         SET_OPTION_BIT(TR_EnableVPICForResolvedVirtualCalls), "F"},
-   {"enableX86AdvancedMemorySet",         "C\tEnable advanced memory support on x86", SET_OPTION_BIT(TR_EnableX86AdvancedMemorySet), "F", NOT_IN_SUBSET },
    {"enableYieldVMAccess",                "O\tenable yielding of VM access when GC is waiting", SET_OPTION_BIT(TR_EnableYieldVMAccess), "F"},
    {"enableZAccessRegs",                "O\tenable use of access regs as spill area on 390.", SET_OPTION_BIT(TR_Enable390AccessRegs), "F"},
    {"enableZEpilogue",                  "O\tenable 64-bit 390 load-multiple breakdown.", SET_OPTION_BIT(TR_Enable39064Epilogue), "F"},
@@ -1103,7 +1104,6 @@ TR::OptionTable OMR::Options::_jitOptions[] = {
    {"traceEarlyStackMap",               "L\ttrace early stack map",                        SET_TRACECG_BIT(TR_TraceEarlyStackMap), "P"},
    {"traceEscapeAnalysis",              "L\ttrace escape analysis",                        TR::Options::traceOptimization, escapeAnalysis, 0, "P"},
    {"traceEvaluation",                  "L\tdump output of tree evaluation passes",        SET_TRACECG_BIT(TR_TraceCGEvaluation), "P" },
-   {"traceExceptionAsyncCheckInsertion","L\ttrace async check insertion into exceptions",  TR::Options::traceOptimization, exceptionAsyncCheckInsertion, 0, "P"},  // Java specific option
    {"traceExplicitNewInitialization",   "L\ttrace explicit new initialization",            TR::Options::traceOptimization, explicitNewInitialization, 0, "P"},
    {"traceFieldPrivatization",          "L\ttrace field privatization",                    TR::Options::traceOptimization, fieldPrivatization, 0, "P"},
    {"traceForCodeMining=",              "L{regex}\tadd instruction annotations for code mining",
@@ -1832,6 +1832,10 @@ OMR::Options::Options(
       optimizationPlan->setOptLevelDowngraded(false);
       }
 
+   // TODO (GuardedStorage)
+#if defined(OMR_GC_CONCURRENT_SCAVENGER)
+   self()->setOption (TR_DisableArrayCopyOpts, true);
+#endif
 
    if (self()->getOption(TR_FullSpeedDebug))
       {
