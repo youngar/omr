@@ -25,6 +25,11 @@ if test "x$CMAKE_GENERATOR" = "x"; then
   export CMAKE_GENERATOR="Ninja"
 fi
 
+if test "x$TRAVIS_OS_NAME" = "xosx"; then
+  # ccache is installed to a different location on osx
+  PATH="/usr/local/opt/ccache/libexec:$PATH"
+fi
+
 if test "x$BUILD_WITH_CMAKE" = "xyes"; then
 
   if test "x$TRAVIS_OS_NAME" = "xosx" && test "x$CMAKE_GENERATOR" = "xNinja"; then

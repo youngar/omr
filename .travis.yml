@@ -20,7 +20,9 @@ os:
   - osx
 language: cpp
 sudo: false
-cache: ccache # https://docs.travis-ci.com/user/caching/
+cache:
+  ccache: true # https://docs.travis-ci.com/user/caching/
+  directories: /usr/local/Cellar # cache the homebrew installed packages
 dist: trusty
 addons:
   apt:
@@ -37,6 +39,11 @@ addons:
       - gcc-multilib
       - g++-multilib
       - ninja-build
+install:
+  # Use ccache on osx.
+  # https://docs.travis-ci.com/user/caching#ccache-on-os-x
+  - if [ "x$TRAVIS_OS_NAME" = "xosx" ]; then brew install ccache; fi
+  - if [ "x$TRAVIS_OS_NAME" = "xosx" ]; then export PATH="/usr/local/opt/libexec:$PATH"; fi
 env:
   matrix:
     - BUILD_WITH_CMAKE=yes CMAKE_GENERATOR=Ninja
