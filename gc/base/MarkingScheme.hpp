@@ -86,13 +86,8 @@ private:
 			 */
 			Assert_MM_true(NULL == forwardPtr || (isConcurrentMarkInProgress() && _extensions->isConcurrentScavengerInProgress()));
 		}
-#endif /* OMR_GC_CONCURRENT_SCAVENGER */ 				
+#endif /* OMR_GC_CONCURRENT_SCAVENGER */
 	}
-
-	/**
-	 * Private internal. Called exclusively from completeScan();
-	 */
-	MMINLINE uintptr_t scanObject(MM_EnvironmentBase *env, omrobjectptr_t objectPtr);
 
 	MM_WorkPackets *createWorkPackets(MM_EnvironmentBase *env);
 
@@ -229,40 +224,41 @@ public:
 
 	/**
 	 * This is the marking workhorse, which burns down the backlog of work packets that have accumulated
-	 * on the global work stack during marking. It calls scanObject() for every object in the work stack 
+	 * on the global work stack during marking. It calls internalScanObject() for every object in the work stack 
 	 * until the work stack is empty.
 	 */
 	void completeScan(MM_EnvironmentBase *env);
+
 	
 	/**
-	 * Public object scanning method. Called from external context, eg concurrent GC. Scans object slots
-	 * and marks objects referenfced from specified object.
+	 *  Scans object slots and marks objects referenced from specified object.
 	 *
 	 * For pointer arrays, which may be split for scanning, caller may specify a maximum number
 	 * of bytes to scan. For scalar object type, the default value for this parameter works fine.
 	 *
 	 * @param[in] env calling thread environment
 	 * @param[in] objectPtr pointer to object to be marked (must not be NULL)
-	 * @param[in] reason enumerator identifying scanning context
-	 * @param sizeToDo maximum number of bytes to scan, for pointer arrays
+	 * @param[in] reason element from the enumeration MM_MarkingSchemeScanReason, identifying scanning context
+	 * @param[in] sizeToDo maximum number of bytes to scan, for pointer arrays
 	 */
 	MMINLINE uintptr_t
-	scanObject(MM_EnvironmentBase *env, omrobjectptr_t objectPtr, MM_MarkingSchemeScanReason reason, uintptr_t sizeToDo = UDATA_MAX)
+	scanObject(MM_EnvironmentBase *env, omrobjectptr_t objectPtr, MM_MarkingSchemeScanReason reason = SCAN_REASON_PACKET, uintptr_t sizeToDo = UDATA_MAX)
 	{
 		GC_ObjectScannerState objectScannerState;
-		GC_ObjectScanner *objectScanner = _delegate.getObjectScanner(env, objectPtr, &objectScannerState, reason, &sizeToDo);
+		GC_ObjectScanner *objectScanner = _delegate.getObjectScanner(env, objectPtr, &objectScannerState, SCAN_REASON_PACKET, &sizeToDo);
 		if (NULL != objectScanner) {
 			bool isLeafSlot = false;
 			GC_SlotObject *slotObject;
+
 #if defined(OMR_GC_LEAF_BITS)
 			while (NULL != (slotObject = objectScanner->getNextSlot(isLeafSlot))) {
 #else /* OMR_GC_LEAF_BITS */
 			while (NULL != (slotObject = objectScanner->getNextSlot())) {
 #endif /* OMR_GC_LEAF_BITS */
-				fixupForwardedSlot(slotObject);
 
-				/* with concurrentMark mutator may NULL the slot so must fetch and check here */
+				fixupForwardedSlot(slotObject);
 				inlineMarkObject(env, slotObject->readReferenceFromSlot(), isLeafSlot);
+
 			}
 		}
 
@@ -288,7 +284,8 @@ public:
 	bool heapAddRange(MM_EnvironmentBase *env, MM_MemorySubSpace *subspace, uintptr_t size, void *lowAddress, void *highAddress);
 	bool heapRemoveRange(MM_EnvironmentBase *env, MM_MemorySubSpace *subspace, uintptr_t size, void *lowAddress, void *highAddress, void *lowValidAddress, void *highValidAddress);
 
-	MMINLINE bool isHeapObject(omrobjectptr_t objectPtr)
+	MMINLINE bool
+	isHeapObject(omrobjectptr_t objectPtr)
 	{
 		return ((_heapBase <= (uint8_t *)objectPtr) && (_heapTop > (uint8_t *)objectPtr));
 	}
@@ -303,8 +300,8 @@ public:
 	 * during Scavenger aborted cycle to prevent duplicate copies). The fixup will be done after Scavenger Cycle is done, 
 	 * in the final phase of Concurrent GC when we scan Nursery. 
 	 */
-	
-	void fixupForwardedSlot(GC_SlotObject *slotObject) {
+	MMINLINE void
+	fixupForwardedSlot(GC_SlotObject *slotObject) {
 #if defined(OMR_GC_CONCURRENT_SCAVENGER)
 		if (_extensions->isConcurrentScavengerEnabled() && _extensions->isScavengerBackOutFlagRaised()) {
 			MM_ForwardedHeader forwardHeader(slotObject->readReferenceFromSlot());
@@ -318,7 +315,7 @@ public:
 				}
 			}
 		}
-#endif /* OMR_GC_CONCURRENT_SCAVENGER */ 			
+#endif /* OMR_GC_CONCURRENT_SCAVENGER */
 	}
 
 	/**

@@ -282,31 +282,6 @@ MM_MarkingScheme::setMarkBitsInRange(MM_EnvironmentBase *env, void *heapBase, vo
  * Scanning
  ****************************************
  */
-/**
- * Private internal. Called exclusively from completeScan();
- */
-uintptr_t
-MM_MarkingScheme::scanObject(MM_EnvironmentBase *env, omrobjectptr_t objectPtr)
-{
-	uintptr_t sizeToDo = UDATA_MAX;
-	GC_ObjectScannerState objectScannerState;
-	GC_ObjectScanner *objectScanner = _delegate.getObjectScanner(env, objectPtr, &objectScannerState, SCAN_REASON_PACKET, &sizeToDo);
-	if (NULL != objectScanner) {
-		bool isLeafSlot = false;
-		GC_SlotObject *slotObject;
-#if defined(OMR_GC_LEAF_BITS)
-		while (NULL != (slotObject = objectScanner->getNextSlot(isLeafSlot))) {
-#else /* OMR_GC_LEAF_BITS */
-		while (NULL != (slotObject = objectScanner->getNextSlot())) {
-#endif /* OMR_GC_LEAF_BITS */
-			fixupForwardedSlot(slotObject);
-
-			inlineMarkObjectNoCheck(env, slotObject->readReferenceFromSlot(), isLeafSlot);
-		}
-	}
-	return sizeToDo;
-}
-
 
 /**
  * Scan until there are no more work packets to be processed.
@@ -319,8 +294,7 @@ MM_MarkingScheme::completeScan(MM_EnvironmentBase *env)
 	do {
 		omrobjectptr_t objectPtr = NULL;
 		while (NULL != (objectPtr = (omrobjectptr_t )env->_workStack.pop(env))) {
-			env->_markStats._bytesScanned += scanObject(env, objectPtr);
-			env->_markStats._objectsScanned += 1;
+			scanObject(env, objectPtr);
 		}
 	} while (_workPackets->handleWorkPacketOverflow(env));
 }
