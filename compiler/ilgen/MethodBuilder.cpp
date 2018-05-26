@@ -59,6 +59,7 @@
 #define TraceEnabled    (comp()->getOption(TR_TraceILGen))
 #define TraceIL(m, ...) {if (TraceEnabled) {traceMsg(comp(), m, ##__VA_ARGS__);}}
 
+extern bool jitBuilderShouldCompile;
 
 // MethodBuilder is an IlBuilder object representing an entire method /
 // function, so it conceptually has an entry point (though multiple entry
@@ -99,7 +100,7 @@ OMR::MethodBuilder::MethodBuilder(TR::TypeDictionary *types, TR::JitBuilderRecor
    _numBlocksBeforeWorklist(0),
    _countBlocksWorklist(0),
    _connectTreesWorklist(0),
-   _isCompiling(isCompiling)
+   _isCompiling(jitBuilderShouldCompile)
    {
    _definingLine[0] = '\0';
    initMaps();
@@ -328,7 +329,7 @@ OMR::MethodBuilder::defineSymbol(const char *name, TR::SymbolReference *symRef)
 
    _symbols->insert(std::make_pair(name, symRef));
    _symbolNameFromSlot->insert(std::make_pair(symRef->getCPIndex(), name));
-   
+
    TR::IlType *type = typeDictionary()->PrimitiveType(symRef->getSymbol()->getDataType());
    _symbolTypes->insert(std::make_pair(name, type));
 
@@ -420,28 +421,40 @@ void
 OMR::MethodBuilder::DefineFile(const char *file)
    {
    TR::MethodBuilderRecorder::DefineFile(file);
-   _definingFile = file;
+   if(isCompiling())
+      {
+        _definingFile = file;
+      }
    }
 
 void
 OMR::MethodBuilder::DefineLine(const char *line)
    {
    TR::MethodBuilderRecorder::DefineLine(line);
-   snprintf(_definingLine, MAX_LINE_NUM_LEN * sizeof(char), "%s", line);
+   if(isCompiling())
+      {
+        snprintf(_definingLine, MAX_LINE_NUM_LEN * sizeof(char), "%s", line);
+      }
    }
 
 void
 OMR::MethodBuilder::DefineLine(int32_t line)
    {
    TR::MethodBuilderRecorder::DefineLine(line);
-   snprintf(_definingLine, MAX_LINE_NUM_LEN * sizeof(char), "%d", line);
+   if(isCompiling())
+      {
+        snprintf(_definingLine, MAX_LINE_NUM_LEN * sizeof(char), "%d", line);
+      }
    }
 
 void
 OMR::MethodBuilder::DefineName(const char *name)
    {
    TR::MethodBuilderRecorder::DefineName(name);
-   _methodName = name;
+   if(isCompiling())
+      {
+        _methodName = name;
+      }
    }
 
 void
@@ -449,13 +462,16 @@ OMR::MethodBuilder::DefineParameter(const char *name, TR::IlType *dt)
    {
    TR::MethodBuilderRecorder::DefineParameter(name, dt);
 
-   TR_ASSERT_FATAL(_parameterSlot->find(name) == _parameterSlot->end(), "Parameter '%s' already defined", name);
+   if(isCompiling())
+      {
+        TR_ASSERT_FATAL(_parameterSlot->find(name) == _parameterSlot->end(), "Parameter '%s' already defined", name);
 
-   _parameterSlot->insert(std::make_pair(name, _numParameters));
-   _symbolNameFromSlot->insert(std::make_pair(_numParameters, name));
-   _symbolTypes->insert(std::make_pair(name, dt));
+        _parameterSlot->insert(std::make_pair(name, _numParameters));
+        _symbolNameFromSlot->insert(std::make_pair(_numParameters, name));
+        _symbolTypes->insert(std::make_pair(name, dt));
 
-   _numParameters++;
+        _numParameters++;
+      }
    }
 
 void
@@ -475,7 +491,10 @@ void
 OMR::MethodBuilder::DefineReturnType(TR::IlType *dt)
    {
    TR::MethodBuilderRecorder::DefineReturnType(dt);
-   _returnType = dt;
+   if(isCompiling())
+      {
+        _returnType = dt;
+      }
    }
 
 void
@@ -523,7 +542,7 @@ OMR::MethodBuilder::DefineFunction(const char* const name,
                               TR::IlType     * returnType,
                               int32_t          numParms,
                               TR::IlType     ** parmTypes)
-   {   
+   {
    TR::MethodBuilderRecorder::DefineFunction(name, fileName, lineNumber, entryPoint, returnType, numParms, parmTypes);
 
    TR::ResolvedMethod *method = new (PERSISTENT_NEW) TR::ResolvedMethod((char*)fileName,

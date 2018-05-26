@@ -780,10 +780,13 @@ OMR::IlBuilder::Load(const char *name)
    {
    TR::IlValue *returnValue = IlBuilderRecorder::Load(name);
 
-   TR::SymbolReference *symRef = lookupSymbol(name);
-   TR::Node *valueNode = TR::Node::createLoad(symRef);
-   closeValue(returnValue, symRef->getSymbol()->getDataType(), valueNode);
-
+   if(shouldCompile())
+      {
+        TR::SymbolReference *symRef = lookupSymbol(name);
+        TR::Node *valueNode = TR::Node::createLoad(symRef);
+        closeValue(returnValue, symRef->getSymbol()->getDataType(), valueNode);
+      }
+   
    return returnValue;
    }
 
@@ -941,8 +944,11 @@ TR::IlValue *
 OMR::IlBuilder::ConstInt32(int32_t value)
    {
    TR::IlValue *returnValue = TR::IlBuilderRecorder::ConstInt32(value);
-   closeValue(returnValue, Int32, TR::Node::iconst(value));
-   TraceIL("IlBuilder[ %p ]::%d is ConstInt32 %d\n", this, returnValue->getID(), value);
+   if(shouldCompile())
+      {
+        closeValue(returnValue, Int32, TR::Node::iconst(value));
+        TraceIL("IlBuilder[ %p ]::%d is ConstInt32 %d\n", this, returnValue->getID(), value);
+      }
    return returnValue;
    }
 
@@ -1088,7 +1094,7 @@ OMR::IlBuilder::widenIntegerTo32Bits(TR::IlValue *v)
 TR::Node*
 OMR::IlBuilder::binaryOpNodeFromNodes(TR::ILOpCodes op,
                              TR::Node *leftNode,
-                             TR::Node *rightNode) 
+                             TR::Node *rightNode)
    {
    TR::DataType leftType = leftNode->getDataType();
    TR::DataType rightType = rightNode->getDataType();
@@ -1104,7 +1110,7 @@ OMR::IlBuilder::binaryOpNodeFromNodes(TR::ILOpCodes op,
       leftNode = rightNode;
       rightNode = save;
       }
-   
+
    return TR::Node::create(op, 2, leftNode, rightNode);
    }
 
@@ -1112,21 +1118,21 @@ void
 OMR::IlBuilder::binaryOpFromNodes(TR::ILOpCodes op,
                              TR::IlValue *returnValue,
                              TR::Node *leftNode,
-                             TR::Node *rightNode) 
+                             TR::Node *rightNode)
    {
    TR::Node *result = binaryOpNodeFromNodes(op, leftNode, rightNode);
    closeValue(returnValue, result->getDataType(), result);
-   } 
+   }
 
 TR::IlValue *
 OMR::IlBuilder::binaryOpFromNodes(TR::ILOpCodes op,
                              TR::Node *leftNode,
-                             TR::Node *rightNode) 
+                             TR::Node *rightNode)
    {
    TR::Node *result = binaryOpNodeFromNodes(op, leftNode, rightNode);
    TR::IlValue *returnValue = newValue(result->getDataType(), result);
    return returnValue;
-   } 
+   }
 
 void
 OMR::IlBuilder::binaryOpFromOpMap(OpCodeMapper mapOp,
@@ -1245,11 +1251,14 @@ void
 OMR::IlBuilder::Return(TR::IlValue *value)
    {
    TR::IlBuilderRecorder::Return(value);
-   TraceIL("IlBuilder[ %p ]::Return %d\n", this, value->getID());
-   TR::Node *returnNode = TR::Node::create(TR::ILOpCode::returnOpCode(value->getDataType()), 1, loadValue(value));
-   genTreeTop(returnNode);
-   cfg()->addEdge(_currentBlock, cfg()->getEnd());
-   setDoesNotComeBack();
+   if(shouldCompile())
+      {
+        TraceIL("IlBuilder[ %p ]::Return %d\n", this, value->getID());
+        TR::Node *returnNode = TR::Node::create(TR::ILOpCode::returnOpCode(value->getDataType()), 1, loadValue(value));
+        genTreeTop(returnNode);
+        cfg()->addEdge(_currentBlock, cfg()->getEnd());
+        setDoesNotComeBack();
+      }
    }
 
 TR::IlValue *
@@ -1285,29 +1294,32 @@ TR::IlValue *
 OMR::IlBuilder::Add(TR::IlValue *left, TR::IlValue *right)
    {
    TR::IlValue *returnValue = TR::IlBuilderRecorder::Add(left, right);
-   if (left->getDataType() == TR::Address)
+   if(shouldCompile())
       {
-      if (right->getDataType() == TR::Int32)
-         binaryOpFromNodes(TR::aiadd, returnValue, loadValue(left), loadValue(right));
-      else if (right->getDataType() == TR::Int64)
-         binaryOpFromNodes(TR::aladd, returnValue, loadValue(left), loadValue(right));
-      else 
-         binaryOpFromOpMap(addOpCode, returnValue, left, right);
-      }
-   else
-      binaryOpFromOpMap(addOpCode, returnValue, left, right);
+        if (left->getDataType() == TR::Address)
+           {
+           if (right->getDataType() == TR::Int32)
+              binaryOpFromNodes(TR::aiadd, returnValue, loadValue(left), loadValue(right));
+           else if (right->getDataType() == TR::Int64)
+              binaryOpFromNodes(TR::aladd, returnValue, loadValue(left), loadValue(right));
+           else
+              binaryOpFromOpMap(addOpCode, returnValue, left, right);
+           }
+        else
+           binaryOpFromOpMap(addOpCode, returnValue, left, right);
 
-   TraceIL("IlBuilder[ %p ]::%d is Add %d + %d\n", this, returnValue->getID(), left->getID(), right->getID());
+        TraceIL("IlBuilder[ %p ]::%d is Add %d + %d\n", this, returnValue->getID(), left->getID(), right->getID());
+      }
    return returnValue;
    }
 
 /*
  * blockThrowsException:
  * ....
- * goto blockAfterExceptionHandler 
+ * goto blockAfterExceptionHandler
  * Handler:
  * ....
- * goto blockAfterExceptionHandler 
+ * goto blockAfterExceptionHandler
  * blockAfterExceptionHandler:
  */
 void
@@ -1320,7 +1332,7 @@ OMR::IlBuilder::appendExceptionHandler(TR::Block *blockThrowsException, TR::IlBu
    genTreeTop(gotoNode);
    _currentBlock = NULL;
    _currentBlockNumber = -1;
- 
+
    //append handler, add exception edge and merge edge
    *handler = createBuilderIfNeeded(*handler);
    TR_ASSERT(*handler != NULL, "exception handler cannot be NULL\n");
@@ -1366,7 +1378,7 @@ OMR::IlBuilder::genOperationWithOverflowCHK(TR::ILOpCodes op, TR::Node *leftNode
     *    store
     *       => operation
     * BB2:
-    *    goto BB3 
+    *    goto BB3
     * Handler:
     *    ...
     * BB3:
@@ -1385,7 +1397,7 @@ OMR::IlBuilder::genOperationWithOverflowCHK(TR::ILOpCodes op, TR::Node *leftNode
 
 // This function takes 4 arguments and generate the addValue.
 // This function is called by AddWithOverflow and AddWithUnsignedOverflow.
-TR::ILOpCodes 
+TR::ILOpCodes
 OMR::IlBuilder::getOpCode(TR::IlValue *leftValue, TR::IlValue *rightValue)
    {
    TR::ILOpCodes op;
@@ -1395,14 +1407,14 @@ OMR::IlBuilder::getOpCode(TR::IlValue *leftValue, TR::IlValue *rightValue)
          op = TR::aiadd;
       else if (rightValue->getDataType() == TR::Int64)
          op = TR::aladd;
-      else 
+      else
          TR_ASSERT(0, "the right child type must be either TR::Int32 or TR::Int64 when the left child of Add is TR::Address\n");
-      }    
-   else 
+      }
+   else
       {
       op = addOpCode(leftValue->getDataType());
       }
-   return op; 
+   return op;
    }
 
 TR::IlValue *
@@ -1521,7 +1533,7 @@ OMR::IlBuilder::Xor(TR::IlValue *left, TR::IlValue *right)
 TR::Node*
 OMR::IlBuilder::shiftOpNodeFromNodes(TR::ILOpCodes op,
                                 TR::Node *leftNode,
-                                TR::Node *rightNode) 
+                                TR::Node *rightNode)
    {
    TR::DataType leftType = leftNode->getDataType();
    TR::DataType rightType = rightNode->getDataType();
@@ -1533,12 +1545,12 @@ OMR::IlBuilder::shiftOpNodeFromNodes(TR::ILOpCodes op,
 TR::IlValue *
 OMR::IlBuilder::shiftOpFromNodes(TR::ILOpCodes op,
                             TR::Node *leftNode,
-                            TR::Node *rightNode) 
+                            TR::Node *rightNode)
    {
    TR::Node *result = shiftOpNodeFromNodes(op, leftNode, rightNode);
    TR::IlValue *returnValue = newValue(result->getDataType(), result);
    return returnValue;
-   } 
+   }
 
 TR::IlValue *
 OMR::IlBuilder::shiftOpFromOpMap(OpCodeMapper mapOp,
@@ -1785,7 +1797,7 @@ OMR::IlBuilder::UnsignedGreaterOrEqualTo(TR::IlValue *left, TR::IlValue *right)
    return returnValue;
    }
 
-TR::IlValue** 
+TR::IlValue**
 OMR::IlBuilder::processCallArgs(TR::Compilation *comp, int numArgs, va_list args)
    {
    TR::IlValue ** argValues = (TR::IlValue **) comp->trMemory()->allocateHeapMemory(numArgs * sizeof(TR::IlValue *));
@@ -1797,9 +1809,9 @@ OMR::IlBuilder::processCallArgs(TR::Compilation *comp, int numArgs, va_list args
    }
 
 /*
- * \param numArgs 
- *    Number of actual arguments for the method  plus 1 
- * \param ... 
+ * \param numArgs
+ *    Number of actual arguments for the method  plus 1
+ * \param ...
  *    The list is a computed address followed by the actual arguments
  */
 TR::IlValue *
@@ -1820,8 +1832,8 @@ OMR::IlBuilder::ComputedCall(const char *functionName, int32_t numArgs, ...)
    }
 
 /*
- * \param numArgs 
- *    Number of actual arguments for the method  plus 1 
+ * \param numArgs
+ *    Number of actual arguments for the method  plus 1
  * \param argValues
  *    the computed address followed by the actual arguments
  */
@@ -1898,13 +1910,13 @@ OMR::IlBuilder::genCall(TR::SymbolReference *methodSymRef, int32_t numArgs, TR::
 
 
 /** \brief
- *     The service is used to atomically increase memory location \p baseAddress by amount of \p value. 
+ *     The service is used to atomically increase memory location \p baseAddress by amount of \p value.
  *
  *  \param value
  *     The amount to increase for the memory location.
  *
  *  \note
- *     This service currently only supports Int32/Int64. 
+ *     This service currently only supports Int32/Int64.
  *
  *  \return
  *     The old value at the location \p baseAddress.
@@ -1921,24 +1933,24 @@ OMR::IlBuilder::AtomicAddWithOffset(TR::IlValue * baseAddress, TR::IlValue * off
    TraceIL("IlBuilder[ %p ]::AtomicAdd(%d, %d)\n", this, baseAddress->getID(), value->getID());
 
    OMR::SymbolReferenceTable::CommonNonhelperSymbol atomicBitSymbol = returnType == TR::Int32 ? TR::SymbolReferenceTable::atomicAdd32BitSymbol : TR::SymbolReferenceTable::atomicAdd64BitSymbol;//lock add
-   TR::SymbolReference *methodSymRef = symRefTab()->findOrCreateCodeGenInlinedHelper(atomicBitSymbol); 
+   TR::SymbolReference *methodSymRef = symRefTab()->findOrCreateCodeGenInlinedHelper(atomicBitSymbol);
    TR::Node *callNode;
    callNode = TR::Node::createWithSymRef(TR::ILOpCode::getDirectCall(returnType), 2, methodSymRef);
    callNode->setAndIncChild(0, loadValue(baseAddress));
    callNode->setAndIncChild(1, loadValue(value));
 
    TR::IlValue *returnValue = newValue(callNode->getDataType(), callNode);
-   return returnValue; 
+   return returnValue;
    }
 
 /** \brief
- *     The service is used to atomically increase memory location \p baseAddress by amount of \p value. 
+ *     The service is used to atomically increase memory location \p baseAddress by amount of \p value.
  *
  *  \param value
  *     The amount to increase for the memory location.
  *
  *  \note
- *     This service currently only supports Int32/Int64. 
+ *     This service currently only supports Int32/Int64.
  *
  *  \return
  *     The old value at the location \p baseAddress.
@@ -1946,7 +1958,7 @@ OMR::IlBuilder::AtomicAddWithOffset(TR::IlValue * baseAddress, TR::IlValue * off
 TR::IlValue *
 OMR::IlBuilder::AtomicAdd(TR::IlValue * baseAddress, TR::IlValue * value)
    {
-   return AtomicAddWithOffset(baseAddress, NULL, value);    
+   return AtomicAddWithOffset(baseAddress, NULL, value);
    }
 
 /**
@@ -1955,7 +1967,7 @@ OMR::IlBuilder::AtomicAdd(TR::IlValue * baseAddress, TR::IlValue * value)
  *  At the end of transaction path, service will automatically generate transaction end instruction.
  *
  * \verbatim
- *   
+ *
  *    +---------------------------------+
  *    |<block_$tstart>                  |
  *    |==============                   |
@@ -1968,8 +1980,8 @@ OMR::IlBuilder::AtomicAdd(TR::IlValue * baseAddress, TR::IlValue * value)
  *    +---------------------------------+                         |                                  |
  *                       |                                        |                                  |
  *                       v                                        V                                  V
- *    +-----------------------------------------+   +-------------------------------+    +-------------------------+     
- *    |<block_$transaction>                     |   |<block_$persistentFailure>     |    |<block_$transientFailure>|      
+ *    +-----------------------------------------+   +-------------------------------+    +-------------------------+
+ *    |<block_$transaction>                     |   |<block_$persistentFailure>     |    |<block_$transientFailure>|
  *    |====================                     |   |===========================    |    |=========================|
  *    |     add (For illustration, we take add  |   |AtomicAdd (For illustration, we|    |   ...                   |
  *    |     ... as an example. User could       |   |...       take atomicAdd as an |    |   ...                   |
@@ -1983,21 +1995,21 @@ OMR::IlBuilder::AtomicAdd(TR::IlValue * baseAddress, TR::IlValue * value)
  *                      |                                          |                                 |
  *                      |------------------------------------------+---------------------------------+
  *                      |
- *                      v             
- *              +----------------+     
- *              | block_$merge   |     
- *              | ============== |   
+ *                      v
+ *              +----------------+
+ *              | block_$merge   |
+ *              | ============== |
  *              |      ...       |
- *              +----------------+   
+ *              +----------------+
  *
- * \endverbatim 
+ * \endverbatim
  *
  * \structure & \param value
  *     tstart
  *       |
  *       ----persistentFailure // This is a permanent failure, try atomic way to do it instead
  *       |
- *       ----transientFailure // Temporary failure, user can retry 
+ *       ----transientFailure // Temporary failure, user can retry
  *       |
  *       ----transaction // Success, use general(non-atomic) way to do it
  *                |
@@ -2011,20 +2023,20 @@ OMR::IlBuilder::AtomicAdd(TR::IlValue * baseAddress, TR::IlValue * value)
  *      If user's platform doesn't support TM, go to persistentFailure path directly/
  *      In this case, current IlBuilder walks around transientFailureBuilder and transactionBuilder
  *      and goes to persistentFailureBuilder.
- *      
+ *
  *      _currentBuilder
  *          |
  *          ->Goto()
- *              |   transientFailureBuilder 
+ *              |   transientFailureBuilder
  *              |   transactionBuilder
  *              |-->persistentFailurie
  */
 void
 OMR::IlBuilder::Transaction(TR::IlBuilder **persistentFailureBuilder, TR::IlBuilder **transientFailureBuilder, TR::IlBuilder **transactionBuilder)
-   {   
-   //This assertion is to rule out platforms which don't have tstart evaluator yet. 
-   TR_ASSERT(comp()->cg()->hasTMEvaluator(), "this platform doesn't support tstart or tfinish evaluator yet");   
-    
+   {
+   //This assertion is to rule out platforms which don't have tstart evaluator yet.
+   TR_ASSERT(comp()->cg()->hasTMEvaluator(), "this platform doesn't support tstart or tfinish evaluator yet");
+
    TraceIL("IlBuilder[ %p ]::transactionBegin %p, %p, %p, %p)\n", this, *persistentFailureBuilder, *transientFailureBuilder, *transactionBuilder);
 
    appendBlock();
@@ -2053,12 +2065,12 @@ OMR::IlBuilder::Transaction(TR::IlBuilder **persistentFailureBuilder, TR::IlBuil
    TR::Node *transientFailureNode = TR::Node::create(TR::branch, 0, (*transientFailureBuilder)->getEntry()->getEntry());
    TR::Node *transactionNode = TR::Node::create(TR::branch, 0, (*transactionBuilder)->getEntry()->getEntry());
 
-   TR::Node *tStartNode = TR::Node::create(TR::tstart, 3, persistentFailureNode, transientFailureNode, transactionNode);   
+   TR::Node *tStartNode = TR::Node::create(TR::tstart, 3, persistentFailureNode, transientFailureNode, transactionNode);
    tStartNode->setSymbolReference(comp()->getSymRefTab()->findOrCreateTransactionEntrySymbolRef(comp()->getMethodSymbol()));
-   
+
    genTreeTop(tStartNode);
 
-   //connecting the block having tstart with persistentFailure's and transaction's blocks 
+   //connecting the block having tstart with persistentFailure's and transaction's blocks
    cfg()->addEdge(_currentBlock, (*persistentFailureBuilder)->getEntry());
    cfg()->addEdge(_currentBlock, (*transientFailureBuilder)->getEntry());
    cfg()->addEdge(_currentBlock, (*transactionBuilder)->getEntry());
@@ -2071,7 +2083,7 @@ OMR::IlBuilder::Transaction(TR::IlBuilder **persistentFailureBuilder, TR::IlBuil
    gotoBlock(mergeBlock);
 
    self()->AppendBuilder(*transactionBuilder);
-    
+
    //ending the transaction at the end of transactionBuilder
    appendBlock();
    TR::Node *tEndNode=TR::Node::create(TR::tfinish,0);
@@ -2080,7 +2092,7 @@ OMR::IlBuilder::Transaction(TR::IlBuilder **persistentFailureBuilder, TR::IlBuil
 
    //Three IlBuilders above merged here
    appendBlock(mergeBlock);
-   }  
+   }
 
 
 /**
@@ -2521,7 +2533,7 @@ OMR::IlBuilder::ForLoop(bool countsUp,
       }
 
    TR::IlBuilderRecorder::ForLoop(countsUp, indVar, *loopCode, bBreak, bContinue, initial, end, increment);
-   
+
    methodSymbol()->setMayHaveLoops(true);
 
    // No services will be logged after this point; all objects must be created by now
