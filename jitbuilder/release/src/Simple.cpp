@@ -31,6 +31,7 @@
 #include "ilgen/TypeDictionary.hpp"
 #include "ilgen/MethodBuilder.hpp"
 #include "ilgen/JitBuilderRecorderTextFile.hpp"
+#include "ilgen/JitBuilderReplayTextFile.hpp"
 #include "Simple.hpp"
 
 using std::cout;
@@ -76,15 +77,37 @@ main(int argc, char *argv[])
       SimpleMethodFunction *increment = (SimpleMethodFunction *) entry;
 
       int32_t v;
-      v=0;   cout << "increment(" << v << ") == " << increment(v) << "\n";
-      v=1;   cout << "increment(" << v << ") == " << increment(v) << "\n";
-      v=10;  cout << "increment(" << v << ") == " << increment(v) << "\n";
+      v=0; cout << "increment(" << v << ") == " << increment(v) << "\n";
+      v=1; cout << "increment(" << v << ") == " << increment(v) << "\n";
+      v=10; cout << "increment(" << v << ") == " << increment(v) << "\n";
       v=-15; cout << "increment(" << v << ") == " << increment(v) << "\n";
+
+      // int32_t v, u;
+      // v=0; u=1;  cout << "increment(" << v << "+" << u << ") == " << increment(v,u) << "\n";
+      // v=1; u=5;  cout << "increment(" << v << "+" << u << ") == " << increment(v,u) << "\n";
+      // v=10; u=7; cout << "increment(" << v << "+" << u << ") == " << increment(v,u) << "\n";
+      // v=-15; u=33; cout << "increment(" << v << "+" << u << ") == " << increment(v,u) << "\n";
       }
    //If not compiling verify the output file....
    else
       {
       cout << "Step 5: verify output file\n";
+
+      jitBuilderShouldCompile = true;
+      TR::JitBuilderReplayTextFile replay("simple.out");
+      //
+      // TR::MethodBuilderReplay mb(&replay, &entry);
+      //
+      // int32_t rc = compileMethodBuilder(&mb, &entry);
+      // typedef int32_t (SimpleMethodFunction)(int32_t);
+      // SimpleMethodFunction *increment = (SimpleMethodFunction* ) entry;
+      //
+      // int32_t v;
+      // v=0;   cout << "increment(" << v << ") == " << increment(v) << "\n";
+      // v=1;   cout << "increment(" << v << ") == " << increment(v) << "\n";
+      // v=10;  cout << "increment(" << v << ") == " << increment(v) << "\n";
+      // v=-15; cout << "increment(" << v << ") == " << increment(v) << "\n";
+
       //TODO do something with output file to verify :)
       }
 
@@ -97,11 +120,14 @@ main(int argc, char *argv[])
 SimpleMethod::SimpleMethod(TR::TypeDictionary *d, TR::JitBuilderRecorder *recorder)
    : MethodBuilder(d, recorder)
    {
+     
    DefineLine(LINETOSTR(__LINE__));
    DefineFile(__FILE__);
 
    DefineName("increment");
    DefineParameter("value", Int32);
+   // DefineParameter("value1", Int32);
+   // DefineParameter("value2", Int32);
    DefineReturnType(Int32);
    }
 
@@ -113,5 +139,16 @@ SimpleMethod::buildIL()
       Add(
          Load("value"),
          ConstInt32(1)));
+   // Return(
+   //    Add(
+   //      Add(
+   //        Load("value1"),
+   //        ConstInt32(17)
+   //      ),
+   //      Add(
+   //        Load("value2"),
+   //        ConstInt32(14))));
+
+   // IlValue * value1 = Load("value1");
    return true;
    }

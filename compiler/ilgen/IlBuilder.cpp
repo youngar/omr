@@ -147,6 +147,8 @@ OMR::IlBuilder::injectIL()
 
    setupForBuildIL();
 
+   // TODO About to call BuildIL. Output DONE for constructor
+
    bool rc = buildIL();
    TraceIL("buildIL() returned %d\n", rc);
    if (!rc)
@@ -786,7 +788,7 @@ OMR::IlBuilder::Load(const char *name)
         TR::Node *valueNode = TR::Node::createLoad(symRef);
         closeValue(returnValue, symRef->getSymbol()->getDataType(), valueNode);
       }
-   
+
    return returnValue;
    }
 
