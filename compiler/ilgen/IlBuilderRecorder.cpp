@@ -1955,10 +1955,14 @@ OMR::IlBuilderRecorder::ForLoop(bool countsUp,
    ForLoop(countsUp, indVar, *loopCode, bBreak, bContinue, initial, end, increment);
    }
 
-#if 0
 void
 OMR::IlBuilderRecorder::DoWhileLoop(const char *whileCondition, TR::IlBuilder **body, TR::IlBuilder **breakBuilder, TR::IlBuilder **continueBuilder)
    {
+     TR::JitBuilderRecorder *rec = recorder();
+     if(rec) {
+       TR_ASSERT(0, "ILBR DoWhileLoop not supported");
+     }
+#if 0
    //ILB_REPLAY_BEGIN();
 
    methodSymbol()->setMayHaveLoops(true);
@@ -2002,13 +2006,18 @@ OMR::IlBuilderRecorder::DoWhileLoop(const char *whileCondition, TR::IlBuilder **
           //REPLAY_PTRTOBUILDER(body),
           //REPLAY_PTRTOBUILDER(breakBuilder),
           //REPLAY_PTRTOBUILDER(continueBuilder));
+#endif
    }
 
 void
 OMR::IlBuilderRecorder::WhileDoLoop(const char *whileCondition, TR::IlBuilder **body, TR::IlBuilder **breakBuilder, TR::IlBuilder **continueBuilder)
    {
    //ILB_REPLAY_BEGIN();
-
+   TR::JitBuilderRecorder *rec = recorder();
+   if(rec) {
+     TR_ASSERT(0, "ILBR WhileDoLoop not supported");
+   }
+#if 0
    methodSymbol()->setMayHaveLoops(true);
    TR_ASSERT(body != NULL, "WhileDo needs to have a body");
    TraceIL("IlBuilder[ %p ]::WhileDoLoop while %s do body %p\n", this, whileCondition, *body);
@@ -2046,5 +2055,6 @@ OMR::IlBuilderRecorder::WhileDoLoop(const char *whileCondition, TR::IlBuilder **
           //REPLAY_PTRTOBUILDER(body),
           //REPLAY_PTRTOBUILDER(breakBuilder),
           //REPLAY_PTRTOBUILDER(continueBuilder));
-   }
 #endif
+   }
+

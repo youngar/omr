@@ -215,7 +215,7 @@ public:
       ForLoop(countsUp, indVar, body, NULL, continueBody, initial, iterateWhile, increment);
       }
 
-#if 0
+
    virtual void WhileDoLoop(const char *exitCondition, TR::IlBuilder **body, TR::IlBuilder **breakBuilder = NULL, TR::IlBuilder **continueBuilder = NULL);
    void WhileDoLoopWithBreak(const char *exitCondition, TR::IlBuilder **body, TR::IlBuilder **breakBuilder)
       {
@@ -228,15 +228,16 @@ public:
       }
 
    virtual void DoWhileLoop(const char *exitCondition, TR::IlBuilder **body, TR::IlBuilder **breakBuilder = NULL, TR::IlBuilder **continueBuilder = NULL);
+   
    void DoWhileLoopWithBreak(const char *exitCondition, TR::IlBuilder **body, TR::IlBuilder **breakBuilder)
       {
       DoWhileLoop(exitCondition, body, breakBuilder);
       }
+   
    void DoWhileLoopWithContinue(const char *exitCondition, TR::IlBuilder **body, TR::IlBuilder **continueBuilder)
       {
       DoWhileLoop(exitCondition, body, NULL, continueBuilder);
       }
-#endif
 
    /* @brief creates an AND nest of short-circuited conditions, for each term pass an IlBuilder containing the condition and the IlValue that computes the condition */
    void IfAnd(TR::IlBuilder **allTrueBuilder, TR::IlBuilder **anyFalseBuilder, int32_t numTerms, ... );

@@ -2565,6 +2565,8 @@ OMR::IlBuilder::ForLoop(bool countsUp,
 void
 OMR::IlBuilder::DoWhileLoop(const char *whileCondition, TR::IlBuilder **body, TR::IlBuilder **breakBuilder, TR::IlBuilder **continueBuilder)
    {
+   IlBuilderRecorder::DoWhileLoop(whileCondition, body, continueBuilder);
+
    methodSymbol()->setMayHaveLoops(true);
    TR_ASSERT(body != NULL, "doWhileLoop needs to have a body");
 
@@ -2603,6 +2605,8 @@ OMR::IlBuilder::DoWhileLoop(const char *whileCondition, TR::IlBuilder **body, TR
 void
 OMR::IlBuilder::WhileDoLoop(const char *whileCondition, TR::IlBuilder **body, TR::IlBuilder **breakBuilder, TR::IlBuilder **continueBuilder)
    {
+   IlBuilderRecorder::WhileDoLoop(whileCondition, body, continueBuilder);
+
    methodSymbol()->setMayHaveLoops(true);
    TR_ASSERT(body != NULL, "WhileDo needs to have a body");
    TraceIL("IlBuilder[ %p ]::WhileDoLoop while %s do body %p\n", this, whileCondition, *body);
