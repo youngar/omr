@@ -42,16 +42,14 @@ class MethodBuilder : public OMR::MethodBuilder
 public:
    TR_ALLOC(TR_Memory::IlGenerator)
 
-   MethodBuilder(TR::TypeDictionary *types)
-      : OMR::MethodBuilder(types)
-      {
-      }
-
-   MethodBuilder(TR::TypeDictionary *types, TestDriver *test)
-      : OMR::MethodBuilder(types)
+   MethodBuilder(TR::TypeDictionary *types, TestDriver *test = NULL, TR::JitBuilderRecorder *recorder = NULL)
+      : OMR::MethodBuilder(types, recorder, NULL)
       {
       // need to explicitly initialize TestCompiler::IlInjector layer
-      setMethodAndTest(NULL, test);
+      if (test != NULL)
+        {
+        setMethodAndTest(NULL, test);
+        }
       }
    };
 
@@ -62,17 +60,16 @@ public:
 
 namespace TR
 {
-   class MethodBuilder : public TestCompiler::MethodBuilder
-      {
-      public:
-         MethodBuilder(TR::TypeDictionary *types)
-            : TestCompiler::MethodBuilder(types)
-            { }
 
-         MethodBuilder(TR::TypeDictionary *types, TestCompiler::TestDriver *test)
-            : TestCompiler::MethodBuilder(types, test)
-            { }
-      };
+class MethodBuilder : public TestCompiler::MethodBuilder
+   {
+public:
+
+   MethodBuilder(TR::TypeDictionary *types, TestCompiler::TestDriver *test = NULL, TR::JitBuilderRecorder *recorder = NULL)
+      : TestCompiler::MethodBuilder(types, test, recorder)
+      {
+      }
+   };
 
 } // namespace TR
 
