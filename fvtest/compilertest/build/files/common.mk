@@ -251,11 +251,18 @@ JIT_PRODUCT_SOURCE_FILES+=\
     $(JIT_OMR_DIRTY_DIR)/env/Globals.cpp \
     $(JIT_OMR_DIRTY_DIR)/env/OMRCompilerEnv.cpp \
     $(JIT_OMR_DIRTY_DIR)/env/PersistentAllocator.cpp \
+    $(JIT_OMR_DIRTY_DIR)/ilgen/JitBuilderRecorder.cpp \
+    $(JIT_OMR_DIRTY_DIR)/ilgen/JitBuilderRecorderBinaryBuffer.cpp \
+    $(JIT_OMR_DIRTY_DIR)/ilgen/JitBuilderRecorderBinaryFile.cpp \
+    $(JIT_OMR_DIRTY_DIR)/ilgen/JitBuilderRecorderTextFile.cpp \
     $(JIT_OMR_DIRTY_DIR)/ilgen/IlBuilder.cpp \
+    $(JIT_OMR_DIRTY_DIR)/ilgen/IlBuilderRecorder.cpp \
     $(JIT_OMR_DIRTY_DIR)/ilgen/IlValue.cpp \
     $(JIT_OMR_DIRTY_DIR)/ilgen/IlInjector.cpp \
     $(JIT_OMR_DIRTY_DIR)/ilgen/MethodBuilder.cpp \
+    $(JIT_OMR_DIRTY_DIR)/ilgen/MethodBuilderRecorder.cpp \
     $(JIT_OMR_DIRTY_DIR)/ilgen/BytecodeBuilder.cpp \
+    $(JIT_OMR_DIRTY_DIR)/ilgen/BytecodeBuilderRecorder.cpp \
     $(JIT_OMR_DIRTY_DIR)/ilgen/TypeDictionary.cpp \
     $(JIT_OMR_DIRTY_DIR)/runtime/Alignment.cpp \
     $(JIT_OMR_DIRTY_DIR)/runtime/CodeCacheTypes.cpp \
