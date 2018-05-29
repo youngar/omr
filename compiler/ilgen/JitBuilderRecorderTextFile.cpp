@@ -16,9 +16,10 @@
  *    Multiple authors (IBM Corp.) - initial implementation and documentation
  *******************************************************************************/
 
-#include <stdint.h>
-#include <iostream>
+#include <cstring>
 #include <fstream>
+#include <iostream>
+#include <stdint.h>
 
 #include "infra/Assert.hpp"
 #include "ilgen/JitBuilderRecorderTextFile.hpp"

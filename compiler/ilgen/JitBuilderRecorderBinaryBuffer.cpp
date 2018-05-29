@@ -17,6 +17,8 @@
  *******************************************************************************/
 
 #include <stdint.h>
+#include <cstring>
+
 #include "ilgen/JitBuilderRecorderBinaryBuffer.hpp"
 #include "infra/Assert.hpp"
 
