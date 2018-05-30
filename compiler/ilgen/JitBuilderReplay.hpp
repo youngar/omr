@@ -29,14 +29,48 @@
  #include <fstream>
  #include <map>
 
+ namespace TR { class IlBuilderReplay; }
+ namespace TR { class MethodBuilderReplay; }
+
  namespace OMR
  {
 
  class JitBuilderReplay
     {
     public:
+
+    const char *RECORDER_SIGNATURE = "JBIL"; // JitBuilder IL
+    const char *JBIL_COMPLETE      = "Done";
+
     JitBuilderReplay();
     virtual ~JitBuilderReplay();
+
+    /**
+     * @brief Subclasses override these functions to replay from different input formats
+     * (helpers)
+     */
+
+     // virtual void readFirstLine() {}
+     // virtual char * readLine
+     // virtual bool isEndofFile
+     // virtual void tokenize
+
+     // NOTE: IDs 0 and 1 are defined at JitBuilderRecorder.cpp at start method.
+     // The code says that they are special so...
+
+     // Define Map that maps IDs to pointers
+
+     typedef uint32_t                      TypeID;
+     typedef const void *                  TypePointer;
+     typedef std::map<TypeID, TypePointer> TypeMapPointer;
+
+     protected:
+
+     const TR::MethodBuilderReplay * _mb;
+     TypeID                            _nextID;
+     TypeMapPointer                    _pointerMap;
+     uint8_t                           _idSize;
+
     };
 
  } // namespace OMR

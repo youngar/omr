@@ -120,7 +120,7 @@ main(int argc, char *argv[])
 SimpleMethod::SimpleMethod(TR::TypeDictionary *d, TR::JitBuilderRecorder *recorder)
    : MethodBuilder(d, recorder)
    {
-     
+
    DefineLine(LINETOSTR(__LINE__));
    DefineFile(__FILE__);
 

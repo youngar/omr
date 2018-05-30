@@ -39,9 +39,13 @@
   #include "ilgen/MethodBuilderReplay.hpp"
 
  OMR::MethodBuilderReplay::MethodBuilderReplay(TR::TypeDictionary *types, TR::JitBuilderReplay *replay, OMR::VirtualMachineState *vmState)
-    //: TR::IlBuilder(static_cast<TR::MethodBuilder *>(this), types)
     : TR::MethodBuilder(types)
     {
 
+    // Check if _replay is NULL. Else...
+
+    // replay()->doSomething();
+    // Call methods on _replay
+    // Maybe, _replay->storePointer(), getTokens(), parseLine() ???
 
     }

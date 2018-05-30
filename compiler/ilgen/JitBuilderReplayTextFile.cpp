@@ -25,6 +25,12 @@
 
 
  OMR::JitBuilderReplayTextFile::JitBuilderReplayTextFile(const char *fileName)
+    : TR::JitBuilderReplay()
     {
-    // start();
+    std::cout << "Hey I'm in JitBuilderReplayTextFile()\n";
+    // start(); // Start reading/parsing the file
+    // start would be implemented in JitBuilderReplay (super class)
     }
+
+    // Do the processing here?
+    // Useful http://www.cplusplus.com/reference/string/string/

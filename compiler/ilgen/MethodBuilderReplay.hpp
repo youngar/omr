@@ -46,6 +46,12 @@
 
     MethodBuilderReplay(TR::TypeDictionary *types, TR::JitBuilderReplay *replay, OMR::VirtualMachineState *vmState);
 
+    //
+
+    // protected:
+    //
+    // TR::JitBuilderReplay         * _replay;
+
     };
 
  } // namespace OMR

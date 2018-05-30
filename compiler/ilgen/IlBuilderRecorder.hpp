@@ -61,6 +61,8 @@ public:
    // create a new local value (temporary variable)
    TR::IlValue *NewValue(TR::IlType *dt);
 
+   void DoneConstructor(const char * value);
+
    // constants
    TR::IlValue *NullAddress();
    TR::IlValue *ConstInt8(int8_t value);

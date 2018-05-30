@@ -147,7 +147,8 @@ OMR::IlBuilder::injectIL()
 
    setupForBuildIL();
 
-   // TODO About to call BuildIL. Output DONE for constructor
+   // About to call BuildIL. Output DONE for constructor
+   DoneConstructor("Done");
 
    bool rc = buildIL();
    TraceIL("buildIL() returned %d\n", rc);

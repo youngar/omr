@@ -100,6 +100,18 @@ OMR::IlBuilderRecorder::restoreRecorder(TR::JitBuilderRecorder *recorder)
    }
 
 void
+OMR::IlBuilderRecorder::DoneConstructor(const char * value)
+   {
+     TR::JitBuilderRecorder *rec = recorder();
+     if (rec)
+        {
+        rec->BeginStatement(asIlBuilder(), rec->STATEMENT_DONECONSTRUCTOR);
+        rec->String(value);
+        rec->EndStatement();
+        }
+   }
+
+void
 OMR::IlBuilderRecorder::NewIlBuilder()
    {
    TR::JitBuilderRecorder *rec = recorder();
@@ -775,10 +787,10 @@ OMR::IlBuilderRecorder::Sub(TR::IlValue *left, TR::IlValue *right)
 /*
  * blockThrowsException:
  * ....
- * goto blockAfterExceptionHandler 
+ * goto blockAfterExceptionHandler
  * Handler:
  * ....
- * goto blockAfterExceptionHandler 
+ * goto blockAfterExceptionHandler
  * blockAfterExceptionHandler:
  */
 void
@@ -791,7 +803,7 @@ OMR::IlBuilderRecorder::appendExceptionHandler(TR::Block *blockThrowsException, 
    genTreeTop(gotoNode);
    _currentBlock = NULL;
    _currentBlockNumber = -1;
- 
+
    //append handler, add exception edge and merge edge
    *handler = createBuilderIfNeeded(*handler);
    TR_ASSERT(*handler != NULL, "exception handler cannot be NULL\n");
@@ -837,7 +849,7 @@ OMR::IlBuilderRecorder::genOperationWithOverflowCHK(TR::ILOpCodes op, TR::Node *
     *    store
     *       => operation
     * BB2:
-    *    goto BB3 
+    *    goto BB3
     * Handler:
     *    ...
     * BB3:
@@ -856,7 +868,7 @@ OMR::IlBuilderRecorder::genOperationWithOverflowCHK(TR::ILOpCodes op, TR::Node *
 
 // This function takes 4 arguments and generate the addValue.
 // This function is called by AddWithOverflow and AddWithUnsignedOverflow.
-TR::ILOpCodes 
+TR::ILOpCodes
 OMR::IlBuilderRecorder::getOpCode(TR::IlValue *leftValue, TR::IlValue *rightValue)
    {
    TR::ILOpCodes op;
@@ -866,14 +878,14 @@ OMR::IlBuilderRecorder::getOpCode(TR::IlValue *leftValue, TR::IlValue *rightValu
          op = TR::aiadd;
       else if (rightValue->getDataType() == TR::Int64)
          op = TR::aladd;
-      else 
+      else
          TR_ASSERT(0, "the right child type must be either TR::Int32 or TR::Int64 when the left child of Add is TR::Address\n");
-      }    
-   else 
+      }
+   else
       {
       op = addOpCode(leftValue->getDataType());
       }
-   return op; 
+   return op;
    }
 
 TR::IlValue *
@@ -1204,7 +1216,7 @@ OMR::IlBuilderRecorder::UnsignedGreaterOrEqualTo(TR::IlValue *left, TR::IlValue 
    return returnValue;
    }
 
-TR::IlValue** 
+TR::IlValue**
 OMR::IlBuilderRecorder::processCallArgs(TR::Compilation *comp, int numArgs, va_list args)
    {
    TR::IlValue ** argValues = (TR::IlValue **) comp->trMemory()->allocateHeapMemory(numArgs * sizeof(TR::IlValue *));
@@ -1216,9 +1228,9 @@ OMR::IlBuilderRecorder::processCallArgs(TR::Compilation *comp, int numArgs, va_l
    }
 
 /*
- * \param numArgs 
- *    Number of actual arguments for the method  plus 1 
- * \param ... 
+ * \param numArgs
+ *    Number of actual arguments for the method  plus 1
+ * \param ...
  *    The list is a computed address followed by the actual arguments
  */
 TR::IlValue *
@@ -1240,8 +1252,8 @@ OMR::IlBuilderRecorder::ComputedCall(const char *functionName, int32_t numArgs, 
    }
 
 /*
- * \param numArgs 
- *    Number of actual arguments for the method  plus 1 
+ * \param numArgs
+ *    Number of actual arguments for the method  plus 1
  * \param argValues
  *    the computed address followed by the actual arguments
  */
@@ -1320,11 +1332,11 @@ OMR::IlBuilderRecorder::genCall(TR::SymbolReference *methodSymRef, int32_t numAr
    }
 
 /** \brief
- *     The service is used to atomically increase memory location [\p baseAddress + \p offset] by amount of \p value. 
+ *     The service is used to atomically increase memory location [\p baseAddress + \p offset] by amount of \p value.
  *
  *  \param value
  *     The amount to increase for the memory location.
- * 
+ *
  *  \note
  *	   This service currently only supports Int32/Int64.
  *
@@ -1344,9 +1356,9 @@ OMR::IlBuilderRecorder::AtomicAddWithOffset(TR::IlValue * baseAddress, TR::IlVal
    TraceIL("IlBuilder[ %p ]::AtomicAddWithOffset (%d, %d, %d)\n", this, baseAddress->getID(), offset == NULL ? 0 : offset->getID(), value->getID());
 
    OMR::SymbolReferenceTable::CommonNonhelperSymbol atomicBitSymbol = returnType == TR::Int32 ? TR::SymbolReferenceTable::atomicAdd32BitSymbol : TR::SymbolReferenceTable::atomicAdd64BitSymbol;//lock add
-   TR::SymbolReference *methodSymRef = symRefTab()->findOrCreateCodeGenInlinedHelper(atomicBitSymbol); 
+   TR::SymbolReference *methodSymRef = symRefTab()->findOrCreateCodeGenInlinedHelper(atomicBitSymbol);
    TR::Node *callNode;
-   //Evaluator will handle if it's (baseAddress+offset) or baseAddress based on the number of children the call node have 
+   //Evaluator will handle if it's (baseAddress+offset) or baseAddress based on the number of children the call node have
    callNode = TR::Node::createWithSymRef(TR::ILOpCode::getDirectCall(returnType), offset == NULL ? 2 : 3, methodSymRef);
    callNode->setAndIncChild(0, loadValue(baseAddress));
    if (offset == NULL)
@@ -1360,17 +1372,17 @@ OMR::IlBuilderRecorder::AtomicAddWithOffset(TR::IlValue * baseAddress, TR::IlVal
       }
 
    TR::IlValue *returnValue = newValue(callNode->getDataType(), callNode);
-   return returnValue; 
+   return returnValue;
    }
 
 /** \brief
- *     The service is used to atomically increase memory location \p baseAddress by amount of \p value. 
+ *     The service is used to atomically increase memory location \p baseAddress by amount of \p value.
  *
  *  \param value
  *     The amount to increase for the memory location.
  *
  *  \note
- *     This service currently only supports Int32/Int64. 
+ *     This service currently only supports Int32/Int64.
  *
  *  \return
  *     The old value at the location \p baseAddress.
@@ -1378,7 +1390,7 @@ OMR::IlBuilderRecorder::AtomicAddWithOffset(TR::IlValue * baseAddress, TR::IlVal
 TR::IlValue *
 OMR::IlBuilderRecorder::AtomicAdd(TR::IlValue * baseAddress, TR::IlValue * value)
    {
-   return AtomicAddWithOffset(baseAddress, NULL, value);    
+   return AtomicAddWithOffset(baseAddress, NULL, value);
    }
 
 
@@ -1388,7 +1400,7 @@ OMR::IlBuilderRecorder::AtomicAdd(TR::IlValue * baseAddress, TR::IlValue * value
  *  At the end of transaction path, service will automatically generate transaction end instruction.
  *
  * \verbatim
- *   
+ *
  *    +---------------------------------+
  *    |<block_$tstart>                  |
  *    |==============                   |
@@ -1401,8 +1413,8 @@ OMR::IlBuilderRecorder::AtomicAdd(TR::IlValue * baseAddress, TR::IlValue * value
  *    +---------------------------------+                         |                                  |
  *                       |                                        |                                  |
  *                       v                                        V                                  V
- *    +-----------------------------------------+   +-------------------------------+    +-------------------------+     
- *    |<block_$transaction>                     |   |<block_$persistentFailure>     |    |<block_$transientFailure>|      
+ *    +-----------------------------------------+   +-------------------------------+    +-------------------------+
+ *    |<block_$transaction>                     |   |<block_$persistentFailure>     |    |<block_$transientFailure>|
  *    |====================                     |   |===========================    |    |=========================|
  *    |     add (For illustration, we take add  |   |AtomicAdd (For illustration, we|    |   ...                   |
  *    |     ... as an example. User could       |   |...       take atomicAdd as an |    |   ...                   |
@@ -1416,21 +1428,21 @@ OMR::IlBuilderRecorder::AtomicAdd(TR::IlValue * baseAddress, TR::IlValue * value
  *                      |                                          |                                 |
  *                      |------------------------------------------+---------------------------------+
  *                      |
- *                      v             
- *              +----------------+     
- *              | block_$merge   |     
- *              | ============== |   
+ *                      v
+ *              +----------------+
+ *              | block_$merge   |
+ *              | ============== |
  *              |      ...       |
- *              +----------------+   
+ *              +----------------+
  *
- * \endverbatim 
+ * \endverbatim
  *
  * \structure & \param value
  *     tstart
  *       |
  *       ----persistentFailure // This is a permanent failure, try atomic way to do it instead
  *       |
- *       ----transientFailure // Temporary failure, user can retry 
+ *       ----transientFailure // Temporary failure, user can retry
  *       |
  *       ----transaction // Success, use general(non-atomic) way to do it
  *                |
@@ -1444,21 +1456,21 @@ OMR::IlBuilderRecorder::AtomicAdd(TR::IlValue * baseAddress, TR::IlValue * value
  *      If user's platform doesn't support TM, go to persistentFailure path directly/
  *      In this case, current IlBuilder walks around transientFailureBuilder and transactionBuilder
  *      and goes to persistentFailureBuilder.
- *      
+ *
  *      _currentBuilder
  *          |
  *          ->Goto()
- *              |   transientFailureBuilder 
+ *              |   transientFailureBuilder
  *              |   transactionBuilder
  *              |-->persistentFailurie
  */
 void
 OMR::IlBuilderRecorder::Transaction(TR::IlBuilder **persistentFailureBuilder, TR::IlBuilder **transientFailureBuilder, TR::IlBuilder **transactionBuilder)
-   {   
-   //This assertion is to rule out platforms which don't have tstart evaluator yet. 
-   TR_ASSERT(comp()->cg()->hasTMEvaluator(), "this platform doesn't support tstart or tfinish evaluator yet");   
-    
-   //ILB_REPLAY("%s->TransactionBegin(%s, %s, %s);", REPLAY_BUILDER(this), REPLAY_BUILDER(persistentFailureBuilder), REPLAY_BUILDER(transientFailureBuilder), REPLAY_BUILDER(transactionBuilder)); 
+   {
+   //This assertion is to rule out platforms which don't have tstart evaluator yet.
+   TR_ASSERT(comp()->cg()->hasTMEvaluator(), "this platform doesn't support tstart or tfinish evaluator yet");
+
+   //ILB_REPLAY("%s->TransactionBegin(%s, %s, %s);", REPLAY_BUILDER(this), REPLAY_BUILDER(persistentFailureBuilder), REPLAY_BUILDER(transientFailureBuilder), REPLAY_BUILDER(transactionBuilder));
    TraceIL("IlBuilder[ %p ]::transactionBegin %p, %p, %p, %p)\n", this, *persistentFailureBuilder, *transientFailureBuilder, *transactionBuilder);
 
    appendBlock();
@@ -1487,12 +1499,12 @@ OMR::IlBuilderRecorder::Transaction(TR::IlBuilder **persistentFailureBuilder, TR
    TR::Node *transientFailureNode = TR::Node::create(TR::branch, 0, (*transientFailureBuilder)->getEntry()->getEntry());
    TR::Node *transactionNode = TR::Node::create(TR::branch, 0, (*transactionBuilder)->getEntry()->getEntry());
 
-   TR::Node *tStartNode = TR::Node::create(TR::tstart, 3, persistentFailureNode, transientFailureNode, transactionNode);   
+   TR::Node *tStartNode = TR::Node::create(TR::tstart, 3, persistentFailureNode, transientFailureNode, transactionNode);
    tStartNode->setSymbolReference(comp()->getSymRefTab()->findOrCreateTransactionEntrySymbolRef(comp()->getMethodSymbol()));
-   
+
    genTreeTop(tStartNode);
 
-   //connecting the block having tstart with persistentFailure's and transaction's blocks 
+   //connecting the block having tstart with persistentFailure's and transaction's blocks
    cfg()->addEdge(_currentBlock, (*persistentFailureBuilder)->getEntry());
    cfg()->addEdge(_currentBlock, (*transientFailureBuilder)->getEntry());
    cfg()->addEdge(_currentBlock, (*transactionBuilder)->getEntry());
@@ -1505,7 +1517,7 @@ OMR::IlBuilderRecorder::Transaction(TR::IlBuilder **persistentFailureBuilder, TR
    gotoBlock(mergeBlock);
 
    AppendBuilder(*transactionBuilder);
-    
+
    //ending the transaction at the end of transactionBuilder
    appendBlock();
    TR::Node *tEndNode=TR::Node::create(TR::tfinish,0);
@@ -1514,7 +1526,7 @@ OMR::IlBuilderRecorder::Transaction(TR::IlBuilder **persistentFailureBuilder, TR
 
    //Three IlBuilders above merged here
    appendBlock(mergeBlock);
-   }  
+   }
 
 
 /**
