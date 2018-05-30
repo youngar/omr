@@ -71,6 +71,8 @@
      TypeMapPointer                    _pointerMap;
      uint8_t                           _idSize;
 
+     // set method builder
+
     };
 
  } // namespace OMR

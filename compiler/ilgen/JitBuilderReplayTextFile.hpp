@@ -39,6 +39,16 @@
     {
     public:
     JitBuilderReplayTextFile(const char *fileName);
+
+    void processFirstLineFromTextFile();
+    std::string getLineFromTextFile();
+    char * getTokensFromLine(std::string);
+    const char * SPACE = " ";
+
+    private:
+    std::fstream _file;
+
+    // extract tokens from line -- strtok
     };
 
  } // namespace OMR

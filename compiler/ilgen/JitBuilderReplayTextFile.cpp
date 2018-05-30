@@ -17,6 +17,7 @@
  *******************************************************************************/
 
  #include <stdint.h>
+ #include <cstring>
  #include <iostream>
  #include <fstream>
 
@@ -25,12 +26,54 @@
 
 
  OMR::JitBuilderReplayTextFile::JitBuilderReplayTextFile(const char *fileName)
-    : TR::JitBuilderReplay()
+    : TR::JitBuilderReplay(), _file(fileName, std::fstream::in)
     {
-    std::cout << "Hey I'm in JitBuilderReplayTextFile()\n";
+    // std::cout << "Hey I'm in JitBuilderReplayTextFile()\n";
     // start(); // Start reading/parsing the file
     // start would be implemented in JitBuilderReplay (super class)
+
+    processFirstLineFromTextFile();
+    std::cout << ">>> Start reading 2nd line and BEYOND!" << '\n';
+    while (getLineFromTextFile() != "\0")
+    {
+
     }
+
+    }
+
+std::string
+OMR::JitBuilderReplayTextFile::getLineFromTextFile()
+   {
+   std::string line;
+   std::getline(_file, line);
+   std::cout << ">>> " << line << '\n';
+   return line;
+   }
+
+void
+OMR::JitBuilderReplayTextFile::processFirstLineFromTextFile()
+   {
+      char * token = getTokensFromLine(getLineFromTextFile());
+
+      while (token != NULL) {
+         std::cout << token << '\n';
+         token = std::strtok(NULL, SPACE);
+      }
+   }
+
+char *
+OMR::JitBuilderReplayTextFile::getTokensFromLine(std::string currentLine)
+   {
+      char * line = strdup(currentLine.c_str());
+
+      char * token = std::strtok(line, SPACE);
+      //
+      // while (token != NULL) {
+      //    std::cout << token << '\n';
+      //    token = std::strtok(NULL, SPACE);
+      // }
+      return token;
+   }
 
     // Do the processing here?
     // Useful http://www.cplusplus.com/reference/string/string/
