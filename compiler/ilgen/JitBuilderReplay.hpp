@@ -50,10 +50,22 @@
      * (helpers)
      */
 
-     // virtual void readFirstLine() {}
-     // virtual char * readLine
-     // virtual bool isEndofFile
-     // virtual void tokenize
+     virtual void initializeMethodBuilder(TR::MethodBuilderReplay * replay);
+
+     virtual void StoreReservedIDs();
+
+     virtual void handleMethodBuilder(char * tokens)     { }
+
+     virtual void handleDefineLine(char * tokens)        { }
+     virtual void handleDefineFile(char * tokens)        { }
+     virtual void handleDefineName(char * tokens)        { }
+     virtual void handleDefineReturnType(char * tokens)  { }
+
+     virtual void handleAdd(char * tokens)        { }
+     virtual void handleLoad(char * tokens)       { }
+     virtual void handleConstInt32(char * tokens) { }
+     virtual void handleReturn(char * tokens)     { }
+     virtual bool handleService(char * service)   { return false; }
 
      // NOTE: IDs 0 and 1 are defined at JitBuilderRecorder.cpp at start method.
      // The code says that they are special so...
@@ -62,11 +74,12 @@
 
      typedef uint32_t                      TypeID;
      typedef const void *                  TypePointer;
+     virtual void StoreIDPointerPair(TypeID, TypePointer);
      typedef std::map<TypeID, TypePointer> TypeMapPointer;
 
      protected:
 
-     const TR::MethodBuilderReplay * _mb;
+     const TR::MethodBuilderReplay *   _mb;
      TypeID                            _nextID;
      TypeMapPointer                    _pointerMap;
      uint8_t                           _idSize;

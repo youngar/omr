@@ -73,15 +73,23 @@ main(int argc, char *argv[])
    if (jitBuilderShouldCompile)
       {
       cout << "Step 4: invoke compiled code and print results\n";
-      typedef int32_t (SimpleMethodFunction)(int32_t);
+      // typedef int32_t (SimpleMethodFunction)(int32_t);
+      typedef int32_t (SimpleMethodFunction)();
       SimpleMethodFunction *increment = (SimpleMethodFunction *) entry;
 
-      int32_t v;
-      v=0; cout << "increment(" << v << ") == " << increment(v) << "\n";
-      v=1; cout << "increment(" << v << ") == " << increment(v) << "\n";
-      v=10; cout << "increment(" << v << ") == " << increment(v) << "\n";
-      v=-15; cout << "increment(" << v << ") == " << increment(v) << "\n";
+      cout << "Returning: " << increment() << "\n";
 
+      // *****************************************************************
+      // MOST SIMPLE SIMPLE.cpp
+      // int32_t v;
+      // v=0; cout << "increment(" << v << ") == " << increment(v) << "\n";
+      // v=1; cout << "increment(" << v << ") == " << increment(v) << "\n";
+      // v=10; cout << "increment(" << v << ") == " << increment(v) << "\n";
+      // v=-15; cout << "increment(" << v << ") == " << increment(v) << "\n";
+
+
+      // *****************************************************************
+      // COMPLICATED SIMPLE.cpp
       // int32_t v, u;
       // v=0; u=1;  cout << "increment(" << v << "+" << u << ") == " << increment(v,u) << "\n";
       // v=1; u=5;  cout << "increment(" << v << "+" << u << ") == " << increment(v,u) << "\n";
@@ -125,7 +133,11 @@ SimpleMethod::SimpleMethod(TR::TypeDictionary *d, TR::JitBuilderRecorder *record
    DefineFile(__FILE__);
 
    DefineName("increment");
-   DefineParameter("value", Int32);
+
+   // ORIGINAL SIMPLE.cpp
+   // DefineParameter("value", Int32);
+
+   // COMPLICATED SIMPLE.cpp
    // DefineParameter("value1", Int32);
    // DefineParameter("value2", Int32);
    DefineReturnType(Int32);
@@ -135,10 +147,20 @@ bool
 SimpleMethod::buildIL()
    {
    cout << "SimpleMethod::buildIL() running!\n";
+
+   // MOST SIMPLE SIMPLE.cpp
    Return(
-      Add(
-         Load("value"),
-         ConstInt32(1)));
+      ConstInt32(88));
+
+   // *****************************************************************
+   // ORIGINAL SIMPLE.cpp
+   // Return(
+   //    Add(
+   //       Load("value"),
+   //       ConstInt32(1)));
+
+   // *****************************************************************
+   // COMPLICATED SIMPLE.cpp
    // Return(
    //    Add(
    //      Add(

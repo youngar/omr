@@ -36,15 +36,25 @@
  #include "ilgen/VirtualMachineState.hpp"
  #include "ilgen/JitBuilderReplayTextFile.hpp"
 
+  #include "infra/Assert.hpp"
+
   #include "ilgen/MethodBuilderReplay.hpp"
 
  OMR::MethodBuilderReplay::MethodBuilderReplay(TR::TypeDictionary *types, TR::JitBuilderReplay *replay, OMR::VirtualMachineState *vmState)
     : TR::MethodBuilder(types)
     {
 
-    // Check if _replay is NULL. Else...
+    setReplay(replay); // _mb = replay
 
-    // replay()->doSomething();
+    TR::JitBuilderReplay *rep = _replay;
+    if(rep)
+       {
+           rep->initializeMethodBuilder(static_cast<TR::MethodBuilderReplay *>(this));
+       }
+    else
+       {
+           TR_ASSERT_FATAL(false, "Replay not defined");
+       }
     // Call methods on _replay
     // Maybe, _replay->storePointer(), getTokens(), parseLine() ???
 

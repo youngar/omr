@@ -46,11 +46,11 @@
 
     MethodBuilderReplay(TR::TypeDictionary *types, TR::JitBuilderReplay *replay, OMR::VirtualMachineState *vmState);
 
-    //
+    void setReplay(TR::JitBuilderReplay *replay) { _replay = replay; }
 
-    // protected:
-    //
-    // TR::JitBuilderReplay         * _replay;
+    protected:
+
+    TR::JitBuilderReplay         * _replay;
 
     };
 

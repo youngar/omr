@@ -20,7 +20,6 @@
  #include <cstring>
  #include <iostream>
  #include <fstream>
-
  #include "infra/Assert.hpp"
  #include "ilgen/JitBuilderReplayTextFile.hpp"
 
@@ -54,6 +53,8 @@ void
 OMR::JitBuilderReplayTextFile::processFirstLineFromTextFile()
    {
       char * token = getTokensFromLine(getLineFromTextFile());
+
+      // TR_ASSERT(16 < 10, "Test assertion with digit:  %d", 100);
 
       while (token != NULL) {
          std::cout << token << '\n';
