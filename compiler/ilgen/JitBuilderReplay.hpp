@@ -41,6 +41,7 @@
 
     const char *RECORDER_SIGNATURE = "JBIL"; // JitBuilder IL
     const char *JBIL_COMPLETE      = "Done";
+    enum MethodFlag { CONSTRUCTOR_FLAG, BUILDIL_FLAG };
 
     JitBuilderReplay();
     virtual ~JitBuilderReplay();
@@ -50,8 +51,11 @@
      * (helpers)
      */
 
+     virtual void start();
      virtual void initializeMethodBuilder(TR::MethodBuilderReplay * replay);
-
+     virtual void parseIL(MethodFlag methodFlag);
+     virtual bool parseConstructor()              { return false; }
+     virtual bool parseBuildIl()                  { return false; }
      virtual void StoreReservedIDs();
 
      virtual void handleMethodBuilder(char * tokens)     { }
@@ -78,7 +82,6 @@
      typedef std::map<TypeID, TypePointer> TypeMapPointer;
 
      protected:
-
      const TR::MethodBuilderReplay *   _mb;
      TypeID                            _nextID;
      TypeMapPointer                    _pointerMap;

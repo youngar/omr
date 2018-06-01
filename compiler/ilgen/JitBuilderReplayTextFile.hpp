@@ -40,9 +40,14 @@
     public:
     JitBuilderReplayTextFile(const char *fileName);
 
+    void start();
     void processFirstLineFromTextFile();
     std::string getLineFromTextFile();
     char * getTokensFromLine(std::string);
+
+    bool parseConstructor();
+    bool parseBuildIl();
+
     const char * SPACE = " ";
 
     private:

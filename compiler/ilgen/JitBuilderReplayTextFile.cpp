@@ -30,8 +30,7 @@
     // std::cout << "Hey I'm in JitBuilderReplayTextFile()\n";
     // start(); // Start reading/parsing the file
     // start would be implemented in JitBuilderReplay (super class)
-
-    processFirstLineFromTextFile();
+    start();
     std::cout << ">>> Start reading 2nd line and BEYOND!" << '\n';
     while (getLineFromTextFile() != "\0")
     {
@@ -39,6 +38,12 @@
     }
 
     }
+
+void
+OMR::JitBuilderReplayTextFile::start() {
+   JitBuilderReplay::start();
+   processFirstLineFromTextFile();
+}
 
 std::string
 OMR::JitBuilderReplayTextFile::getLineFromTextFile()
@@ -76,5 +81,25 @@ OMR::JitBuilderReplayTextFile::getTokensFromLine(std::string currentLine)
       return token;
    }
 
+bool
+OMR::JitBuilderReplayTextFile::parseConstructor()
+   {
+      // get a line
+      // get tokens from the line
+      // if DEF is seen: eg. Def A# "length [STRING]" --> 4 tokens
+         // Def
+         // A#
+         // "length <-- use this length to find out how many chars to keep from next token after first char
+         // [STRING]"
+         // put pointer value at given ID in table --> what is this pointer value?????
+      // if B[#] is seen == operation is seen: eg. B2 S4
+         // B2
+   }
+
+bool
+OMR::JitBuilderReplayTextFile::parseBuildIl()
+   {
+
+   }
     // Do the processing here?
     // Useful http://www.cplusplus.com/reference/string/string/

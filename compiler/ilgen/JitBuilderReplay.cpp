@@ -35,6 +35,11 @@
     }
 
 void
+OMR::JitBuilderReplay::start() {
+   StoreReservedIDs();
+}
+
+void
 OMR::JitBuilderReplay::StoreReservedIDs()
    {
       StoreIDPointerPair(0, 0);
@@ -56,4 +61,15 @@ OMR::JitBuilderReplay::StoreIDPointerPair(TypeID ID, TypePointer ptr)
         TR_ASSERT_FATAL(0, "Unexpected pointer already defined for ID %d", ID);
 
      _pointerMap.insert(std::make_pair(ID, ptr));
+   }
+
+void
+OMR::JitBuilderReplay::parseIL(MethodFlag methodFlag)
+   {
+      if (methodFlag == CONSTRUCTOR_FLAG) {
+         parseConstructor();          // read until DoneConstructor token
+      }
+      else if (methodFlag == BUILDIL_FLAG) {
+         parseBuildIl();              // read until Done token
+      }
    }

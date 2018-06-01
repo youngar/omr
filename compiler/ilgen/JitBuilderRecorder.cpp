@@ -138,6 +138,11 @@ OMR::JitBuilderRecorder::StoreID(const void *ptr)
       TR_ASSERT_FATAL(0, "Unexpected ID already defined for address %p", ptr);
 
    _idMap.insert(std::make_pair(ptr, getNewID()));
+   // std::cout << "map: " << _idMap << '\n';
+   // auto pair = std::make_pair(ptr, getNewID());
+   // _idMap.insert(pair);
+   // std::cout << "pointer: " << pair.first << '\n';
+   // std::cout << "id: " << pair.second << '\n';
    }
 
 bool

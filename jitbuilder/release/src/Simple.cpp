@@ -104,7 +104,7 @@ main(int argc, char *argv[])
       jitBuilderShouldCompile = true;
       TR::JitBuilderReplayTextFile replay("simple.out");
       //
-      // TR::MethodBuilderReplay mb(&replay, &entry);
+      // TR::MethodBuilderReplay mb(&types, &replay, &entry);
       //
       // int32_t rc = compileMethodBuilder(&mb, &entry);
       // typedef int32_t (SimpleMethodFunction)(int32_t);
@@ -130,6 +130,7 @@ SimpleMethod::SimpleMethod(TR::TypeDictionary *d, TR::JitBuilderRecorder *record
    {
 
    DefineLine(LINETOSTR(__LINE__));
+   // cout << LINETOSTR(__LINE__) << " // CHECKING VALUE OF DEFINELINE \n";
    DefineFile(__FILE__);
 
    DefineName("increment");
