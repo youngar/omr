@@ -55,7 +55,5 @@
        {
            TR_ASSERT_FATAL(false, "Replay not defined");
        }
-    // Call methods on _replay
-    // Maybe, _replay->storePointer(), getTokens(), parseLine() ???
 
     }

@@ -48,6 +48,22 @@
     bool parseConstructor();
     bool parseBuildIl();
 
+    void addIDPointerPairToMap(char * tokens);
+
+    bool handleService(char * tokens);
+
+    // typedef uint32_t              TypeID;
+
+    // Def S4 "16 [DefineLineString]"
+    // B2 S4 "3 [132]"
+    // Should we insert in the map map.insert(4, pointer to DefineLineString)
+    // and then on the next line call _mb.DefineLineString with parameter 132?
+    // Or
+    // In the first line we know we will call DefineLine() passing a string as a parameter
+    // In the next line we construct DefineLine("132") and store in the map
+    // the pair [4: pointer to DefineLine("132")]
+    uint32_t getNumberFromToken(char * token);
+
     const char * SPACE = " ";
 
     private:
