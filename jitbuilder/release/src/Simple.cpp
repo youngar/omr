@@ -29,9 +29,9 @@
 
 #include "Jit.hpp"
 #include "ilgen/TypeDictionary.hpp"
-#include "ilgen/MethodBuilder.hpp"
 #include "ilgen/JitBuilderRecorderTextFile.hpp"
 #include "ilgen/JitBuilderReplayTextFile.hpp"
+#include "ilgen/MethodBuilderReplay.hpp"
 #include "Simple.hpp"
 
 using std::cout;
@@ -104,7 +104,7 @@ main(int argc, char *argv[])
       jitBuilderShouldCompile = true;
       TR::JitBuilderReplayTextFile replay("simple.out");
       //
-      // TR::MethodBuilderReplay mb(&types, &replay, &entry);
+      TR::MethodBuilderReplay mb(&types, &replay);
       //
       // int32_t rc = compileMethodBuilder(&mb, &entry);
       // typedef int32_t (SimpleMethodFunction)(int32_t);

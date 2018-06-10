@@ -43,14 +43,14 @@ void
 OMR::JitBuilderReplay::StoreReservedIDs()
    {
       StoreIDPointerPair(0, 0);
-      StoreIDPointerPair(1, (const void *)1);
+      StoreIDPointerPair(1, (void *)1);
    }
 
 void
 OMR::JitBuilderReplay::initializeMethodBuilder(TR::MethodBuilderReplay * replay)
    {
        _mb = replay;
-       StoreIDPointerPair(2, _mb);
+       StoreIDPointerPair((TypeID)2, replay);
    }
 
 void
@@ -63,13 +63,13 @@ OMR::JitBuilderReplay::StoreIDPointerPair(TypeID ID, TypePointer ptr)
      _pointerMap.insert(std::make_pair(ID, ptr));
    }
 
-void
-OMR::JitBuilderReplay::parseIL(MethodFlag methodFlag)
+OMR::JitBuilderReplay::TypePointer
+OMR::JitBuilderReplay::lookupPointer(TypeID id)
    {
-      if (methodFlag == CONSTRUCTOR_FLAG) {
-         parseConstructor();          // read until DoneConstructor token
-      }
-      else if (methodFlag == BUILDIL_FLAG) {
-         parseBuildIl();              // read until Done token
-      }
+     TypeMapPointer::iterator it = _pointerMap.find(id);
+     if (it == _pointerMap.end())
+        TR_ASSERT_FATAL(0, "Attempt to lookup an id that has not yet been created");
+
+     TypePointer pointer = it->second;
+     return pointer;
    }

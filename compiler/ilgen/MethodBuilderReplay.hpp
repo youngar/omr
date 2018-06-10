@@ -44,7 +44,7 @@
     {
     public:
 
-    MethodBuilderReplay(TR::TypeDictionary *types, TR::JitBuilderReplay *replay, OMR::VirtualMachineState *vmState);
+    MethodBuilderReplay(TR::TypeDictionary *types, TR::JitBuilderReplay *replay);
 
     void setReplay(TR::JitBuilderReplay *replay) { _replay = replay; }
 
@@ -64,11 +64,11 @@
     class MethodBuilderReplay : public OMR::MethodBuilderReplay
        {
        public:
-          MethodBuilderReplay(TR::TypeDictionary *types, TR::JitBuilderReplay *replay)
-             : OMR::MethodBuilderReplay(types, replay, NULL)
-             { }
-          MethodBuilderReplay(TR::TypeDictionary *types, TR::JitBuilderReplay *replay=NULL, OMR::VirtualMachineState *vmState=NULL)
-             : OMR::MethodBuilderReplay(types, replay, vmState)
+          // MethodBuilderReplay(TR::TypeDictionary *types, TR::JitBuilderReplay *replay)
+          //    : OMR::MethodBuilderReplay(types, replay)
+          //    { }
+          MethodBuilderReplay(TR::TypeDictionary *types, TR::JitBuilderReplay *replay=NULL)
+             : OMR::MethodBuilderReplay(types, replay)
              { }
        };
 

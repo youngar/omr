@@ -27,6 +27,7 @@
 
 
  #include "ilgen/JitBuilderReplay.hpp"
+ #include "ilgen/IlBuilderRecorder.hpp"
 
  #include <iostream>
  #include <fstream>
@@ -38,6 +39,10 @@
  class JitBuilderReplayTextFile : public TR::JitBuilderReplay
     {
     public:
+
+    // enum to handle Service method to distinguish between a MethodBuilder and an IlBuilder
+    enum BuilderFlag {METHOD_BUILDER, IL_BUILDER};
+
     JitBuilderReplayTextFile(const char *fileName);
 
     void start();
@@ -46,22 +51,26 @@
     char * getTokensFromLine(std::string);
 
     bool parseConstructor();
-    bool parseBuildIl();
+    bool parseBuildIL();
 
     void addIDPointerPairToMap(char * tokens);
+    char * getServiceStringFromToken(uint32_t strLen, char * tokens);
+    const char * getServiceStringFromMap(char ** tokens);
 
-    bool handleService(char * tokens);
+    bool handleService(BuilderFlag builderFlag, char * tokens);
+    bool handleServiceMethodBuilder(uint32_t mbID, char * tokens);
+    bool handleServiceIlBuilder(uint32_t mbID, char * tokens);
+
+    void handleMethodBuilder(uint32_t serviceID, char * tokens);
+    void handleDefineLine(TR::MethodBuilder * mb, char * tokens);
+    void handleDefineFile(TR::MethodBuilder * mb, char * tokens);
+    void handleDefineName(TR::MethodBuilder * mb, char * tokens);
+    void handlePrimitiveType(TR::MethodBuilder * mb, char * tokens);
+    void handleDefineReturnType(TR::MethodBuilder * mb, char * tokens);
+
+    void handleConstInt32(TR::IlBuilder * ilmb, char * tokens);
 
     // typedef uint32_t              TypeID;
-
-    // Def S4 "16 [DefineLineString]"
-    // B2 S4 "3 [132]"
-    // Should we insert in the map map.insert(4, pointer to DefineLineString)
-    // and then on the next line call _mb.DefineLineString with parameter 132?
-    // Or
-    // In the first line we know we will call DefineLine() passing a string as a parameter
-    // In the next line we construct DefineLine("132") and store in the map
-    // the pair [4: pointer to DefineLine("132")]
     uint32_t getNumberFromToken(char * token);
 
     const char * SPACE = " ";

@@ -34,13 +34,13 @@
  #include "ilgen/BytecodeBuilder.hpp"
  #include "ilgen/TypeDictionary.hpp"
  #include "ilgen/VirtualMachineState.hpp"
- #include "ilgen/JitBuilderReplayTextFile.hpp"
+ // #include "ilgen/JitBuilderReplayTextFile.hpp"
 
   #include "infra/Assert.hpp"
 
   #include "ilgen/MethodBuilderReplay.hpp"
 
- OMR::MethodBuilderReplay::MethodBuilderReplay(TR::TypeDictionary *types, TR::JitBuilderReplay *replay, OMR::VirtualMachineState *vmState)
+ OMR::MethodBuilderReplay::MethodBuilderReplay(TR::TypeDictionary *types, TR::JitBuilderReplay *replay)
     : TR::MethodBuilder(types)
     {
 
@@ -50,10 +50,13 @@
     if(rep)
        {
            rep->initializeMethodBuilder(static_cast<TR::MethodBuilderReplay *>(this));
+           std::cout << "MethodBuilderReplay initialized.\n";
        }
     else
        {
            TR_ASSERT_FATAL(false, "Replay not defined");
        }
 
+    rep->parseConstructor();
+    rep->parseBuildIL();
     }
