@@ -103,13 +103,28 @@ main(int argc, char *argv[])
 
       jitBuilderShouldCompile = true;
       TR::JitBuilderReplayTextFile replay("simple.out");
-      //
+
       TR::MethodBuilderReplay mb(&types, &replay);
-      //
-      // int32_t rc = compileMethodBuilder(&mb, &entry);
-      // typedef int32_t (SimpleMethodFunction)(int32_t);
-      // SimpleMethodFunction *increment = (SimpleMethodFunction* ) entry;
-      //
+
+      int32_t rc = compileMethodBuilder(&mb, &entry);
+      typedef int32_t (SimpleMethodFunction)();
+      SimpleMethodFunction *increment = (SimpleMethodFunction* ) entry;
+
+      cout << "Returning: " << increment() << "\n";
+
+      // record again
+      TR::JitBuilderRecorderTextFile recorder2(NULL, "simple2.out");
+
+      cout << "Step 3: compile method builder\n";
+      SimpleMethod method2(&types, &recorder2);
+
+      uint8_t *entry2 = 0;
+      int32_t rc2 = compileMethodBuilder(&method2, &entry2);
+      if (rc2 != 0)
+         {
+         cerr << "FAIL: compilation error " << rc2 << "\n";
+         exit(-2);
+         }
       // int32_t v;
       // v=0;   cout << "increment(" << v << ") == " << increment(v) << "\n";
       // v=1;   cout << "increment(" << v << ") == " << increment(v) << "\n";

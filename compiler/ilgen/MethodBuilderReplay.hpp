@@ -47,6 +47,7 @@
     MethodBuilderReplay(TR::TypeDictionary *types, TR::JitBuilderReplay *replay);
 
     void setReplay(TR::JitBuilderReplay *replay) { _replay = replay; }
+    virtual bool buildIL();
 
     protected:
 

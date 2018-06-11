@@ -26,16 +26,13 @@
  #include "ilgen/MethodBuilder.hpp"
  #include "ilgen/JitBuilderReplay.hpp"
  #include "ilgen/TypeDictionary.hpp"
+  #include "ilgen/IlBuilder.hpp"
 
  OMR::JitBuilderReplayTextFile::JitBuilderReplayTextFile(const char *fileName)
     : TR::JitBuilderReplay(), _file(fileName, std::fstream::in)
     {
-    // std::cout << "Hey I'm in JitBuilderReplayTextFile()\n";
-    // start(); // Start reading/parsing the file
-    // start would be implemented in JitBuilderReplay (super class)
     start();
     std::cout << ">>> Start reading 2nd line and BEYOND!" << '\n';
-    // parseConstructor(); // Now called in MethodBuilderReplay
     }
 
 void
@@ -49,7 +46,6 @@ OMR::JitBuilderReplayTextFile::getLineFromTextFile()
    {
    std::string line;
    std::getline(_file, line);
-   // std::cout << ">>> " << line << '\n';
    return line;
    }
 
@@ -58,10 +54,7 @@ OMR::JitBuilderReplayTextFile::processFirstLineFromTextFile()
    {
       char * token = getTokensFromLine(getLineFromTextFile());
 
-      // TR_ASSERT(16 < 10, "Test assertion with digit:  %d", 100);
-
       while (token != NULL) {
-         std::cout << token << '\n';
          token = std::strtok(NULL, SPACE);
       }
    }
@@ -70,13 +63,8 @@ char *
 OMR::JitBuilderReplayTextFile::getTokensFromLine(std::string currentLine)
    {
       char * line = strdup(currentLine.c_str());
-
       char * token = std::strtok(line, SPACE);
-      //
-      // while (token != NULL) {
-      //    std::cout << token << '\n';
-      //    token = std::strtok(NULL, SPACE);
-      // }
+
       return token;
    }
 
@@ -96,7 +84,7 @@ OMR::JitBuilderReplayTextFile::getNumberFromToken(char * token)
        else if(token[1])
           {
              IDtoReturn = atoi(&token[1]);
-             std::cout << "Token found: " << token << ". uint32_t #: " << IDtoReturn << '\n';
+             // std::cout << "Token found: " << token << ". uint32_t #: " << IDtoReturn << '\n';
           }
        else
           {
@@ -117,20 +105,16 @@ OMR::JitBuilderReplayTextFile::addIDPointerPairToMap(char * tokens)
 
        char * idPointer = getServiceStringFromToken(strLen, tokens);
 
-       std::cout << "Storing ID: " << ID << ", and pointer: " << idPointer << ", to the map." << '\n';
+       // std::cout << "Storing ID: " << ID << ", and pointer: " << idPointer << ", to the map." << '\n';
        StoreIDPointerPair(ID, idPointer);
-       std::cout << "idPointer: " << idPointer << '\n';
    }
 
 char *
 OMR::JitBuilderReplayTextFile::getServiceStringFromToken(uint32_t strLen, char * tokens)
    {
      char idPointerStr[strLen];
-
-     std::cout << "&tokens[1]: " << &tokens[1] << '\n';
      strncpy(idPointerStr, &tokens[1], sizeof(idPointerStr));
      idPointerStr[strLen] = '\0';
-     std::cout << "&tokens[1] AFTER: " << idPointerStr << '\n';
 
      return strdup(idPointerStr);
    }
@@ -142,9 +126,7 @@ OMR::JitBuilderReplayTextFile::getServiceStringFromMap(char ** tokens)
      temp = std::strtok(NULL, SPACE);
      uint32_t serviceID = getNumberFromToken(temp);
 
-     std::cout << "Service ID: " << serviceID << '\n';
      const char * serviceString = static_cast<const char *>(lookupPointer(serviceID));
-     std::cout << "Service string: " << serviceString << '\n';
      temp = std::strtok(NULL, SPACE);
 
      *tokens = temp;
@@ -155,17 +137,12 @@ OMR::JitBuilderReplayTextFile::getServiceStringFromMap(char ** tokens)
 bool
 OMR::JitBuilderReplayTextFile::handleService(BuilderFlag builderFlag, char * tokens)
    {
-       // Each if statement for each service will handle the tokens accordingly
-       // tokens: "B2 S5 "14 [src/Simple.cpp]""
        bool handleServiceFlag = true;
 
-       // Get methodBuilder/IlBuilder
        uint32_t mbID = getNumberFromToken(tokens);
-       std::cout << "Looking up in JitBuilderReplay mbID: " << mbID << '\n';
 
        if(builderFlag == METHOD_BUILDER)
           {
-              // builder = static_cast<const TR::MethodBuilder *>(lookupPointer(mbID));
               // divides work into handleServiceMethodBuilder and handleServiceIlBuilder
               handleServiceFlag = handleServiceMethodBuilder(mbID, tokens);
           }
@@ -189,7 +166,7 @@ OMR::JitBuilderReplayTextFile::handleServiceMethodBuilder(uint32_t mbID, char * 
    // Therefore, tokens will contain 1 to 3 tokens at the most
 
    // Here we have the builder and the service to be called
-   // Starting checking if else if statements to call each service
+   // Starting to check if else if statements to call each service
    if(strcmp(serviceString, STATEMENT_NEWMETHODBUILDER) == 0)
       {
       handleMethodBuilder(mbID, tokens);
@@ -234,7 +211,11 @@ OMR::JitBuilderReplayTextFile::handleServiceIlBuilder(uint32_t mbID, char * toke
       if(strcmp(serviceString, STATEMENT_CONSTINT32) == 0)
          {
          handleConstInt32(ilmb, tokens);
-         return false;
+         }
+      else if(strcmp(serviceString, STATEMENT_RETURNVALUE) == 0)
+         {
+         handleReturnValue(ilmb, tokens);
+         return true;
          }
 
       return true;
@@ -303,8 +284,6 @@ void OMR::JitBuilderReplayTextFile::handlePrimitiveType(TR::MethodBuilder * mb, 
     tokens = std::strtok(NULL, SPACE);
     uint32_t value = getNumberFromToken(tokens);
 
-    std::cout << "ID: " << ID << ", value: " << value << '\n';
-
     TR::DataType dt((TR::DataTypes)value);
     TR::IlType *type = mb->typeDictionary()->PrimitiveType(dt);
 
@@ -325,7 +304,6 @@ OMR::JitBuilderReplayTextFile::handleDefineReturnType(TR::MethodBuilder * mb, ch
 void
 OMR::JitBuilderReplayTextFile::handleConstInt32(TR::IlBuilder * ilmb, char * tokens)
    {
-   // IlValue * val = ConstInt32(val);
    // Put into map: key ID, value IlValue*
    std::cout << "Calling handleConstInt32 helper.\n";
 
@@ -333,13 +311,21 @@ OMR::JitBuilderReplayTextFile::handleConstInt32(TR::IlBuilder * ilmb, char * tok
    tokens = std::strtok(NULL, SPACE);
    uint32_t value = getNumberFromToken(tokens);
 
-   std::cout << "Found ID: " << ID << ", and value: " << value << ". Storing into map.\n";
+   // std::cout << "Found ID: " << ID << ", and value: " << value << ". Storing into map.\n";
 
-   // TODO: Call service on IlBuilder accordinly
-   // IlValue * val = ilmb->ConstInt32(value);
-   // std::cout << "/* message */aidbsaifaisufhoidfjiofjiofjsdiofjsoifjdso" << '\n';
-   // StoreIDPointerPair(ID, val);
+   IlValue * val = ilmb->ConstInt32(value);
+   StoreIDPointerPair(ID, val);
+   }
 
+void
+OMR::JitBuilderReplayTextFile::handleReturnValue(TR::IlBuilder * ilmb, char * tokens)
+   {
+      std::cout << "Calling handleReturnValue helper.\n";
+
+      uint32_t ID = getNumberFromToken(tokens);
+      TR::IlValue * value = static_cast<TR::IlValue *>(lookupPointer(ID));
+
+      ilmb->Return(value);
    }
 
 bool
@@ -368,15 +354,15 @@ OMR::JitBuilderReplayTextFile::parseConstructor()
 
             uint32_t id = getNumberFromToken(tokens);
 
-            if(id == 0) // Its DEF
+            if(id == 0) // It's DEF
                {
-                   std::cout << "I am DEF: " << tokens << '\n';
+                   // std::cout << "I am DEF: " << tokens << '\n';
                    // Store something in the table
                    addIDPointerPairToMap(tokens);
                }
             else if (tokens != NULL)  // Its probably a call to MethodBuilder
                {
-                   std::cout << "I am a builder call: " << tokens << '\n';
+                   // std::cout << "I am a builder call: " << tokens << '\n';
                    constructorFlag = handleService(METHOD_BUILDER, tokens);
                }
          }
@@ -399,19 +385,26 @@ OMR::JitBuilderReplayTextFile::parseBuildIL()
 
       uint32_t id = getNumberFromToken(tokens);
 
-      if(id == 0) // Its DEF
+      if(id == 0) // It's DEF
          {
-             std::cout << "I am DEF: " << tokens << '\n';
-             // Store something in the table
-             addIDPointerPairToMap(tokens);
+            if (tokens[0] == 'I')
+               {
+                  // std::cout << "I am ID1: " << tokens << '\n';
+                  buildIlFlag = false;
+               }
+            else
+               {
+                  // std::cout << "I am DEF: " << tokens << '\n';
+                  // Store something in the table
+                  addIDPointerPairToMap(tokens);
+               }
          }
       else if (tokens != NULL)  // Its probably a call to MethodBuilder
          {
-             std::cout << "I am a builder call: " << tokens << '\n';
+             // std::cout << "I am a builder call: " << tokens << '\n';
              buildIlFlag = handleService(IL_BUILDER, tokens);
          }
       }
-
       return buildIlFlag;
    }
     // Do the processing here?

@@ -69,8 +69,8 @@
     void handleDefineReturnType(TR::MethodBuilder * mb, char * tokens);
 
     void handleConstInt32(TR::IlBuilder * ilmb, char * tokens);
+    void handleReturnValue(TR::IlBuilder * ilmb, char * tokens);
 
-    // typedef uint32_t              TypeID;
     uint32_t getNumberFromToken(char * token);
 
     const char * SPACE = " ";
@@ -78,7 +78,6 @@
     private:
     std::fstream _file;
 
-    // extract tokens from line -- strtok
     };
 
  } // namespace OMR

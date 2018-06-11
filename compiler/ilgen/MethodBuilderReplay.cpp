@@ -58,5 +58,11 @@
        }
 
     rep->parseConstructor();
-    rep->parseBuildIL();
     }
+
+bool
+OMR::MethodBuilderReplay::buildIL()
+{
+   _replay->parseBuildIL();
+   return true;
+}
