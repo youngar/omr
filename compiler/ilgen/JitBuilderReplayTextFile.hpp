@@ -65,10 +65,13 @@
     void handleDefineLine(TR::MethodBuilder * mb, char * tokens);
     void handleDefineFile(TR::MethodBuilder * mb, char * tokens);
     void handleDefineName(TR::MethodBuilder * mb, char * tokens);
+    void handleDefineParameter(TR::MethodBuilder * mb, char * tokens);
     void handlePrimitiveType(TR::MethodBuilder * mb, char * tokens);
     void handleDefineReturnType(TR::MethodBuilder * mb, char * tokens);
 
     void handleConstInt32(TR::IlBuilder * ilmb, char * tokens);
+    void handleLoad(TR::IlBuilder * ilmb, char * tokens);
+    void handleAdd(TR::IlBuilder * ilmb, char * tokens);
     void handleReturnValue(TR::IlBuilder * ilmb, char * tokens);
 
     uint32_t getNumberFromToken(char * token);

@@ -74,10 +74,10 @@ main(int argc, char *argv[])
       {
       cout << "Step 4: invoke compiled code and print results\n";
       // typedef int32_t (SimpleMethodFunction)(int32_t);
-      typedef int32_t (SimpleMethodFunction)();
+      typedef int32_t (SimpleMethodFunction)(int32_t, int32_t);
       SimpleMethodFunction *increment = (SimpleMethodFunction *) entry;
 
-      cout << "Returning: " << increment() << "\n";
+      // cout << "Returning: " << increment() << "\n";
 
       // *****************************************************************
       // MOST SIMPLE SIMPLE.cpp
@@ -90,11 +90,11 @@ main(int argc, char *argv[])
 
       // *****************************************************************
       // COMPLICATED SIMPLE.cpp
-      // int32_t v, u;
-      // v=0; u=1;  cout << "increment(" << v << "+" << u << ") == " << increment(v,u) << "\n";
-      // v=1; u=5;  cout << "increment(" << v << "+" << u << ") == " << increment(v,u) << "\n";
-      // v=10; u=7; cout << "increment(" << v << "+" << u << ") == " << increment(v,u) << "\n";
-      // v=-15; u=33; cout << "increment(" << v << "+" << u << ") == " << increment(v,u) << "\n";
+      int32_t v, u;
+      v=0; u=1;  cout << "increment(" << v << "+" << u << ") == " << increment(v,u) << "\n";
+      v=1; u=5;  cout << "increment(" << v << "+" << u << ") == " << increment(v,u) << "\n";
+      v=10; u=7; cout << "increment(" << v << "+" << u << ") == " << increment(v,u) << "\n";
+      v=-15; u=33; cout << "increment(" << v << "+" << u << ") == " << increment(v,u) << "\n";
       }
    //If not compiling verify the output file....
    else
@@ -104,37 +104,52 @@ main(int argc, char *argv[])
       jitBuilderShouldCompile = true;
       TR::JitBuilderReplayTextFile replay("simple.out");
 
-      TR::MethodBuilderReplay mb(&types, &replay);
+      TR::TypeDictionary types2;
+      uint8_t *entry2 = 0;
 
-      int32_t rc = compileMethodBuilder(&mb, &entry);
-      typedef int32_t (SimpleMethodFunction)();
-      SimpleMethodFunction *increment = (SimpleMethodFunction* ) entry;
+      TR::MethodBuilderReplay mb(&types2, &replay);
 
-      cout << "Returning: " << increment() << "\n";
+      int32_t rc = compileMethodBuilder(&mb, &entry2);
+      cout << "Step 5.1: invoke compiled code from replay\n";
+      typedef int32_t (SimpleMethodFunction)(int32_t, int32_t);
+      SimpleMethodFunction *increment = (SimpleMethodFunction* ) entry2;
 
       // record again
       TR::JitBuilderRecorderTextFile recorder2(NULL, "simple2.out");
 
-      cout << "Step 3: compile method builder\n";
-      SimpleMethod method2(&types, &recorder2);
+      cout << "Step 6: compile method builder\n";
+      SimpleMethod method2(&types2, &recorder2);
 
-      uint8_t *entry2 = 0;
+      entry2 = 0;
       int32_t rc2 = compileMethodBuilder(&method2, &entry2);
       if (rc2 != 0)
          {
          cerr << "FAIL: compilation error " << rc2 << "\n";
          exit(-2);
          }
+
+      cout << "Step 6.1: print results\n";
+      // SIMPLE SIMPLE
+      // cout << "Returning: " << increment() << "\n";
+
+      // *****************************************************************
+      // MOST SIMPLE SIMPLE.cpp
       // int32_t v;
-      // v=0;   cout << "increment(" << v << ") == " << increment(v) << "\n";
-      // v=1;   cout << "increment(" << v << ") == " << increment(v) << "\n";
-      // v=10;  cout << "increment(" << v << ") == " << increment(v) << "\n";
+      // v=0; cout << "increment(" << v << ") == " << increment(v) << "\n";
+      // v=1; cout << "increment(" << v << ") == " << increment(v) << "\n";
+      // v=10; cout << "increment(" << v << ") == " << increment(v) << "\n";
       // v=-15; cout << "increment(" << v << ") == " << increment(v) << "\n";
 
-      //TODO do something with output file to verify :)
+      // *****************************************************************
+      // COMPLICATED SIMPLE.cpp
+      int32_t v, u;
+      v=0; u=1;  cout << "increment(" << v << "+" << u << ") == " << increment(v,u) << "\n";
+      v=1; u=5;  cout << "increment(" << v << "+" << u << ") == " << increment(v,u) << "\n";
+      v=10; u=7; cout << "increment(" << v << "+" << u << ") == " << increment(v,u) << "\n";
+      v=-15; u=33; cout << "increment(" << v << "+" << u << ") == " << increment(v,u) << "\n";
       }
 
-   cout << "Step 6: shutdown JIT\n";
+   cout << "Step 7: shutdown JIT\n";
    shutdownJit();
    }
 
@@ -154,8 +169,8 @@ SimpleMethod::SimpleMethod(TR::TypeDictionary *d, TR::JitBuilderRecorder *record
    // DefineParameter("value", Int32);
 
    // COMPLICATED SIMPLE.cpp
-   // DefineParameter("value1", Int32);
-   // DefineParameter("value2", Int32);
+   DefineParameter("value1", Int32);
+   DefineParameter("value2", Int32);
    DefineReturnType(Int32);
    }
 
@@ -165,8 +180,8 @@ SimpleMethod::buildIL()
    cout << "SimpleMethod::buildIL() running!\n";
 
    // MOST SIMPLE SIMPLE.cpp
-   Return(
-      ConstInt32(88));
+   // Return(
+   //    ConstInt32(88));
 
    // *****************************************************************
    // ORIGINAL SIMPLE.cpp
@@ -177,15 +192,15 @@ SimpleMethod::buildIL()
 
    // *****************************************************************
    // COMPLICATED SIMPLE.cpp
-   // Return(
-   //    Add(
-   //      Add(
-   //        Load("value1"),
-   //        ConstInt32(17)
-   //      ),
-   //      Add(
-   //        Load("value2"),
-   //        ConstInt32(14))));
+   Return(
+      Add(
+        Add(
+          Load("value1"),
+          ConstInt32(17)
+        ),
+        Add(
+          Load("value2"),
+          ConstInt32(14))));
 
    // IlValue * value1 = Load("value1");
    return true;
