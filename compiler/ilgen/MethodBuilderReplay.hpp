@@ -44,7 +44,7 @@
     {
     public:
 
-    MethodBuilderReplay(TR::TypeDictionary *types, TR::JitBuilderReplay *replay);
+    MethodBuilderReplay(TR::TypeDictionary *types, TR::JitBuilderReplay *replay, TR::JitBuilderRecorder *recorder);
 
     void setReplay(TR::JitBuilderReplay *replay) { _replay = replay; }
     virtual bool buildIL();
@@ -68,8 +68,8 @@
           // MethodBuilderReplay(TR::TypeDictionary *types, TR::JitBuilderReplay *replay)
           //    : OMR::MethodBuilderReplay(types, replay)
           //    { }
-          MethodBuilderReplay(TR::TypeDictionary *types, TR::JitBuilderReplay *replay=NULL)
-             : OMR::MethodBuilderReplay(types, replay)
+          MethodBuilderReplay(TR::TypeDictionary *types, TR::JitBuilderReplay *replay=NULL,  TR::JitBuilderRecorder *recorder=NULL)
+             : OMR::MethodBuilderReplay(types, replay, recorder)
              { }
        };
 

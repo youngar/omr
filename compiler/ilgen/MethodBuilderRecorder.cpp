@@ -261,7 +261,7 @@ OMR::MethodBuilderRecorder::DefineFunction(const char* const name,
                                            TR::IlType      * returnType,
                                            int32_t           numParms,
                                            TR::IlType     ** parmTypes)
-   {   
+        {
    TR::JitBuilderRecorder *rec = recorder();
    if (rec)
       {
