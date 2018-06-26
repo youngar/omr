@@ -72,6 +72,7 @@
     void handleConstInt32(TR::IlBuilder * ilmb, char * tokens);
     void handleLoad(TR::IlBuilder * ilmb, char * tokens);
     void handleAdd(TR::IlBuilder * ilmb, char * tokens);
+    void handleStore(TR::IlBuilder * ilmb, char * tokens);
     void handleReturnValue(TR::IlBuilder * ilmb, char * tokens);
 
     uint32_t getNumberFromToken(char * token);

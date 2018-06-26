@@ -228,6 +228,13 @@ OMR::JitBuilderReplayTextFile::handleServiceIlBuilder(uint32_t mbID, char * toke
          {
          handleReturnValue(ilmb, tokens);
          }
+      else if(strcmp(serviceString, STATEMENT_STORE) == 0)
+         {
+         handleStore(ilmb, tokens);
+         }
+      else{
+          TR_ASSERT_FATAL(0, "handleServiceIlBuilder asked to handle unknown serive %s", serviceString);
+         }
 
       return true;
    }
@@ -346,6 +353,7 @@ OMR::JitBuilderReplayTextFile::handleConstInt32(TR::IlBuilder * ilmb, char * tok
    StoreIDPointerPair(ID, val);
    }
 
+
 void
 OMR::JitBuilderReplayTextFile::handleLoad(TR::IlBuilder * ilmb, char * tokens)
    {
@@ -364,6 +372,32 @@ OMR::JitBuilderReplayTextFile::handleLoad(TR::IlBuilder * ilmb, char * tokens)
    IlValue * loadVal = ilmb->Load(defineLoadParam);
    StoreIDPointerPair(ID, loadVal);
    }
+
+
+
+   void
+   OMR::JitBuilderReplayTextFile::handleStore(TR::IlBuilder * ilmb, char * tokens)
+      {
+      // Def S22 "5 [Store]"
+      //B2 S22 "7 [result2]" V21
+      //B2 S13 V23 "7 [result2]"
+      std::cout << "Calling handleStore helper.\n";
+
+    //  uint32_t ID = getNumberFromToken(tokens);
+    //  tokens = std::strtok(NULL, SPACE);
+
+      uint32_t strLen = getNumberFromToken(tokens);
+      tokens = std::strtok(NULL, SPACE);
+      const char * defineStoreParam = getServiceStringFromToken(strLen, tokens);
+      tokens = std::strtok(NULL, SPACE);
+      uint32_t valuetoStore = getNumberFromToken(tokens);
+
+      TR::IlValue * paramIlValue = static_cast<TR::IlValue *>(lookupPointer(valuetoStore));
+
+      ilmb->Store(defineStoreParam, paramIlValue);
+      //StoreIDPointerPair(ID, loadVal);
+      }
+
 
 void
 OMR::JitBuilderReplayTextFile::handleAdd(TR::IlBuilder * ilmb, char * tokens)
