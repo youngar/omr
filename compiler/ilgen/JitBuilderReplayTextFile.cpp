@@ -232,6 +232,19 @@ OMR::JitBuilderReplayTextFile::handleServiceIlBuilder(uint32_t mbID, char * toke
          {
          handleStore(ilmb, tokens);
          }
+      else if(strcmp(serviceString, STATEMENT_SUB) == 0)
+      {
+         handleSub(ilmb, tokens);
+      }
+      else if (strcmp(serviceString, STATEMENT_LESSTHAN) == 0) {
+        handleLessThan(ilmb, tokens);
+      }
+      else if(strcmp(serviceString, STATEMENT_NEWILBUILDER) == 0) {
+        handleNewIlBuilder(ilmb, tokens);
+      }
+      else if(strcmp(serviceString, STATEMENT_IFTHENELSE) == 0){
+        handleIfThenElse(ilmb, tokens);
+      }
       else{
           TR_ASSERT_FATAL(0, "handleServiceIlBuilder asked to handle unknown serive %s", serviceString);
          }
@@ -420,6 +433,103 @@ OMR::JitBuilderReplayTextFile::handleAdd(TR::IlBuilder * ilmb, char * tokens)
 
    StoreIDPointerPair(IDtoStore, addResult);
    }
+
+//Add Sub June.27
+   void
+   OMR::JitBuilderReplayTextFile::handleSub(TR::IlBuilder * ilmb, char * tokens)
+      {
+      // Def S16 "3 [Sub]"
+      // B2 S16 V15 V11 V13
+      std::cout << "Calling handleSub helper.\n";
+
+      uint32_t IDtoStore = getNumberFromToken(tokens);
+      tokens = std::strtok(NULL, SPACE);
+
+      uint32_t param1ID = getNumberFromToken(tokens);
+      tokens = std::strtok(NULL, SPACE);
+      uint32_t param2ID = getNumberFromToken(tokens);
+
+      TR::IlValue * param1IlValue = static_cast<TR::IlValue *>(lookupPointer(param1ID));
+      TR::IlValue * param2IlValue = static_cast<TR::IlValue *>(lookupPointer(param2ID));
+
+      TR::IlValue * subResult = ilmb->Sub(param1IlValue, param2IlValue);
+
+      StoreIDPointerPair(IDtoStore, subResult);
+      }
+
+// Add New Builder June.29
+  void
+  OMR::JitBuilderReplayTextFile::handleNewIlBuilder(TR::IlBuilder * ilmb, char * tokens)
+   {
+   // Def S20 "12 [NewIlBuilder]"
+   // B2 S20 B19
+   std::cout << "Calling handleNewBuilder helper.\n";
+
+   uint32_t IDtoStore = getNumberFromToken(tokens);
+   tokens = std::strtok(NULL, SPACE);
+
+
+   TR::IlBuilder * newBuilder = ilmb->OrphanBuilder();//???error: cannot
+      //initialize a variable of type 'TR::IlValue *' with an rvalue of type
+      //'void'
+
+   StoreIDPointerPair(IDtoStore, newBuilder);
+   }
+
+// Add LessThan June.29
+  void
+  OMR::JitBuilderReplayTextFile::handleLessThan(TR::IlBuilder * ilmb, char * tokens){
+    // Def S17 "8 [LessThan]"
+    // B2 S17 V16 V12 V14
+    std::cout << "Calling handleLessThan helper.\n";
+
+    uint32_t IDtoStore = getNumberFromToken(tokens);
+    tokens = std::strtok(NULL, SPACE);
+
+    uint32_t param1ID = getNumberFromToken(tokens);
+    tokens = std::strtok(NULL, SPACE);
+    uint32_t param2ID = getNumberFromToken(tokens);
+
+    TR::IlValue * leftValue  = static_cast<TR::IlValue *>(lookupPointer(param1ID));
+    TR::IlValue * rightValue = static_cast<TR::IlValue *>(lookupPointer(param2ID));
+
+    TR::IlValue * lessThanResult = ilmb->LessThan(leftValue, rightValue);
+
+    StoreIDPointerPair(IDtoStore, lessThanResult);
+
+  }
+
+
+
+   // Add IfThenElse June.29
+   void
+   OMR::JitBuilderReplayTextFile::handleIfThenElse(TR::IlBuilder * ilmb, char * tokens)
+      {
+      // B2 S13 V22 "14 [lessThanResult]
+      // Def S23 "10 [IfThenElse]"
+      // B2 S23 B19 B21 V22
+      // B19 S15 V24 1
+      // B19 S18 "6 [result]" V24
+      // B21 S15 V25 0
+      // B21 S18 "6 [result]" V25
+      std::cout << "Calling handleIfThenElse helper.\n";
+
+      uint32_t IfID = getNumberFromToken(tokens);
+      tokens = std::strtok(NULL, SPACE);
+
+      uint32_t ElseID = getNumberFromToken(tokens);
+      tokens = std::strtok(NULL, SPACE);
+      uint32_t conditionID = getNumberFromToken(tokens);
+
+      TR::IlBuilder * IfBlock   = static_cast<TR::IlBuilder *>(lookupPointer(IfID));
+      TR::IlBuilder * ElseBlock = static_cast<TR::IlBuilder *>(lookupPointer(ElseID));
+
+      TR::IlValue * conditionValue = static_cast<TR::IlValue *>(lookupPointer(conditionID));
+
+      ilmb->IfThenElse(&IfBlock, &ElseBlock, conditionValue);
+
+      }
+
 
 void
 OMR::JitBuilderReplayTextFile::handleReturnValue(TR::IlBuilder * ilmb, char * tokens)

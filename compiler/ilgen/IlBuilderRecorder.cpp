@@ -30,6 +30,9 @@
 #include "ilgen/MethodBuilder.hpp"
 #include "ilgen/IlValue.hpp"
 
+#include "ilgen/JitBuilderRecorderTextFile.hpp"
+#include "ilgen/JitBuilderReplayTextFile.hpp"
+#include "ilgen/MethodBuilderReplay.hpp"
 // IlBuilder is a class designed to help build Testarossa IL quickly without
 // a lot of knowledge of the intricacies of commoned references, symbols,
 // symbol references, or blocks. You can add operations to an IlBuilder via
@@ -782,6 +785,31 @@ OMR::IlBuilderRecorder::Sub(TR::IlValue *left, TR::IlValue *right)
       binaryOp(returnValue, left, right, rec->STATEMENT_SUB);
    return returnValue;
    }
+
+
+TR::IlValue *
+OMR::IlBuilderRecorder::Mul(TR::IlValue *left, TR::IlValue *right)
+      {
+      TR::IlValue *returnValue = newValue();
+      TR::JitBuilderRecorder *rec = recorder();
+      if (rec)
+//         binaryOp(returnValue, left, right, rec->STATEMENT_MUL);//???
+      return returnValue;
+      }
+
+
+
+
+// TR::IlValue *
+// OMR::IlBuilderRecorder::LessThan(TR::IlValue *left, TR::IlValue *right)
+//             {
+//             TR::IlValue *returnValue = newValue();
+//             TR::JitBuilderRecorder *rec = recorder();
+//             if (rec)
+//                binaryOp(returnValue, left, right, rec->STATEMENT_LESSTHAN);
+//             return returnValue;
+//             }
+
 
 #if 0
 /*

@@ -1264,24 +1264,6 @@ OMR::IlBuilder::Return(TR::IlValue *value)
       }
    }
 
-TR::IlValue *
-OMR::IlBuilder::Sub(TR::IlValue *left, TR::IlValue *right)
-   {
-   TR::IlValue *returnValue = TR::IlBuilderRecorder::Sub(left, right);;
-   if (left->getDataType() == TR::Address)
-      {
-      if (right->getDataType() == TR::Int32)
-         binaryOpFromNodes(TR::aiadd, returnValue, loadValue(left), loadValue(Sub(ConstInt32(0), right)));
-      else if (right->getDataType() == TR::Int64)
-         binaryOpFromNodes(TR::aladd, returnValue, loadValue(left), loadValue(Sub(ConstInt64(0), right)));
-      else
-         binaryOpFromOpMap(TR::ILOpCode::subtractOpCode, returnValue, left, right);
-      }
-   else
-      binaryOpFromOpMap(TR::ILOpCode::subtractOpCode, returnValue, left, right);
-   TraceIL("IlBuilder[ %p ]::%d is Sub %d - %d\n", this, returnValue->getID(), left->getID(), right->getID());
-   return returnValue;
-   }
 
 static TR::ILOpCodes addOpCode(TR::DataType type)
    {
@@ -1315,6 +1297,27 @@ OMR::IlBuilder::Add(TR::IlValue *left, TR::IlValue *right)
       }
    return returnValue;
    }
+
+
+TR::IlValue *
+OMR::IlBuilder::Sub(TR::IlValue *left, TR::IlValue *right)
+      {
+      TR::IlValue *returnValue = TR::IlBuilderRecorder::Sub(left, right);
+      if (left->getDataType() == TR::Address)
+         {
+         if (right->getDataType() == TR::Int32)
+            binaryOpFromNodes(TR::aiadd, returnValue, loadValue(left), loadValue(Sub(ConstInt32(0), right)));
+         else if (right->getDataType() == TR::Int64)
+            binaryOpFromNodes(TR::aladd, returnValue, loadValue(left), loadValue(Sub(ConstInt64(0), right)));
+         else
+            binaryOpFromOpMap(TR::ILOpCode::subtractOpCode, returnValue, left, right);
+         }
+      else
+         binaryOpFromOpMap(TR::ILOpCode::subtractOpCode, returnValue, left, right);
+      TraceIL("IlBuilder[ %p ]::%d is Sub %d - %d\n", this, returnValue->getID(), left->getID(), right->getID());
+      return returnValue;
+      }
+
 
 /*
  * blockThrowsException:
@@ -1475,8 +1478,11 @@ OMR::IlBuilder::MulWithOverflow(TR::IlBuilder **handler, TR::IlValue *left, TR::
 TR::IlValue *
 OMR::IlBuilder::Mul(TR::IlValue *left, TR::IlValue *right)
    {
-   TR::IlValue *returnValue=binaryOpFromOpMap(TR::ILOpCode::multiplyOpCode, left, right);
-   TraceIL("IlBuilder[ %p ]::%d is Mul %d * %d\n", this, returnValue->getID(), left->getID(), right->getID());
+   TR::IlValue *returnValue;//=TR:IlBuilderRecorder::Mul(left, right);
+   if(shouldCompile()){
+     TR::IlValue *returnValue=binaryOpFromOpMap(TR::ILOpCode::multiplyOpCode, left, right);
+   }
+  // TraceIL("IlBuilder[ %p ]::%d is Mul %d * %d\n", this, returnValue->getID(), left->getID(), right->getID());
    return returnValue;
    }
 
