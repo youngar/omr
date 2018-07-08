@@ -106,7 +106,6 @@ public:
    TR::IlValue *UnsignedShiftR(TR::IlValue *v, int8_t amount)        { return UnsignedShiftR(v, ConstInt8(amount)); }
    TR::IlValue *NotEqualTo(TR::IlValue *left, TR::IlValue *right);
    TR::IlValue *EqualTo(TR::IlValue *left, TR::IlValue *right);
-   TR::IlValue *LessThan(TR::IlValue *left, TR::IlValue *right);
    TR::IlValue *UnsignedLessThan(TR::IlValue *left, TR::IlValue *right);
    TR::IlValue *LessOrEqualTo(TR::IlValue *left, TR::IlValue *right);
    TR::IlValue *UnsignedLessOrEqualTo(TR::IlValue *left, TR::IlValue *right);
@@ -116,6 +115,9 @@ public:
    TR::IlValue *UnsignedGreaterOrEqualTo(TR::IlValue *left, TR::IlValue *right);
    TR::IlValue *ConvertTo(TR::IlType *t, TR::IlValue *v);
    TR::IlValue *UnsignedConvertTo(TR::IlType *t, TR::IlValue *v);
+
+   TR::IlValue *LessThan(TR::IlValue *left, TR::IlValue *right);
+   TR::IlValue *IfThenElse(TR::IlValue *left, TR::IlValue *right);
 
    // memory
    void Store(const char *name, TR::IlValue *value);
