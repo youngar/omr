@@ -29,33 +29,55 @@
   #include "ilgen/IlBuilder.hpp"
 
  OMR::JitBuilderReplayTextFile::JitBuilderReplayTextFile(const char *fileName)
-    : TR::JitBuilderReplay(), _file(fileName, std::fstream::in)
+    : TR::JitBuilderReplay(), _file(fileName, std::fstream::in), _isFile(true)
     {
     start();
+    std::cout << "File constructor..." << '\n';
+    std::cout << ">>> Start reading 2nd line and BEYOND!" << '\n';
+    }
+
+ OMR::JitBuilderReplayTextFile::JitBuilderReplayTextFile(std::string fileString)
+    : TR::JitBuilderReplay(), _isFile(false), _fileStream(std::istringstream(fileString))
+    {
+    start();
+    std::cout << "File as a string constructor..." << '\n';
     std::cout << ">>> Start reading 2nd line and BEYOND!" << '\n';
     }
 
 void
-OMR::JitBuilderReplayTextFile::start() {
+OMR::JitBuilderReplayTextFile::start()
+   {
    TR::JitBuilderReplay::start();
    processFirstLineFromTextFile();
-}
+   }
 
-std::string
-OMR::JitBuilderReplayTextFile::getLineFromTextFile()
+char *
+OMR::JitBuilderReplayTextFile::getLineAsChar()
    {
+   char * lineAsChar;
    std::string line;
-   std::getline(_file, line);
-   return line;
+
+   if(_isFile)
+      {
+      std::getline(_file, line);
+      }
+   else
+      {
+      std::getline(_fileStream, line);
+      }
+
+   lineAsChar = getTokensFromLine(line);
+   return lineAsChar;
    }
 
 void
 OMR::JitBuilderReplayTextFile::processFirstLineFromTextFile()
    {
-      char * token = getTokensFromLine(getLineFromTextFile());
+    char * token;
+    token = getLineAsChar();
 
-      while (token != NULL) {
-         token = std::strtok(NULL, SPACE);
+    while (token != NULL) {
+       token = std::strtok(NULL, SPACE);
       }
    }
 
@@ -419,8 +441,7 @@ OMR::JitBuilderReplayTextFile::parseConstructor()
 
          while(constructorFlag)
          {
-            textLine = getLineFromTextFile();
-            tokens = getTokensFromLine(textLine);
+            tokens = getLineAsChar();
 
             uint32_t id = getNumberFromToken(tokens);
 
@@ -450,8 +471,7 @@ OMR::JitBuilderReplayTextFile::parseBuildIL()
 
    while(buildIlFlag)
       {
-      textLine = getLineFromTextFile();
-      tokens = getTokensFromLine(textLine);
+      tokens = getLineAsChar();
 
       uint32_t id = getNumberFromToken(tokens);
 

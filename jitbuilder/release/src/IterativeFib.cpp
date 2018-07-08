@@ -52,6 +52,7 @@ IterativeFibonnaciMethod::buildIL()
          Load("n"),
          ConstInt32(2)));
 
+   // Only executed if "n < 2"
    returnN->Return(
    returnN->   Load("n"));
 

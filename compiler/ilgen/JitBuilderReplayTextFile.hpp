@@ -28,8 +28,11 @@
 
  #include "ilgen/JitBuilderReplay.hpp"
  #include "ilgen/IlBuilderRecorder.hpp"
+ // #include "JitBuilderReplay.hpp" // Works for gRPC
+ // #include "IlBuilderRecorder.hpp"
 
  #include <iostream>
+ #include <sstream>
  #include <fstream>
  #include <map>
 
@@ -44,10 +47,11 @@
     enum BuilderFlag {METHOD_BUILDER, IL_BUILDER};
 
     JitBuilderReplayTextFile(const char *fileName);
+    JitBuilderReplayTextFile(std::string fileString);
 
     void start();
     void processFirstLineFromTextFile();
-    std::string getLineFromTextFile();
+    char * getLineAsChar();
     char * getTokensFromLine(std::string);
 
     bool parseConstructor();
@@ -77,9 +81,12 @@
     uint32_t getNumberFromToken(char * token);
 
     const char * SPACE = " ";
+    const char * NEW_LINE = "\r\n";
 
     private:
     std::fstream _file;
+    std::istringstream _fileStream;
+    bool _isFile;
 
     };
 
@@ -95,6 +102,9 @@
        public:
           JitBuilderReplayTextFile(const char *fileName)
              : OMR::JitBuilderReplayTextFile(fileName)
+             { }
+          JitBuilderReplayTextFile(std::string fileString)
+             : OMR::JitBuilderReplayTextFile(fileString)
              { }
           virtual ~JitBuilderReplayTextFile()
              { }

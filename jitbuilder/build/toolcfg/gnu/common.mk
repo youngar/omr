@@ -77,7 +77,7 @@ ARMASM_SCRIPT?=$(JIT_SCRIPT_DIR)/armasm2gas.sed
 ZASM_SCRIPT?=$(JIT_SCRIPT_DIR)/s390m4check.pl
 
 #
-# First setup C and C++ compilers. 
+# First setup C and C++ compilers.
 #
 #     Note: "CX" means both C and C++
 #
@@ -100,7 +100,6 @@ CX_FLAGS+=\
 
 CXX_FLAGS+=\
     -std=c++0x \
-    -fno-rtti \
     -fno-threadsafe-statics \
     -Wno-deprecated \
     -Wno-enum-compare \
@@ -116,7 +115,7 @@ endif
 ifeq ($(PLATFORM),ppc64le-linux64-gcc)
     DEFAULT_OPTFLAG=-O2
 endif
-    
+
 ifeq ($(BUILD_CONFIG),prod)
     CX_OPTFLAG?=$(DEFAULT_OPTFLAG)
 
@@ -131,7 +130,7 @@ endif
 ifeq ($(BUILD_CONFIG),debug)
     CX_DEFINES+=DEBUG
     CX_FLAGS+=-ggdb3
-    
+
     ifeq ($(PLATFORM),s390-linux-gcc)
         CX_FLAGS+=-gdwarf-2
     endif
@@ -212,7 +211,7 @@ ifeq ($(HOST_ARCH),x)
     ifeq ($(HOST_BITS),32)
         S_FLAGS+=--32
     endif
-    
+
     ifeq ($(HOST_BITS),64)
         ifeq ($(LLVM_ASSEMBLER),1)
             S_FLAGS+=-march=x86-64 -c
@@ -248,9 +247,9 @@ ifeq ($(HOST_ARCH),x)
     endif
 
     ASM_FLAGS+=$(ASM_FLAGS_EXTRA)
-    
+
     PASM_CMD=$(CC_PATH)
-    
+
     PASM_INCLUDES=$(PRODUCT_INCLUDES)
     PASM_DEFINES+=$(HOST_DEFINES) $(TARGET_DEFINES)
     PASM_FLAGS+=$(PASM_FLAGS_EXTRA)
@@ -258,14 +257,14 @@ endif
 
 #
 # Setup CPP and SED to preprocess PowerPC Assembly Files
-# 
+#
 ifeq ($(HOST_ARCH),p)
     IPP_CMD=$(SED_PATH)
-    
+
     IPP_FLAGS+=$(IPP_FLAGS_EXTRA)
-    
+
     SPP_CMD=$(CC_PATH)
-    
+
     SPP_INCLUDES=$(PRODUCT_INCLUDES)
     SPP_DEFINES+=$(CX_DEFINES) $(SPP_DEFINES_EXTRA)
     SPP_FLAGS+=$(CX_FLAGS) $(SPP_FLAGS_EXTRA)
@@ -279,18 +278,18 @@ ifeq ($(HOST_ARCH),z)
 
     M4_INCLUDES=$(PRODUCT_INCLUDES)
     M4_DEFINES+=$(HOST_DEFINES) $(TARGET_DEFINES) $(M4_DEFINES_EXTRA)
-    
+
     ifeq ($(PLATFORM),s390-linux-gcc)
         M4_DEFINES+=J9VM_TIERED_CODE_CACHE
-        
+
         ifneq (,$(shell grep 'define J9VM_JIT_32BIT_USES64BIT_REGISTERS' $(J9SRC)/include/j9cfg.h))
             M4_DEFINES+=J9VM_JIT_32BIT_USES64BIT_REGISTERS
         endif
     endif
-    
+
     ifeq ($(PLATFORM),s390-linux64-gcc)
         M4_DEFINES+=J9VM_TIERED_CODE_CACHE
-        
+
         ifneq (,$(shell grep 'define J9VM_INTERP_COMPRESSED_OBJECT_HEADER' $(J9SRC)/include/j9cfg.h))
             M4_DEFINES+=J9VM_INTERP_COMPRESSED_OBJECT_HEADER
         endif
@@ -299,7 +298,7 @@ ifeq ($(HOST_ARCH),z)
             M4_DEFINES+=J9VM_OPT_TENANT
         endif
     endif
-    
+
     M4_FLAGS+=$(M4_FLAGS_EXTRA)
 endif
 
@@ -310,7 +309,7 @@ ifeq ($(HOST_ARCH),arm)
     ARMASM_CMD?=$(SED_PATH)
 
     SPP_CMD?=$(CC_PATH)
-    
+
     SPP_INCLUDES=$(PRODUCT_INCLUDES)
     SPP_DEFINES+=$(CX_DEFINES) $(SPP_DEFINES_EXTRA)
     SPP_FLAGS+=$(CX_FLAGS) $(SPP_FLAGS_EXTRA)
@@ -323,7 +322,7 @@ ifeq ($(HOST_ARCH),aarch64)
     AARCH64ASM_CMD?=$(SED_PATH)
 
     SPP_CMD?=$(CC_PATH)
-    
+
     SPP_INCLUDES=$(PRODUCT_INCLUDES)
     SPP_DEFINES+=$(CX_DEFINES) $(SPP_DEFINES_EXTRA)
     SPP_FLAGS+=$(CX_FLAGS) $(SPP_FLAGS_EXTRA)
