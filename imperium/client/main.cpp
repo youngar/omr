@@ -37,7 +37,7 @@
 #include "ilgen/MethodBuilderReplay.hpp"
 #include "Simple.hpp"
 
-#include "../../../include_core/omrthread.h"
+#include "omrthread.h"
 // #include "../../../compiler/infra/OMRMonitor.hpp"
 
 using std::cout;
@@ -63,8 +63,9 @@ class ServerCall {
    */
   ServerCall()
      {
-      omrthread_init_library();
-
+      if(J9THREAD_SUCCESS != omrthread_init_library()){
+         std::cout << "ERROR INITIALIZING thread library" << '\n';
+}
       attachSelf();
 
       _monitorStatus = MonitorStatus::INITIALIZING;
@@ -192,9 +193,9 @@ class ServerCall {
        std::cout << "Inside test entry Point ************************************" << '\n';
        std::cout << "Inside test entry Point $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$" << '\n';
        omrthread_sleep(1000);
-       for (size_t i = 0; i < 100000000000000; i++) {int u = i + 5 * 100 / 5;}
+       //for (size_t i = 0; i < 100000000000000; i++) {int u = i + 5 * 100 / 5;}
        std::cout << "Inside test entry Point ####################################" << '\n';
-       for (size_t c = 0; c < 100000000000000; c++) {int yy = c + 5 * 100 / 5;}
+       //for (size_t c = 0; c < 100000000000000; c++) {int yy = c + 5 * 100 / 5;}
        std::cout << "Inside test entry Point *********^^^^^^^^^&&&&&&&&&&(()()()())" << '\n';
 
        while(_monitorStatus != MonitorStatus::JOBS_DONE)
@@ -303,6 +304,7 @@ main(int argc, char *argv[])
 
       serverCall.addJobToTheQueue(temp1);
       serverCall.addJobToTheQueue(temp2);
+      std::cout << "Going to ssssleep zzZZzZzZzZzZZzZzZZzzZzZzZzZ" << '\n';
       omrthread_sleep(1500);
       serverCall.addJobToTheQueue(temp3);
       serverCall.addJobToTheQueue(temp4);
@@ -313,6 +315,8 @@ main(int argc, char *argv[])
       omrthread_sleep(1000);
       serverCall.addJobToTheQueue(temp8);
       serverCall.addJobToTheQueue(temp9);
+
+      std::cout << "before jobs done..." << '\n';
 
       // Signal that there are no more jobs to be added to the queue
       serverCall.setJobDone();

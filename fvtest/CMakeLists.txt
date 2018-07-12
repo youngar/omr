@@ -41,15 +41,15 @@ add_subdirectory(threadtest)
 add_subdirectory(utiltest)
 add_subdirectory(vmtest)
 
-if (OMR_JITBUILDER)
-	add_subdirectory(jitbuildertest)
-endif()
-
-if(OMR_TEST_COMPILER)
-	add_subdirectory(compilertest)
-endif()
-
-if(OMR_JITBUILDER)
-	add_subdirectory(tril)
-	add_subdirectory(compilertriltest)
-endif()
+# if (OMR_JITBUILDER)
+# 	add_subdirectory(jitbuildertest)
+# endif()
+#
+# if(OMR_TEST_COMPILER)
+#	add_subdirectory(compilertest)
+# endif()
+#
+# if(OMR_JITBUILDER)
+# 	add_subdirectory(tril)
+# 	add_subdirectory(compilertriltest)
+# endif()

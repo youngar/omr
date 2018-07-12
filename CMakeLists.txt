@@ -23,6 +23,10 @@
 # TODO: OMR_RTTI flag
 # TODO: Version things
 
+set(OMR_COMPILER   ON  CACHE INTERNAL "Enable the Compiler.")
+set(OMR_JITBUILDER ON  CACHE INTERNAL "We use OMR's jitbuilder tool for the b9 JIT")
+set(CMAKE_BUILD_TYPE Debug)
+
 cmake_minimum_required(VERSION 3.2 FATAL_ERROR)
 
 message(STATUS "Starting with CMake version ${CMAKE_VERSION}")
@@ -152,6 +156,8 @@ endif()
 if(OMR_JITBUILDER)
 	add_subdirectory(jitbuilder)
 endif(OMR_JITBUILDER)
+
+add_subdirectory(imperium)
 
 # This should come last to ensure dependencies
 # are defined
