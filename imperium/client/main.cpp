@@ -227,7 +227,7 @@ class ServerCall {
 };
 
 int
-main(int argc, char *argv[])
+main1(int argc, char *argv[])
    {
    cout << "Step 1: initialize JIT\n";
    bool initialized = initializeJit();
