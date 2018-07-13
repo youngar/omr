@@ -11,7 +11,6 @@
 #include "ilgen/JitBuilderRecorderTextFile.hpp"
 #include "ilgen/JitBuilderReplayTextFile.hpp"
 #include "ilgen/MethodBuilderReplay.hpp"
-#include "Simple.hpp"
 #include "omrthread.h"
 
 #include "imperium/imperium.hpp"
@@ -53,29 +52,46 @@ public:
 
    void SendOutFile()
      {
+       ServerChannel serverChannel;
+       serverChannel.createWorkThread();
 
-       cout << "Step 1: initialize JIT\n";
-       bool initialized = initializeJit();
-       if (!initialized)
+       char * temp1 = strdup("First elemenet on the queue");
+       char * temp2 = strdup("Second elemenet on the queue");
+       char * temp3 = strdup("Third elemenet on the queue");
+       char * temp4 = strdup("Fourth duck");
+       char * temp5 = strdup("Fifth wild duck");
+       char * temp6 = strdup("Sixth six six the number");
+       char * temp7 = strdup("Seven the lucky number");
+       char * temp8 = strdup("Eight wonderlands in the world");
+       char * temp9 = strdup("Nine the number before ten");
+
+       serverChannel.addJobToTheQueue(temp1);
+       serverChannel.addJobToTheQueue(temp2);
+       std::cout << "Going to ssssleep zzZZzZzZzZzZZzZzZZzzZzZzZzZ" << '\n';
+       omrthread_sleep(1500);
+       serverChannel.addJobToTheQueue(temp3);
+       serverChannel.addJobToTheQueue(temp4);
+       omrthread_sleep(700);
+       serverChannel.addJobToTheQueue(temp5);
+       serverChannel.addJobToTheQueue(temp6);
+       serverChannel.addJobToTheQueue(temp7);
+       omrthread_sleep(1000);
+       serverChannel.addJobToTheQueue(temp8);
+       serverChannel.addJobToTheQueue(temp9);
+
+       std::cout << "before jobs done..." << '\n';
+
+       // Signal that there are no more jobs to be added to the queue
+       serverChannel.setJobDone();
+
+       while(!serverChannel.isShutdownComplete())
           {
-          cerr << "FAIL: could not initialize JIT\n";
-          exit(-1);
+          std::cout << "Waiting for SHUTDOWN_COMPLETE signal from thread..." << '\n';
+          serverChannel.waitForMonitor();
           }
 
-       cout << "Step 2: define type dictionary\n";
-       TR::TypeDictionary types;
-       // Create a recorder so we can directly control the file for this particular test
-       TR::JitBuilderRecorderTextFile recorder(NULL, "simple.out");
-
-       cout << "Step 3: compile method builder\n";
-       SimpleMethod method(&types, &recorder);
-
-       //TODO Hack to be able to turn compiling off a global level
-       jitBuilderShouldCompile = false;
-
-       uint8_t *entry = 0;
-       int32_t rc = compileMethodBuilder(&method, &entry);
-
+       std::cout << "AFTER AFTER AFTER" << '\n';
+       omrthread_sleep(1500);
 
 
      // With the ClientContext we can set deadlines for a particular response

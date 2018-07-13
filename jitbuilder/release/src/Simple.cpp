@@ -79,9 +79,14 @@ class ServerCall {
 
       _monitorStatus = MonitorStatus::INITIALIZING_COMPLETE;
      }
-
   ~ServerCall()
-     {}
+     {
+        std::cout << " *** ServerCall destructor called!!" << '\n';
+
+        destroy();
+        omrthread_detach(omrthread_self());
+        omrthread_shutdown_library();
+     }
 
   void destroy() {
     if(J9THREAD_SUCCESS != omrthread_monitor_destroy(monitor))
@@ -102,7 +107,7 @@ class ServerCall {
        omrthread_entrypoint_t entpoint = helperThread;
        omrthread_t newThread;
 
-       intptr_t ret1 = omrthread_create(&newThread, 0, J9THREAD_PRIORITY_MAX, 0, entpoint, (void *)this);
+       intptr_t ret1 = omrthread_create(&newThread, 0, J9THREAD_PRIORITY_MAX, 0, entpoint, (void *) this);
      }
 
   // Signal that there are no more jobs to be added to the queue
@@ -125,11 +130,6 @@ class ServerCall {
 
      return 1;
      }
-
-  MonitorStatus getMonitorStatus()
-    {
-    return _monitorStatus;
-    }
 
   void waitForMonitor()
      {
@@ -288,9 +288,9 @@ main(int argc, char *argv[])
       cout << "Step 5: Replay\n";
 
       // *********************************************************************************
-      char * temp1 = strdup("First elemenet on the queue");
-      char * temp2 = strdup("Second elemenet on the queue");
-      char * temp3 = strdup("Third elemenet on the queue");
+      char * temp1 = strdup("First element in the queue");
+      char * temp2 = strdup("Second element in the queue");
+      char * temp3 = strdup("Third element in the queue");
       char * temp4 = strdup("Fourth duck");
       char * temp5 = strdup("Fifth wild duck");
       char * temp6 = strdup("Sixth six six the number");
@@ -338,9 +338,6 @@ main(int argc, char *argv[])
       cout << "Step 6: verify output file\n";
       TR::MethodBuilderReplay mb(&types2, &replay, &recorder2); // Process Constructor
       int32_t rc = compileMethodBuilder(&mb, &entry2); // Process buildIL
-
-      omrthread_detach(omrthread_self());
-      omrthread_shutdown_library();
       }
 
    cout << "Step 7: shutdown JIT\n";

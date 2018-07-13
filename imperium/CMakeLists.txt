@@ -20,7 +20,7 @@
 # SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
 ###############################################################################
 
-add_executable(omr_client "client/omr_client.cc" client/main.cpp)
+add_executable(omr_client "client/omr_client.cc")
 
 target_link_libraries(omr_client imperium)
 
