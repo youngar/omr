@@ -1,5 +1,5 @@
 ###############################################################################
-# Copyright (c) 2017, 2017 IBM Corp. and others
+# Copyright (c) 2018 IBM Corp. and others
 #
 # This program and the accompanying materials are made available under
 # the terms of the Eclipse Public License 2.0 which accompanies this
@@ -20,12 +20,12 @@
 # SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
 ###############################################################################
 
-add_executable(omr_client "client/omr_client.cc")
+add_executable(imperium_client "client/imperium_client.cc")
 
-target_link_libraries(omr_client imperium)
+target_link_libraries(imperium_client imperium)
 
-add_executable(omr_server "server/omr_server.cc")
+add_executable(imperium_server "server/imperium_server.cc")
 
-target_link_libraries(omr_server imperium)
+target_link_libraries(imperium_server imperium)
 
 add_subdirectory(imperium)

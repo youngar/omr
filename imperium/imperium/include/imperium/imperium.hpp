@@ -27,43 +27,78 @@
 
  #include "omrthread.h"
 
- // namespace OMR
- // {
+ // gRPC includes
+ #include <grpc/grpc.h>
+ #include <grpcpp/server.h>
+ #include <grpcpp/server_builder.h>
+ #include <grpcpp/server_context.h>
+ #include <grpcpp/security/server_credentials.h>
+ #include <grpc/support/log.h>
+ #include "imperium.grpc.pb.h"
 
- class ServerChannel
-    {
-    public:
-    enum MonitorStatus {
-      SHUTTING_DOWN,
-      SHUTDOWN_COMPLETE,
-      INITIALIZING,
-      INITIALIZING_COMPLETE, // INITIALIZATION ******
-      JOBS_DONE // nothing left to be added to the queue -- RENAME ******
-    };
+ using grpc::Server;
+ using grpc::ServerBuilder;
+ using grpc::ServerContext;
+ using grpc::ServerReaderWriter;
+ using grpc::Status;
 
-    ServerChannel();
-    ~ServerChannel();
+ using imperium::ClientMessage;
+ using imperium::ServerResponse;
+ using imperium::ImperiumRPC;
 
-    void createWorkThread();
-    void setJobDone(); // RENAME ACCORDING TO NEW MONITOR STATUS NAME ******
-    bool isShutdownComplete();
-    void waitForMonitor();
-    bool addJobToTheQueue(char * job);
-    bool isQueueEmpty();
+// include header files for proto stuff HERE
 
-    private:
-    omrthread_monitor_t _monitor;
-    MonitorStatus _monitorStatus;
-    std::queue<char *> _queueJobs;
-    void destroy(); // RENAME ******
-    omrthread_t attachSelf();
-    static int helperThread(void * data);
-    char * getNextJob();
-    void handleCall();
-    };
+namespace OMR
+{
+   namespace Imperium
+   {
+      class ServerChannel final : public ImperiumRPC::Service
+      {
+         public:
+         ServerChannel();
+         ~ServerChannel();
 
- // } // namespace OMR
- //
+         // Server-facing
+         bool RunServer(const char * port);
+      };
+
+      class ClientChannel
+      {
+         public:
+         enum MonitorStatus {
+         SHUTTING_DOWN,
+         SHUTDOWN_COMPLETE,
+         INITIALIZING,
+         INITIALIZING_COMPLETE, // INITIALIZATION ******
+         NO_JOBS_LEFT
+         };
+
+         ClientChannel();
+         ~ClientChannel();
+
+         bool initClient(const char * port);
+         void createClientThread();
+         bool addJobToTheQueue(char * job);
+
+         bool isQueueEmpty();
+         bool isShutdownComplete();
+         void signalNoJobsLeft();
+
+         void waitForMonitor();
+
+         private:
+         omrthread_monitor_t _monitor;
+         MonitorStatus _monitorStatus;
+         std::queue<char *> _queueJobs;
+         void shutdown();
+         omrthread_t attachSelf();
+         static int helperThread(void * data);
+         char * getNextJob();
+         void handleCall();
+      };
+   }
+} // namespace OMR
+
  // namespace TR
  // {
  //    class ServerChannel : public OMR::ServerChannel

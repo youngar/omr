@@ -20,7 +20,6 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
-
 #include <iostream>
 #include <stdlib.h>
 #include <stdint.h>
@@ -38,7 +37,6 @@
 #include "Simple.hpp"
 
 #include "../../../include_core/omrthread.h"
-// #include "../../../compiler/infra/OMRMonitor.hpp"
 
 using std::cout;
 using std::cerr;

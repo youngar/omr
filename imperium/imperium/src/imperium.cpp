@@ -22,12 +22,18 @@
 
  #include "imperium/imperium.hpp"
 
+ using namespace OMR::Imperium;
+
+   /****************
+   * ClientChannel *
+   ****************/
+
   /*
    * Initializes OMR thread library
    * Attaches self (main) thread
    * And initializes the monitor
    */
-  ServerChannel::ServerChannel()
+  ClientChannel::ClientChannel()
      {
       omrthread_init_library();
 
@@ -46,21 +52,22 @@
       _monitorStatus = MonitorStatus::INITIALIZING_COMPLETE;
      }
 
-  ServerChannel::~ServerChannel()
+  ClientChannel::~ClientChannel()
      {
-        std::cout << " *** ServerChannel destructor called!!" << '\n';
-
-        destroy();
-        omrthread_detach(omrthread_self());
-        omrthread_shutdown_library();
+        std::cout << " *** ClientChannel destructor called!!" << '\n';
+        shutdown();
      }
 
-  void ServerChannel::destroy() {
+  void ClientChannel::shutdown()
+  {
     if(J9THREAD_SUCCESS != omrthread_monitor_destroy(_monitor))
        std::cout << "ERROR WHILE destroying monitor" << '\n';
+    omrthread_detach(omrthread_self());
+    omrthread_shutdown_library();
+    std::cout << " *** ClientChannel shutdown COMPLETE" << '\n';
   }
 
-  omrthread_t ServerChannel::attachSelf()
+  omrthread_t ClientChannel::attachSelf()
      {
        // Attach self thread
        omrthread_t thisThread;
@@ -69,7 +76,7 @@
        return thisThread;
      }
 
-  void ServerChannel::createWorkThread()
+  void ClientChannel::createClientThread()
      {
        omrthread_entrypoint_t entpoint = helperThread;
        omrthread_t newThread;
@@ -78,19 +85,19 @@
      }
 
   // Signal that there are no more jobs to be added to the queue
-  void ServerChannel::setJobDone()
+  void ClientChannel::signalNoJobsLeft()
      {
-     _monitorStatus = MonitorStatus::JOBS_DONE;
+     _monitorStatus = MonitorStatus::NO_JOBS_LEFT;
      }
 
-  bool ServerChannel::isShutdownComplete()
+  bool ClientChannel::isShutdownComplete()
      {
      return _monitorStatus == MonitorStatus::SHUTDOWN_COMPLETE;
      }
 
-  int ServerChannel::helperThread(void *data)
+  int ClientChannel::helperThread(void *data)
     {
-     ServerChannel *s = (ServerChannel *)data;
+     ClientChannel *s = (ClientChannel *)data;
 
      std::cout << " Compiler: initializing\n";
      s->handleCall();
@@ -98,7 +105,7 @@
      return 1;
      }
 
-  void ServerChannel::waitForMonitor()
+  void ClientChannel::waitForMonitor()
      {
      if(0 != omrthread_monitor_enter(_monitor))
         std::cout << "ERROR WHILE ENTERING on wait monitor" << '\n';
@@ -115,7 +122,7 @@
         std::cout << "ERROR WHILE Exiting on wait monitor" << '\n';
      }
 
-  bool ServerChannel::addJobToTheQueue(char * job)
+  bool ClientChannel::addJobToTheQueue(char * job)
      {
       if(J9THREAD_SUCCESS != omrthread_monitor_enter(_monitor))
          std::cout << "ERROR WHILE ENTERING MONITOR on addJobToTheQueue" << '\n';
@@ -131,12 +138,12 @@
       return true;
      }
 
-  bool ServerChannel::isQueueEmpty()
+  bool ClientChannel::isQueueEmpty()
      {
       return _queueJobs.empty();
      }
 
-  char * ServerChannel::getNextJob()
+  char * ClientChannel::getNextJob()
      {
       if(isQueueEmpty())
          {
@@ -151,7 +158,7 @@
      }
 
   // Called by thread
-  void ServerChannel::handleCall()
+  void ClientChannel::handleCall()
      {
        omrthread_monitor_enter(_monitor);
        std::cout << "Entering monitor at handleCall..." << '\n';
@@ -162,7 +169,7 @@
        std::cout << "Inside test entry Point ####################################" << '\n';
        std::cout << "Inside test entry Point *********^^^^^^^^^&&&&&&&&&&(()()()())" << '\n';
 
-       while(_monitorStatus != MonitorStatus::JOBS_DONE)
+       while(_monitorStatus != MonitorStatus::NO_JOBS_LEFT)
           {
           // Sleep until queue is populated
           waitForMonitor();
@@ -182,4 +189,36 @@
 
        if(J9THREAD_SUCCESS != omrthread_monitor_exit(_monitor))
           std::cout << "ERROR WHILE EXITING MONITOR on handleCall" << '\n';
+     }
+
+     bool ClientChannel::initClient(const char * port)
+     {
+
+     }
+
+     /****************
+     * ServerChannel *
+     ****************/
+
+     ServerChannel::ServerChannel()
+        {
+
+        }
+
+     ServerChannel::~ServerChannel()
+        {
+          std::cout << " *** ServerChannel destructor called!!" << '\n';
+        }
+
+     bool ServerChannel::RunServer(const char * port)
+     {
+        std::string server_address(port); // "localhost:50055"
+        ServerChannel service;
+
+        ServerBuilder builder;
+        builder.AddListeningPort(server_address, grpc::InsecureServerCredentials());
+        builder.RegisterService(&service);
+        std::unique_ptr<Server> server(builder.BuildAndStart());
+        std::cout << "Server listening on " << server_address << std::endl;
+        server->Wait();
      }
