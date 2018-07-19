@@ -24,10 +24,14 @@
  #include <queue>
  #include <iostream>
  #include <stdlib.h>
+ #include <fstream>
+ #include <string>
+ #include <vector>
 
  #include "omrthread.h"
 
  // gRPC includes
+ #include "infra/Assert.hpp"
  #include <grpc/grpc.h>
  #include <grpcpp/server.h>
  #include <grpcpp/server_builder.h>
@@ -36,11 +40,22 @@
  #include <grpc/support/log.h>
  #include "imperium.grpc.pb.h"
 
+ #include <grpcpp/grpcpp.h>
+
+ // Server
  using grpc::Server;
  using grpc::ServerBuilder;
  using grpc::ServerContext;
  using grpc::ServerReaderWriter;
  using grpc::Status;
+ using grpc::StatusCode;
+
+ // Client
+ using grpc::Channel;
+ using grpc::ClientContext;
+ using grpc::ClientReader;
+ using grpc::ClientReaderWriter;
+ using grpc::ClientWriter;
 
  using imperium::ClientMessage;
  using imperium::ServerResponse;
@@ -57,6 +72,9 @@ namespace OMR
          public:
          ServerChannel();
          ~ServerChannel();
+
+         Status SendMessage(ServerContext* context,
+                           ServerReaderWriter<ServerResponse, ClientMessage>* stream) override;
 
          // Server-facing
          bool RunServer(const char * port);
@@ -76,25 +94,40 @@ namespace OMR
          ClientChannel();
          ~ClientChannel();
 
+         typedef std::shared_ptr<ClientReaderWriter<ClientMessage, ServerResponse>> sharedPtr;
+
          bool initClient(const char * port);
-         void createClientThread();
-         bool addJobToTheQueue(char * job);
+         void generateIL(const char * fileName);
+         void createWriterThread();
+         bool addMessageToTheQueue(ClientMessage message);
+         static std::vector<std::string> readFilesAsString(char * fileNames [], int numOfFiles);
 
          bool isQueueEmpty();
          bool isShutdownComplete();
          void signalNoJobsLeft();
+         void waitForThreadCompletion();
+         ClientMessage constructMessage(std::string file, uint64_t address);
+
+         // TEST
+         void createReaderThread();
 
          void waitForMonitor();
+         void SendMessage();
 
          private:
          omrthread_monitor_t _monitor;
          MonitorStatus _monitorStatus;
-         std::queue<char *> _queueJobs;
+         std::queue<ClientMessage> _queueJobs;
+         std::unique_ptr<ImperiumRPC::Stub> stub_;
+         sharedPtr _stream;
+
          void shutdown();
          omrthread_t attachSelf();
-         static int helperThread(void * data);
-         char * getNextJob();
-         void handleCall();
+         static int writerThread(void * data);
+         static int readerThread(void *data);
+         ClientMessage getNextMessage();
+         void handleWrite();
+         void handleRead();
       };
    }
 } // namespace OMR

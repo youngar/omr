@@ -26,6 +26,7 @@
 #include <random>
 #include <string>
 #include <thread>
+#include <vector>
 
 #include "Jit.hpp"
 #include "ilgen/TypeDictionary.hpp"
@@ -39,6 +40,8 @@
 #include <grpcpp/grpcpp.h>
 
 #include "imperium.grpc.pb.h"
+
+ using namespace OMR::Imperium;
 
 using std::cout;
 using std::cerr;
@@ -273,14 +276,37 @@ int main(int argc, char** argv) {
   // are created. This channel models a connection to an endpoint (in this case,
   // localhost at port 50051). We indicate that the channel isn't authenticated
   // (use of InsecureChannelCredentials()).
-  OMRClient client(grpc::CreateChannel(
-      "localhost:50055", grpc::InsecureChannelCredentials()));
+  // OMRClient client(grpc::CreateChannel(
+  //     "localhost:50055", grpc::InsecureChannelCredentials()));
 
-  std::cout << "-------------- Client Running --------------" << std::endl;
-  // client.SendOutFile();
-  std::cout << "-------------- Client Finished --------------" << std::endl;
+  // OMR::Imperium::ClientChannel client(grpc::CreateChannel(
+  //     "localhost:50055", grpc::InsecureChannelCredentials()));
 
-  std::cout << "____----____----____ BiDirectional SendOutFiles ____----____----____" << '\n';
+  char * fileName = strdup("simple.out");
+  ClientChannel client;
+  client.initClient("localhost:50055"); // Maybe make it private and call it in the constructor?
+  client.generateIL(fileName);
+
+  uint8_t *entry = 0;
+  char * fileNames[] = {fileName, "simple3.out"};
+  // TODO: Too repetitive, make it call in a single function
+  std::vector<std::string> files = ClientChannel::readFilesAsString(fileNames, 2);
+  // std::cout << "files[0]: " << files[0] << '\n';
+  // std::cout << "files[0]: " << files[1] << '\n';
+  //
+  ClientMessage m = client.constructMessage(files.at(0), reinterpret_cast<uint64_t>(&entry));
+  ClientMessage m1 = client.constructMessage(files.at(1), reinterpret_cast<uint64_t>(&entry));
+  // // Populate queue with .out files produced by this same method
+  // // TODO: Encapsulate as much as possible
+  client.addMessageToTheQueue(m);
+  client.addMessageToTheQueue(m1);
+  //
+
   client.SendMessage();
+  // client.signalNoJobsLeft();
+
+
+  // std::cout << "____----____----____ BiDirectional SYNC SendOutFiles ____----____----____" << '\n';
+  client.waitForThreadCompletion();
   return 0;
 }
