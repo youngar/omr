@@ -19,6 +19,7 @@
 #include <stdint.h>
 #include <iostream>
 #include <fstream>
+#include <cstring>
 
 #include "infra/Assert.hpp"
 #include "ilgen/JitBuilderRecorderTextFile.hpp"
