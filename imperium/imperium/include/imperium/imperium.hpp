@@ -84,8 +84,8 @@ namespace OMR
       {
          public:
          enum MonitorStatus {
-         SHUTTING_DOWN,
-         SHUTDOWN_COMPLETE,
+         WRITE_COMPLETE,
+         READ_COMPLETE,
          INITIALIZING,
          INITIALIZING_COMPLETE, // INITIALIZATION ******
          NO_JOBS_LEFT
@@ -98,49 +98,35 @@ namespace OMR
 
          bool initClient(const char * port);
          void generateIL(const char * fileName);
-         void createWriterThread();
          bool addMessageToTheQueue(ClientMessage message);
          static std::vector<std::string> readFilesAsString(char * fileNames [], int numOfFiles);
 
-         bool isQueueEmpty();
-         bool isShutdownComplete();
-         void signalNoJobsLeft();
-         void waitForThreadCompletion();
+         void waitForThreadsCompletion();
          ClientMessage constructMessage(std::string file, uint64_t address);
-
-         // TEST
-         void createReaderThread();
-
-         void waitForMonitor();
-         void SendMessage();
+         void signalNoJobsLeft();
 
          private:
+         ClientContext _context;
          omrthread_monitor_t _monitor;
          MonitorStatus _monitorStatus;
          std::queue<ClientMessage> _queueJobs;
-         std::unique_ptr<ImperiumRPC::Stub> stub_;
+         std::unique_ptr<ImperiumRPC::Stub> _stub;
          sharedPtr _stream;
 
          void shutdown();
          omrthread_t attachSelf();
+         ClientMessage getNextMessage();
+         bool isWriteComplete();
+         bool isReadComplete();
+         void createWriterThread();
+         void createReaderThread();
          static int writerThread(void * data);
          static int readerThread(void *data);
-         ClientMessage getNextMessage();
          void handleWrite();
          void handleRead();
+         void waitForMonitor();
+         void SendMessage();
+         bool isQueueEmpty();
       };
    }
 } // namespace OMR
-
- // namespace TR
- // {
- //    class ServerChannel : public OMR::ServerChannel
- //       {
- //       public:
- //          ServerChannel()
- //            : OMR::ServerChannel()
- //            { }
- //          virtual ~ServerChannel()
- //            { }
- //       };
- // } // namespace TR

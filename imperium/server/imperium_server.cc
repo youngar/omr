@@ -50,7 +50,7 @@ using imperium::ImperiumRPC;
 int main(int argc, char** argv) {
 
   OMR::Imperium::ServerChannel serverChannel;
-  serverChannel.RunServer("localhost:50055");
+  serverChannel.RunServer("192.168.0.20:50055");
 
   return 0;
 }

@@ -284,29 +284,33 @@ int main(int argc, char** argv) {
 
   char * fileName = strdup("simple.out");
   ClientChannel client;
-  client.initClient("localhost:50055"); // Maybe make it private and call it in the constructor?
+  client.initClient("192.168.0.20:50055"); // Maybe make it private and call it in the constructor?
   client.generateIL(fileName);
 
+
   uint8_t *entry = 0;
-  char * fileNames[] = {fileName, "simple3.out"};
-  // TODO: Too repetitive, make it call in a single function
+  char * fileNames[] = {fileName, strdup("simple3.out")};
+  // Param 1: File names as array of char *
+  // Param 2: Number of file names
   std::vector<std::string> files = ClientChannel::readFilesAsString(fileNames, 2);
-  // std::cout << "files[0]: " << files[0] << '\n';
-  // std::cout << "files[0]: " << files[1] << '\n';
   //
   ClientMessage m = client.constructMessage(files.at(0), reinterpret_cast<uint64_t>(&entry));
   ClientMessage m1 = client.constructMessage(files.at(1), reinterpret_cast<uint64_t>(&entry));
-  // // Populate queue with .out files produced by this same method
-  // // TODO: Encapsulate as much as possible
+  ClientMessage m2 = client.constructMessage(files.at(0), reinterpret_cast<uint64_t>(&entry));
+
+  // Populate queue with .out files produced by this same method
   client.addMessageToTheQueue(m);
+  omrthread_sleep(400);
   client.addMessageToTheQueue(m1);
-  //
+  client.addMessageToTheQueue(m2);
+  omrthread_sleep(100);
+  client.addMessageToTheQueue(m1);
+  client.addMessageToTheQueue(m);
+  client.addMessageToTheQueue(m2);
+  omrthread_sleep(500);
+  client.signalNoJobsLeft();
 
-  client.SendMessage();
-  // client.signalNoJobsLeft();
-
-
-  // std::cout << "____----____----____ BiDirectional SYNC SendOutFiles ____----____----____" << '\n';
-  client.waitForThreadCompletion();
+  client.waitForThreadsCompletion();
+  std::cout << "ABOUT TO CALL CLIENT DESCRUCTOR!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << '\n';
   return 0;
 }

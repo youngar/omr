@@ -92,7 +92,6 @@
    * And initializes the monitor
    */
   ClientChannel::ClientChannel()
-      // : stub_(ImperiumRPC::NewStub(channel))
      {
       omrthread_init_library();
 
@@ -106,7 +105,7 @@
          std::cout << "ERROR INITIALIZING monitor" << '\n';
 
       std::cout << "SLEEPING zzZZzZzZzZzZZzZzZZzzZzZzZzZzzZzZ " << '\n';
-      omrthread_sleep(2000);
+      omrthread_sleep(500);
 
       _monitorStatus = MonitorStatus::INITIALIZING_COMPLETE;
      }
@@ -120,32 +119,17 @@
   void ClientChannel::SendMessage()
      {
      std::cout << "Calling SendMessage from ClientChannel..." << '\n';
-     ClientContext context;
 
-     _stream = stub_->SendMessage(&context);
+     _stream = _stub->SendMessage(&_context);
 
-     // Call create thread passing the stream as a parameter (might not work because stream is not static)
-     // Which will handle sending off .out files to the server
+     // Call createWriterThread which creates a thread that writes
+     // to the server based on the queue
+     // It will handle sending off .out files to the server
      createWriterThread();
-     // After stream->WritesDone(); we can start reading what has been sent from the Server
-     // createReaderThread();
+     // Call createReaderThread which creates a thread that waits
+     // and listens for messages from the server
+     createReaderThread();
 
-     ServerResponse retBytes;
-     while (_stream->Read(&retBytes))
-        {
-        std::cout << "Client received: " << retBytes.bytestream()
-        << ", with size: " << retBytes.size() << '\n';
-        }
-     // Check if status is OK
-     Status status = _stream->Finish();
-
-     if (!status.ok())
-       {
-       std::cout << "OMR SendOutFiles rpc failed." << std::endl;
-       std::cout << status.error_message() << '\n';
-       std::cout << "Error details: " << status.error_details() << '\n';
-       std::cout << "Status error code: " << status.error_code() << '\n';
-       }
      }
 
   void ClientChannel::generateIL(const char * fileName)
@@ -219,37 +203,32 @@
      omrthread_monitor_enter(_monitor);
      omrthread_monitor_notify_all(_monitor);
      omrthread_monitor_exit(_monitor);
-
-  //    ServerResponse retBytes;
-  //    while (_stream->Read(&retBytes))
-  //       {
-  //       std::cout << "Client received: " << retBytes.bytestream()
-  //       << ", with size: " << retBytes.size() << '\n';
-  //       }
-  //    // Check if status is OK
-  //    Status status = _stream->Finish();
-  //
-  //    if (!status.ok())
-  //      {
-  //      std::cout << "OMR SendOutFiles rpc failed." << std::endl;
-  //      std::cout << status.error_message() << '\n';
-  //      std::cout << "Error details: " << status.error_details() << '\n';
-  //      std::cout << "Status error code: " << status.error_code() << '\n';
-  //      }
      }
 
-  void ClientChannel::waitForThreadCompletion()
+  void ClientChannel::waitForThreadsCompletion()
      {
-     while(!isShutdownComplete())
+     while(!isWriteComplete())
         {
-        std::cout << "Waiting for SHUTDOWN_COMPLETE signal from thread..." << '\n';
+        std::cout << "Waiting for WRITE_COMPLETE signal from thread..." << '\n';
         waitForMonitor();
+        std::cout << "Woke up from WRITE_COMPLETE and the monitor status should be 1 : " << (bool)(_monitorStatus == MonitorStatus::WRITE_COMPLETE)  << '\n';
+        }
+     while(!isReadComplete())
+        {
+        std::cout << "Waiting for READ_COMPLETE signal from thread read... &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&" << '\n';
+        waitForMonitor();
+        std::cout << "Woke up from READ_COMPLETE and the monitor status should be 1 : " << (bool)(_monitorStatus == MonitorStatus::READ_COMPLETE) << '\n';
         }
      }
 
-  bool ClientChannel::isShutdownComplete()
+  bool ClientChannel::isWriteComplete()
      {
-     return _monitorStatus == MonitorStatus::SHUTDOWN_COMPLETE;
+     return _monitorStatus == MonitorStatus::WRITE_COMPLETE;
+     }
+
+  bool ClientChannel::isReadComplete()
+     {
+     return _monitorStatus == MonitorStatus::READ_COMPLETE;
      }
 
   int ClientChannel::readerThread(void *data)
@@ -365,7 +344,7 @@
   void ClientChannel::handleRead()
      {
        std::cout << "******************************** Calling handle read..." << '\n';
-       omrthread_sleep(5000);
+       omrthread_sleep(500);
        std::cout << "handleRead WOKE UP!!!!!!!!!!!" << '\n';
        ServerResponse retBytes;
        while (_stream->Read(&retBytes))
@@ -380,8 +359,22 @@
          {
          std::cout << "OMR SendOutFiles rpc failed." << std::endl;
          std::cout << status.error_message() << '\n';
+         if(status.error_code() == grpc::UNKNOWN)
+            {
+              std::cout << "UNKNOWN error at server side!!!!!" << '\n';
+              std::cout << "Server side application throws an exception (or does something other than returning a Status code to terminate an RPC)" << '\n';
+            }
          std::cout << "Error details: " << status.error_details() << '\n';
          std::cout << "Status error code: " << status.error_code() << '\n';
+         }
+
+         omrthread_monitor_enter(_monitor);
+         std::cout << "Changing monitor status to READ_COMPLETE!!!!!!" << '\n';
+         _monitorStatus = MonitorStatus::READ_COMPLETE;
+         omrthread_monitor_notify_all(_monitor);
+         std::cout << "Monitor status changed to READ_COMPLETE!!!!" << '\n';
+         if(J9THREAD_SUCCESS != omrthread_monitor_exit(_monitor)) {
+            std::cout << "ERROR WHILE EXITING MONITOR on handleRead" << '\n';
          }
      }
 
@@ -392,14 +385,12 @@
        std::cout << "Entering monitor at handleWrite..." << '\n';
 
        std::cout << "Inside test entry Point ************************************" << '\n';
-       omrthread_sleep(200);
-       std::cout << "Inside test entry Point ####################################" << '\n';
 
-       // while(_monitorStatus != MonitorStatus::NO_JOBS_LEFT)
-       //    {
-       //    // Sleep until queue is populated
-       //    std::cout << "Waiting inside ClientChannel::handleWrite." << '\n';
-       //    waitForMonitor();
+       while(_monitorStatus != MonitorStatus::NO_JOBS_LEFT)
+          {
+          // Sleep until queue is populated
+          std::cout << "Waiting inside ClientChannel::handleWrite." << '\n';
+          waitForMonitor();
 
           while(!isQueueEmpty())
             {
@@ -410,10 +401,10 @@
              omrthread_sleep(500);
              omrthread_monitor_enter(_monitor);
             }
-        // }
+        }
        _stream->WritesDone();
-       std::cout << "Changing status to SHUTDOWN_COMPLETE!!!!" << '\n';
-       _monitorStatus = MonitorStatus::SHUTDOWN_COMPLETE;
+       std::cout << "Changing status to WRITE_COMPLETE!!!!" << '\n';
+       _monitorStatus = MonitorStatus::WRITE_COMPLETE;
        omrthread_monitor_notify_all(_monitor);
 
        if(J9THREAD_SUCCESS != omrthread_monitor_exit(_monitor))
@@ -422,16 +413,16 @@
 
      bool ClientChannel::initClient(const char * port)
        {
-       if(stub_ != NULL)
+       if(_stub != NULL)
           {
             TR_ASSERT_FATAL(0, "Client was already initialized. Quiting...");
           }
        std::shared_ptr<Channel> channel = grpc::CreateChannel(
               port, grpc::InsecureChannelCredentials());
 
-       stub_ = ImperiumRPC::NewStub(channel);
+       _stub = ImperiumRPC::NewStub(channel);
 
-       // SendMessage();
+       SendMessage();
        }
 
      /****************
@@ -452,7 +443,7 @@
                       ServerReaderWriter<ServerResponse, ClientMessage>* stream)
         {
 
-          std::string serverStr[4] = {"0000011111", "01010101", "11110000", "000111000"};
+          std::string serverStr[6] = {"0000011111", "01010101", "11110000", "000111000", "1010101010101", "1100110011001100"};
           int count = 0;
 
           ClientMessage clientMessage;
@@ -465,6 +456,7 @@
                 // ******************************************************************
                 // Compile file string received from server and send back bytecodes
                 // TODO: Put all this in a helper method!!
+                // TODO: Should it initializeJit everytime it needs to compile or do it outside the while loop?
                 bool initialized = initializeJit();
                 if (!initialized)
                 {
@@ -509,15 +501,14 @@
                 // v=-15; u=33; std::cout << "increment(" << v << "+" << u << ") == " << increment(v,u) << "\n";
 
                 //******************************************************************
-
+                // TODO: Should it shutdown everytime it compiles or outside the while loop?
                 shutdownJit();
-                // ******************************************************************
 
                 ServerResponse e;
                 e.set_bytestream(serverStr[count]);
                 e.set_size((count + 2) * 64);
 
-                std::cout << "Sending to client: " << serverStr[count] << '\n';
+                std::cout << "Sending to client: " << count << ": " << serverStr[count] << '\n';
                 count++;
 
                 stream->Write(e);
