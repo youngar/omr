@@ -20,37 +20,13 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
-#include <iostream>
-#include <memory>
-#include <string>
-#include <thread>
-
-#include <grpc/grpc.h>
-#include <grpcpp/server.h>
-#include <grpcpp/server_builder.h>
-#include <grpcpp/server_context.h>
-#include <grpcpp/security/server_credentials.h>
-#include <grpc/support/log.h>
-
 #include "imperium/imperium.hpp"
 
-#include "imperium.grpc.pb.h"
-
-using grpc::Server;
-using grpc::ServerBuilder;
-using grpc::ServerContext;
-using grpc::ServerReaderWriter;
-using grpc::Status;
-using grpc::StatusCode;
-//
-using imperium::ClientMessage;
-using imperium::ServerResponse;
-using imperium::ImperiumRPC;
+using namespace OMR::Imperium;
 
 int main(int argc, char** argv) {
-
-  OMR::Imperium::ServerChannel serverChannel;
-  serverChannel.RunServer("192.168.0.20:50055");
+  ServerChannel serverChannel;
+  serverChannel.RunServer("localhost:50055");
 
   return 0;
 }

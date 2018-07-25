@@ -30,7 +30,6 @@ service ImperiumRPC {
 }
 
 message ClientMessage {
-
    string file = 1;
    int32 version = 2;
    int64 address = 3;
@@ -38,7 +37,7 @@ message ClientMessage {
 }
 
 message ServerResponse {
-
    bytes byteStream = 1;
    int32 size = 2;
+   int64 address = 3;
 }

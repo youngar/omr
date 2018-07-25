@@ -83,13 +83,24 @@ namespace OMR
       class ClientChannel
       {
          public:
-         enum MonitorStatus {
-         WRITE_COMPLETE,
-         READ_COMPLETE,
-         INITIALIZING,
-         INITIALIZING_COMPLETE, // INITIALIZATION ******
-         NO_JOBS_LEFT
+         enum ThreadStatus {
+         INITIALIZATION,
+         RUNNING,
+         NO_JOBS_LEFT,
+         SHUTDOWN_REQUESTED,
+         SHUTDOWN_COMPLETE,
+         ERROR
          };
+
+         // void shutdownWriter() TODO
+         //     *** grab writer thread mutex -- when you grab a mutex to set thread local state
+         //     set status = SHUTDOWN requested
+         //     *** release;
+
+         // void shutdown() TODO
+         //     shutdownWriter();
+         //     shutdownReader();
+         //     while(both monitors != SHUTDOWN_COMPLETE) {}
 
          ClientChannel();
          ~ClientChannel();
@@ -108,7 +119,8 @@ namespace OMR
          private:
          ClientContext _context;
          omrthread_monitor_t _monitor;
-         MonitorStatus _monitorStatus;
+         ThreadStatus _writerStatus;
+         ThreadStatus _readerStatus;
          std::queue<ClientMessage> _queueJobs;
          std::unique_ptr<ImperiumRPC::Stub> _stub;
          sharedPtr _stream;

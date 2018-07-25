@@ -21,11 +21,12 @@
  *******************************************************************************/
 
  #include "Jit.hpp"
+ #include "jitbuilder/env/FrontEnd.hpp"
  #include "ilgen/TypeDictionary.hpp"
  #include "ilgen/JitBuilderRecorderTextFile.hpp"
  #include "ilgen/JitBuilderReplayTextFile.hpp"
  #include "ilgen/MethodBuilderReplay.hpp"
-
+ #include "runtime/CodeCacheManager.hpp"
  #include "imperium/imperium.hpp"
 
  #include <thread>
@@ -60,7 +61,7 @@
     bool
     buildIL()
        {
-       std::cout << "SimpleMethod::buildIL() running!\n";
+       // std::cout << "SimpleMethod::buildIL() running!\n";
 
        // ORIGINAL SIMPLE.cpp
        Return(
@@ -97,17 +98,12 @@
 
       attachSelf();
 
-      _monitorStatus = MonitorStatus::INITIALIZING;
-
-      std::cout << "Initializing Monitors..." << '\n';
+      _writerStatus = ThreadStatus::INITIALIZATION;
+      _readerStatus = ThreadStatus::INITIALIZATION;
+      std::cout << "Initializing Monitor..." << '\n';
 
       if(J9THREAD_SUCCESS != omrthread_monitor_init(&_monitor, 0))
          std::cout << "ERROR INITIALIZING monitor" << '\n';
-
-      std::cout << "SLEEPING zzZZzZzZzZzZZzZzZZzzZzZzZzZzzZzZ " << '\n';
-      omrthread_sleep(500);
-
-      _monitorStatus = MonitorStatus::INITIALIZING_COMPLETE;
      }
 
   ClientChannel::~ClientChannel()
@@ -120,16 +116,20 @@
      {
      std::cout << "Calling SendMessage from ClientChannel..." << '\n';
 
+     // create code cache and send initial to server (message: init code cache)
      _stream = _stub->SendMessage(&_context);
+
+     // ClientMessage --> CompileRequest
+     // ServerReponse --> CompileComplete
 
      // Call createWriterThread which creates a thread that writes
      // to the server based on the queue
      // It will handle sending off .out files to the server
      createWriterThread();
+
      // Call createReaderThread which creates a thread that waits
      // and listens for messages from the server
      createReaderThread();
-
      }
 
   void ClientChannel::generateIL(const char * fileName)
@@ -153,7 +153,19 @@
      //TODO Hack to be able to turn compiling off a global level
      jitBuilderShouldCompile = false;
 
+     auto fe = JitBuilder::FrontEnd::instance();
+     auto codeCacheManager = fe->codeCacheManager();
+     auto codeCache = codeCacheManager.getFirstCodeCache();
+     void * mem = codeCache->getWarmCodeAlloc();
+
      uint8_t *entry = 0; // uint8_t ** , address = &entry
+
+     std::cout << " *********************** " << (mem) << " *********************** " << '\n';
+
+     // comp() is in OMRCompilation.hpp
+     // warmAlloc = frontend.codecache.getWarmAlloc();
+     // entry - warmAlloc = size of compiled code --> pass in ClientMessage
+
      std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
      int32_t rc = compileMethodBuilder(&method, &entry); // run in client thread
      std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
@@ -199,53 +211,39 @@
   // Signal that there are no more jobs to be added to the queue
   void ClientChannel::signalNoJobsLeft()
      {
-     _monitorStatus = MonitorStatus::NO_JOBS_LEFT;
-     omrthread_monitor_enter(_monitor);
-     omrthread_monitor_notify_all(_monitor);
-     omrthread_monitor_exit(_monitor);
+     if(J9THREAD_SUCCESS != omrthread_monitor_enter(_monitor))
+        std::cout << "NO_JOBS_LEFT: ERROR WHILE ENTERING" << '\n';
+
+     _writerStatus = ThreadStatus::NO_JOBS_LEFT; // at this point _readerStatus should be RUNNING
+     std::cout << "\n\n*!*!*!*!*!*!*! NO JOBS LEFT *!*!*!*!*!*!*!" << "\n\n";
+
+     if(J9THREAD_SUCCESS != omrthread_monitor_notify_all(_monitor))
+        std::cout << "NO_JOBS_LEFT: ERROR WHILE NOTIFYING ALL" << '\n';
+
+     if(J9THREAD_SUCCESS != omrthread_monitor_exit(_monitor))
+       std::cout << "NO_JOBS_LEFT: ERROR WHILE EXITING" << '\n';
+
      }
 
   void ClientChannel::waitForThreadsCompletion()
      {
-     while(!isWriteComplete())
-        {
-        std::cout << "Waiting for WRITE_COMPLETE signal from thread..." << '\n';
-        waitForMonitor();
-        std::cout << "Woke up from WRITE_COMPLETE and the monitor status should be 1 : " << (bool)(_monitorStatus == MonitorStatus::WRITE_COMPLETE)  << '\n';
-        }
-     while(!isReadComplete())
-        {
-        std::cout << "Waiting for READ_COMPLETE signal from thread read... &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&" << '\n';
-        waitForMonitor();
-        std::cout << "Woke up from READ_COMPLETE and the monitor status should be 1 : " << (bool)(_monitorStatus == MonitorStatus::READ_COMPLETE) << '\n';
-        }
+     while (_writerStatus != ThreadStatus::SHUTDOWN_COMPLETE || _readerStatus != ThreadStatus::SHUTDOWN_COMPLETE) {
      }
 
-  bool ClientChannel::isWriteComplete()
-     {
-     return _monitorStatus == MonitorStatus::WRITE_COMPLETE;
+     std::cout << "\n\n*!*!*!*!*!*!*! FINISHED WAITING FOR THREAD COMPLETION *!*!*!*!*!*!*!" << "\n\n";
      }
 
-  bool ClientChannel::isReadComplete()
+  int ClientChannel::readerThread(void * data)
      {
-     return _monitorStatus == MonitorStatus::READ_COMPLETE;
-     }
-
-  int ClientChannel::readerThread(void *data)
-     {
-       ClientChannel *s = (ClientChannel *)data;
-
-       std::cout << " Compiler: initializing\n";
+       ClientChannel *s = (ClientChannel *) data;
        s->handleRead();
 
        return 1;
      }
 
-  int ClientChannel::writerThread(void *data)
+  int ClientChannel::writerThread(void * data)
     {
-     ClientChannel *s = (ClientChannel *)data;
-
-     std::cout << " Compiler: initializing\n";
+     ClientChannel *s = (ClientChannel *) data;
      s->handleWrite();
 
      return 1;
@@ -256,9 +254,9 @@
      if(0 != omrthread_monitor_enter(_monitor))
         std::cout << "ERROR WHILE ENTERING on wait monitor" << '\n';
 
-     std::cout << "WAITING ON MONITOR..." << '\n';
-
+     // std::cout << "WAITING ON MONITOR..." << '\n';
      intptr_t tt = omrthread_monitor_wait(_monitor);
+
      if(J9THREAD_SUCCESS != tt)
         std::cout << "ERROR WHILE WAITING ON monitor, error code: " << tt << '\n';
 
@@ -276,10 +274,10 @@
         std::string fileString;
         std::ifstream _file(fileNames[i]);
         std::string line;
-        std::cout << "Reading " << fileNames[i]  << "...\n";
+        // std::cout << "Reading " << fileNames[i]  << "...\n";
         if(_file.is_open())
            {
-            std::cout << fileNames[i] << " opened." << '\n';
+            // std::cout << fileNames[i] << " opened." << '\n';
             while(getline(_file,line))
                {
                fileString += line + '\n';
@@ -302,7 +300,7 @@
        ClientMessage clientMessage;
        clientMessage.set_file(file);
        clientMessage.set_address(address);
-       std::cout << "Constructing message with entry point address: " << address << '\n';
+       // std::cout << "Constructing message with entry point address: " << address << '\n';
 
        return clientMessage;
      }
@@ -344,13 +342,12 @@
   void ClientChannel::handleRead()
      {
        std::cout << "******************************** Calling handle read..." << '\n';
-       omrthread_sleep(500);
-       std::cout << "handleRead WOKE UP!!!!!!!!!!!" << '\n';
        ServerResponse retBytes;
        while (_stream->Read(&retBytes))
           {
           std::cout << "Client received: " << retBytes.bytestream()
           << ", with size: " << retBytes.size() << '\n';
+          // print out address received as well
           }
        // Check if status is OK
        Status status = _stream->Finish();
@@ -359,23 +356,27 @@
          {
          std::cout << "OMR SendOutFiles rpc failed." << std::endl;
          std::cout << status.error_message() << '\n';
+
          if(status.error_code() == grpc::UNKNOWN)
             {
               std::cout << "UNKNOWN error at server side!!!!!" << '\n';
               std::cout << "Server side application throws an exception (or does something other than returning a Status code to terminate an RPC)" << '\n';
             }
+
          std::cout << "Error details: " << status.error_details() << '\n';
          std::cout << "Status error code: " << status.error_code() << '\n';
          }
 
          omrthread_monitor_enter(_monitor);
-         std::cout << "Changing monitor status to READ_COMPLETE!!!!!!" << '\n';
-         _monitorStatus = MonitorStatus::READ_COMPLETE;
+         std::cout << "Changing monitor status to SHUTDOWN_REQUESTED!!!!!!" << '\n';
+         _readerStatus = ThreadStatus::SHUTDOWN_REQUESTED;
          omrthread_monitor_notify_all(_monitor);
-         std::cout << "Monitor status changed to READ_COMPLETE!!!!" << '\n';
+         std::cout << "Monitor status changed to SHUTDOWN_REQUESTED!!!!" << '\n';
          if(J9THREAD_SUCCESS != omrthread_monitor_exit(_monitor)) {
             std::cout << "ERROR WHILE EXITING MONITOR on handleRead" << '\n';
          }
+
+         _readerStatus = ThreadStatus::SHUTDOWN_COMPLETE;
      }
 
   // Called by thread
@@ -384,9 +385,7 @@
        omrthread_monitor_enter(_monitor);
        std::cout << "Entering monitor at handleWrite..." << '\n';
 
-       std::cout << "Inside test entry Point ************************************" << '\n';
-
-       while(_monitorStatus != MonitorStatus::NO_JOBS_LEFT)
+       while(_writerStatus != ThreadStatus::NO_JOBS_LEFT)
           {
           // Sleep until queue is populated
           std::cout << "Waiting inside ClientChannel::handleWrite." << '\n';
@@ -398,17 +397,19 @@
              ClientMessage message = getNextMessage();
              _stream->Write(message);
              std::cout << "JUST WROTE SOMETHING TO THE SERVER!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << '\n';
-             omrthread_sleep(500);
              omrthread_monitor_enter(_monitor);
             }
         }
+
        _stream->WritesDone();
-       std::cout << "Changing status to WRITE_COMPLETE!!!!" << '\n';
-       _monitorStatus = MonitorStatus::WRITE_COMPLETE;
+       std::cout << "Changing status to SHUTDOWN_REQUESTED!!!!" << '\n';
+       _writerStatus = ThreadStatus::SHUTDOWN_REQUESTED;
        omrthread_monitor_notify_all(_monitor);
 
        if(J9THREAD_SUCCESS != omrthread_monitor_exit(_monitor))
           std::cout << "ERROR WHILE EXITING MONITOR on handleWrite" << '\n';
+
+       _writerStatus = ThreadStatus::SHUTDOWN_COMPLETE;
        }
 
      bool ClientChannel::initClient(const char * port)
@@ -437,36 +438,22 @@
      ServerChannel::~ServerChannel()
         {
           std::cout << " *** ServerChannel destructor called!!" << '\n';
+          shutdownJit();
         }
 
      Status ServerChannel::SendMessage(ServerContext* context,
                       ServerReaderWriter<ServerResponse, ClientMessage>* stream)
         {
-
           std::string serverStr[6] = {"0000011111", "01010101", "11110000", "000111000", "1010101010101", "1100110011001100"};
           int count = 0;
 
           ClientMessage clientMessage;
           std::cout << "Server waiting for message from client..." << '\n';
+
           while (stream->Read(&clientMessage))
              {
                 std::cout << "Server received file: " << clientMessage.file() << '\n';
                 std::cout << "Server entry point address: " << clientMessage.address() << '\n';
-
-                // ******************************************************************
-                // Compile file string received from server and send back bytecodes
-                // TODO: Put all this in a helper method!!
-                // TODO: Should it initializeJit everytime it needs to compile or do it outside the while loop?
-                bool initialized = initializeJit();
-                if (!initialized)
-                {
-                  std::cerr << "FAIL: could not initialize JIT\n";
-                  exit(-1);
-                }
-                else
-                {
-                  std::cout << ">>> JIT INITIALIZED" << '\n';
-                }
 
                 TR::JitBuilderReplayTextFile replay(clientMessage.file());
                 TR::JitBuilderRecorderTextFile recorder(NULL, "simple2.out");
@@ -476,15 +463,36 @@
 
                 std::cout << "Step 1: verify output file\n";
                 TR::MethodBuilderReplay mb(&types, &replay, &recorder); // Process Constructor
+
                 //************************************************************
                 std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
                 int32_t rc = compileMethodBuilder(&mb, &entry); // Process buildIL
+
+                // TODO
+                // send entry back to client, calculate size and send back to client
+                // copy bytes between entry point and code cache warm alloc
+                // void * or uint8_t * should give size in bytes
+
+                // Java JITaaS commit: Option to allocate code cache at specified address
+
+                // TODO: all the below stuff occurs on the server side
+                // auto fe = JitBuilder::FrontEnd::instance();
+                // auto codeCacheManager = fe->codeCacheManager();
+                // auto codeCache = codeCacheManager.getFirstCodeCache();
+                // void * mem = codeCache->getWarmCodeAlloc();
+                //
+                // // uint8_t *entry = 0; // uint8_t ** , address = &entry
+                //
+                // std::cout << " *********************** " << (mem) << " *********************** " << '\n';
+                // // (uint8_t *) mem = 0x0000000103800040 ""
+
                 std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
                 auto duration = std::chrono::duration_cast<std::chrono::microseconds>( t2 - t1 ).count();
 
                 std::cout << "Duration for compileMethodBuilder in server: " << duration << " microseconds." << '\n';
                 //************************************************************
-                // TODO: remove and put in the client side
+                // TODO: remove function calls and put in the client side
+                //       need to send back compiled code, then run that code on client
                 typedef int32_t (SimpleMethodFunction)(int32_t);
                 SimpleMethodFunction *increment = (SimpleMethodFunction *) entry;
 
@@ -501,20 +509,19 @@
                 // v=-15; u=33; std::cout << "increment(" << v << "+" << u << ") == " << increment(v,u) << "\n";
 
                 //******************************************************************
-                // TODO: Should it shutdown everytime it compiles or outside the while loop?
-                shutdownJit();
 
                 ServerResponse e;
                 e.set_bytestream(serverStr[count]);
                 e.set_size((count + 2) * 64);
+                // TODO: set address (defined in proto) to entry address sent by client
 
                 std::cout << "Sending to client: " << count << ": " << serverStr[count] << '\n';
                 count++;
 
                 stream->Write(e);
                 // Sleeps for 1 second
-                std::this_thread::sleep_for (std::chrono::seconds(1));
-              }
+                // std::this_thread::sleep_for (std::chrono::seconds(1));
+             }
 
          if (context->IsCancelled()) {
            return Status(StatusCode::CANCELLED, "Deadline exceeded or Client cancelled, abandoning.");
@@ -524,6 +531,18 @@
 
      bool ServerChannel::RunServer(const char * port)
      {
+        // TODO: wrap init Jit in helper func (used in both client and server currently)
+        bool initialized = initializeJit();
+        if (!initialized)
+        {
+         std::cerr << "FAIL: could not initialize JIT\n";
+         exit(-1);
+        }
+        else
+        {
+         std::cout << ">>> JIT INITIALIZED" << '\n';
+        }
+
         std::string server_address(port); // "localhost:50055"
         // ServerChannel service = this;
 

@@ -56,4 +56,4 @@ target_link_libraries(imperium PUBLIC jitbuilder
 
 target_compile_features(imperium PUBLIC cxx_std_11)
 
-target_include_directories(imperium PUBLIC include/ "${CMAKE_CURRENT_BINARY_DIR}")
+target_include_directories(imperium PUBLIC include/ "${CMAKE_CURRENT_BINARY_DIR}" "${CMAKE_SOURCE_DIR}/jitbuilder")
