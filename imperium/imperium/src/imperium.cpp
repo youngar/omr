@@ -102,13 +102,18 @@
       _readerStatus = ThreadStatus::INITIALIZATION;
       std::cout << "Initializing Monitor..." << '\n';
 
-      if(J9THREAD_SUCCESS != omrthread_monitor_init(&_monitor, 0))
+      if(J9THREAD_SUCCESS != omrthread_monitor_init(&_threadMonitor, 0))
          std::cout << "ERROR INITIALIZING monitor" << '\n';
+
+      if(J9THREAD_SUCCESS != omrthread_monitor_init(&_queueMonitor, 0))
+        std::cout << "ERROR INITIALIZING monitor" << '\n';
      }
 
   ClientChannel::~ClientChannel()
      {
         std::cout << " *** ClientChannel destructor called!!" << '\n';
+        signalNoJobsLeft();
+        waitForThreadsCompletion();
         shutdown();
      }
 
@@ -176,8 +181,11 @@
 
   void ClientChannel::shutdown()
   {
-    if(J9THREAD_SUCCESS != omrthread_monitor_destroy(_monitor))
+    if(J9THREAD_SUCCESS != omrthread_monitor_destroy(_threadMonitor))
        std::cout << "ERROR WHILE destroying monitor" << '\n';
+    if(J9THREAD_SUCCESS != omrthread_monitor_destroy(_queueMonitor))
+      std::cout << "ERROR WHILE destroying monitor" << '\n';
+
     omrthread_detach(omrthread_self());
     omrthread_shutdown_library();
     std::cout << " *** ClientChannel shutdown COMPLETE" << '\n';
@@ -211,24 +219,45 @@
   // Signal that there are no more jobs to be added to the queue
   void ClientChannel::signalNoJobsLeft()
      {
-     if(J9THREAD_SUCCESS != omrthread_monitor_enter(_monitor))
-        std::cout << "NO_JOBS_LEFT: ERROR WHILE ENTERING" << '\n';
 
-     _writerStatus = ThreadStatus::NO_JOBS_LEFT; // at this point _readerStatus should be RUNNING
+     // Must grab both monitors before sending the shutdown signal
+     if(J9THREAD_SUCCESS != omrthread_monitor_enter(_threadMonitor))
+        std::cout << "NO_JOBS_LEFT: ERROR WHILE ENTERING" << '\n';
+     if(J9THREAD_SUCCESS != omrthread_monitor_enter(_queueMonitor))
+       std::cout << "NO_JOBS_LEFT: ERROR WHILE ENTERING" << '\n';
+
+     if (_writerStatus != ThreadStatus::SHUTDOWN_COMPLETE) {
+       _writerStatus = ThreadStatus::SHUTDOWN_REQUESTED;
+     }
+     if (_readerStatus != ThreadStatus::SHUTDOWN_COMPLETE) {
+       _readerStatus = ThreadStatus::SHUTDOWN_REQUESTED;
+     }
      std::cout << "\n\n*!*!*!*!*!*!*! NO JOBS LEFT *!*!*!*!*!*!*!" << "\n\n";
 
-     if(J9THREAD_SUCCESS != omrthread_monitor_notify_all(_monitor))
+     if(J9THREAD_SUCCESS != omrthread_monitor_notify_all(_threadMonitor))
         std::cout << "NO_JOBS_LEFT: ERROR WHILE NOTIFYING ALL" << '\n';
-
-     if(J9THREAD_SUCCESS != omrthread_monitor_exit(_monitor))
+     if(J9THREAD_SUCCESS != omrthread_monitor_exit(_threadMonitor))
        std::cout << "NO_JOBS_LEFT: ERROR WHILE EXITING" << '\n';
 
+     // The writer thread could be waiting for more jobs to be added to the queue
+     if(J9THREAD_SUCCESS != omrthread_monitor_notify_all(_queueMonitor))
+       std::cout << "NO_JOBS_LEFT: ERROR WHILE NOTIFYING ALL" << '\n';
+     if(J9THREAD_SUCCESS != omrthread_monitor_exit(_queueMonitor))
+       std::cout << "NO_JOBS_LEFT: ERROR WHILE EXITING" << '\n';
      }
 
   void ClientChannel::waitForThreadsCompletion()
      {
-     while (_writerStatus != ThreadStatus::SHUTDOWN_COMPLETE || _readerStatus != ThreadStatus::SHUTDOWN_COMPLETE) {
+
+     if(J9THREAD_SUCCESS != omrthread_monitor_enter(_threadMonitor))
+        std::cout << "NO_JOBS_LEFT: ERROR WHILE ENTERING" << '\n';
+
+     while(_writerStatus != ThreadStatus::SHUTDOWN_COMPLETE || _readerStatus != ThreadStatus::SHUTDOWN_COMPLETE) {
+        omrthread_monitor_wait(_threadMonitor);
      }
+
+     if(J9THREAD_SUCCESS != omrthread_monitor_exit(_threadMonitor))
+       std::cout << "NO_JOBS_LEFT: ERROR WHILE EXITING" << '\n';
 
      std::cout << "\n\n*!*!*!*!*!*!*! FINISHED WAITING FOR THREAD COMPLETION *!*!*!*!*!*!*!" << "\n\n";
      }
@@ -247,23 +276,6 @@
      s->handleWrite();
 
      return 1;
-     }
-
-  void ClientChannel::waitForMonitor()
-     {
-     if(0 != omrthread_monitor_enter(_monitor))
-        std::cout << "ERROR WHILE ENTERING on wait monitor" << '\n';
-
-     // std::cout << "WAITING ON MONITOR..." << '\n';
-     intptr_t tt = omrthread_monitor_wait(_monitor);
-
-     if(J9THREAD_SUCCESS != tt)
-        std::cout << "ERROR WHILE WAITING ON monitor, error code: " << tt << '\n';
-
-     std::cout << "MONITOR RELEASED. READY TO GO!" << '\n';
-
-     if(0 != omrthread_monitor_exit(_monitor))
-        std::cout << "ERROR WHILE Exiting on wait monitor" << '\n';
      }
 
   std::vector<std::string> ClientChannel::readFilesAsString(char * fileNames [], int numOfFiles)
@@ -307,17 +319,19 @@
 
   bool ClientChannel::addMessageToTheQueue(ClientMessage message)
      {
-      if(J9THREAD_SUCCESS != omrthread_monitor_enter(_monitor))
+      if(J9THREAD_SUCCESS != omrthread_monitor_enter(_queueMonitor))
          std::cout << "ERROR WHILE ENTERING MONITOR on addJobToTheQueue" << '\n';
 
       _queueJobs.push(message);
       std::cout << "++ Added message: " << message.file() << " to the queue." << '\n';
       std::cout << "++ There are now " << _queueJobs.size() << " jobs in the queue." << '\n';
-      // Notify that there are new jobs to be processed in the queue
-      omrthread_monitor_notify_all(_monitor);
 
-      if(J9THREAD_SUCCESS != omrthread_monitor_exit(_monitor))
+      // Notify that there are new jobs to be processed in the queue
+      omrthread_monitor_notify_all(_queueMonitor);
+
+      if(J9THREAD_SUCCESS != omrthread_monitor_exit(_queueMonitor))
          std::cout << "ERROR WHILE EXITING MONITOR on addJobToTheQueue" << '\n';
+
       return true;
      }
 
@@ -343,12 +357,17 @@
      {
        std::cout << "******************************** Calling handle read..." << '\n';
        ServerResponse retBytes;
-       while (_stream->Read(&retBytes))
+       while (_writerStatus != ThreadStatus::SHUTDOWN_REQUESTED)
           {
-          std::cout << "Client received: " << retBytes.bytestream()
-          << ", with size: " << retBytes.size() << '\n';
-          // print out address received as well
+            // TODO: we don't need to read results if we're shutting down.  Right
+            // now it will block until the stream is closed.
+            while(_stream->Read(&retBytes))
+              {
+              // print out address received as well
+              std::cout << "Client received: " << retBytes.bytestream() << ", with size: " << retBytes.size() << '\n';
+              }
           }
+
        // Check if status is OK
        Status status = _stream->Finish();
 
@@ -367,49 +386,45 @@
          std::cout << "Status error code: " << status.error_code() << '\n';
          }
 
-         omrthread_monitor_enter(_monitor);
-         std::cout << "Changing monitor status to SHUTDOWN_REQUESTED!!!!!!" << '\n';
-         _readerStatus = ThreadStatus::SHUTDOWN_REQUESTED;
-         omrthread_monitor_notify_all(_monitor);
-         std::cout << "Monitor status changed to SHUTDOWN_REQUESTED!!!!" << '\n';
-         if(J9THREAD_SUCCESS != omrthread_monitor_exit(_monitor)) {
-            std::cout << "ERROR WHILE EXITING MONITOR on handleRead" << '\n';
-         }
-
+         omrthread_monitor_enter(_threadMonitor);
+         std::cout << "readerStatus changed to SHUTDOWN_COMPLETE!!!!" << '\n';
          _readerStatus = ThreadStatus::SHUTDOWN_COMPLETE;
+         omrthread_monitor_notify_all(_threadMonitor);
+         omrthread_exit(_threadMonitor);
      }
 
   // Called by thread
   void ClientChannel::handleWrite()
      {
-       omrthread_monitor_enter(_monitor);
-       std::cout << "Entering monitor at handleWrite..." << '\n';
 
-       while(_writerStatus != ThreadStatus::NO_JOBS_LEFT)
+       omrthread_monitor_enter(_queueMonitor);
+       while(_writerStatus != ThreadStatus::SHUTDOWN_REQUESTED)
           {
-          // Sleep until queue is populated
-          std::cout << "Waiting inside ClientChannel::handleWrite." << '\n';
-          waitForMonitor();
-
-          while(!isQueueEmpty())
+          if (!isQueueEmpty())
             {
-             omrthread_monitor_exit(_monitor);
-             ClientMessage message = getNextMessage();
-             _stream->Write(message);
-             std::cout << "JUST WROTE SOMETHING TO THE SERVER!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << '\n';
-             omrthread_monitor_enter(_monitor);
+            ClientMessage message = getNextMessage();
+
+            // exit the monitor so more items can be added to the queue
+            omrthread_monitor_exit(_queueMonitor);
+
+            _stream->Write(message);
+            std::cout << "JUST WROTE SOMETHING TO THE SERVER!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << '\n';
+
+            omrthread_monitor_enter(_queueMonitor);
+            } else
+            {
+              std::cout << "Waiting inside ClientChannel::handleWrite." << '\n';
+              omrthread_monitor_wait(_queueMonitor);
             }
-        }
+          }
 
        _stream->WritesDone();
-       std::cout << "Changing status to SHUTDOWN_REQUESTED!!!!" << '\n';
-       _writerStatus = ThreadStatus::SHUTDOWN_REQUESTED;
-       omrthread_monitor_notify_all(_monitor);
 
-       if(J9THREAD_SUCCESS != omrthread_monitor_exit(_monitor))
-          std::cout << "ERROR WHILE EXITING MONITOR on handleWrite" << '\n';
-
+       omrthread_monitor_enter(_threadMonitor);
+       std::cout << "writeStatus changed to SHUTDOWN_COMPLETE!!!!" << '\n';
        _writerStatus = ThreadStatus::SHUTDOWN_COMPLETE;
+       omrthread_monitor_notify_all(_threadMonitor);
+       omrthread_exit(_threadMonitor);
        }
 
      bool ClientChannel::initClient(const char * port)

@@ -112,13 +112,13 @@ namespace OMR
          bool addMessageToTheQueue(ClientMessage message);
          static std::vector<std::string> readFilesAsString(char * fileNames [], int numOfFiles);
 
-         void waitForThreadsCompletion();
          ClientMessage constructMessage(std::string file, uint64_t address);
          void signalNoJobsLeft();
 
          private:
          ClientContext _context;
-         omrthread_monitor_t _monitor;
+         omrthread_monitor_t _threadMonitor;
+         omrthread_monitor_t _queueMonitor;
          ThreadStatus _writerStatus;
          ThreadStatus _readerStatus;
          std::queue<ClientMessage> _queueJobs;
@@ -126,6 +126,7 @@ namespace OMR
          sharedPtr _stream;
 
          void shutdown();
+         void waitForThreadsCompletion();
          omrthread_t attachSelf();
          ClientMessage getNextMessage();
          bool isWriteComplete();
@@ -136,7 +137,6 @@ namespace OMR
          static int readerThread(void *data);
          void handleWrite();
          void handleRead();
-         void waitForMonitor();
          void SendMessage();
          bool isQueueEmpty();
       };

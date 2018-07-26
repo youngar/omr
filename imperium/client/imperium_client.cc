@@ -47,16 +47,12 @@ int main(int argc, char** argv) {
   ClientMessage m2 = client.constructMessage(files.at(0), reinterpret_cast<uint64_t>(&entry));
 
   // Populate queue with .out files produced by the same client instance
-  client.addMessageToTheQueue(m);
-  client.addMessageToTheQueue(m1);
-  client.addMessageToTheQueue(m2);
-  client.addMessageToTheQueue(m1);
-  client.addMessageToTheQueue(m);
-  client.addMessageToTheQueue(m2);
-  // omrthread_sleep(500);
-  client.signalNoJobsLeft();
+  for(int i = 0; i < 1000; i++) {
+    client.addMessageToTheQueue(m);
+    client.addMessageToTheQueue(m1);
+    omrthread_sleep(200);
+  }
 
-  client.waitForThreadsCompletion();
   std::cout << "ABOUT TO CALL CLIENT DESTRUCTOR!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << '\n';
   // TODO: figure out what is causing Segmentation fault: 11 :(
   //       server is hanging for a moment, Seg fault happens on client side
