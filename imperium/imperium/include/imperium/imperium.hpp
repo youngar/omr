@@ -61,6 +61,9 @@
  using imperium::ServerResponse;
  using imperium::ImperiumRPC;
 
+
+ namespace TR {class MethodBuilder;}
+
 // include header files for proto stuff HERE
 
 namespace OMR
@@ -92,28 +95,14 @@ namespace OMR
          ERROR
          };
 
-         // void shutdownWriter() TODO
-         //     *** grab writer thread mutex -- when you grab a mutex to set thread local state
-         //     set status = SHUTDOWN requested
-         //     *** release;
-
-         // void shutdown() TODO
-         //     shutdownWriter();
-         //     shutdownReader();
-         //     while(both monitors != SHUTDOWN_COMPLETE) {}
-
          ClientChannel();
          ~ClientChannel();
 
          typedef std::shared_ptr<ClientReaderWriter<ClientMessage, ServerResponse>> sharedPtr;
 
          bool initClient(const char * port);
-         void generateIL(const char * fileName);
-         bool addMessageToTheQueue(ClientMessage message);
-         static std::vector<std::string> readFilesAsString(char * fileNames [], int numOfFiles);
-
-         ClientMessage constructMessage(std::string file, uint64_t address);
-         void signalNoJobsLeft();
+         void requestCompile(char * fileName, uint8_t ** entryPoint, TR::MethodBuilder *mb);
+         void shutdown();
 
          private:
          ClientContext _context;
@@ -125,7 +114,9 @@ namespace OMR
          std::unique_ptr<ImperiumRPC::Stub> _stub;
          sharedPtr _stream;
 
-         void shutdown();
+         ClientMessage constructMessage(std::string file, uint64_t address);
+         bool addMessageToTheQueue(ClientMessage message);
+         void signalNoJobsLeft();
          void waitForThreadsCompletion();
          omrthread_t attachSelf();
          ClientMessage getNextMessage();

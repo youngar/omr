@@ -20,13 +20,27 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
+#include "Jit.hpp"
+
 #include "imperium/imperium.hpp"
 
 using namespace OMR::Imperium;
 
 int main(int argc, char** argv) {
+
+  // omrthread_init_library();
+  bool initialized = initializeJit();
+  if (!initialized)
+     {
+     std::cerr << "FAIL: could not initialize JIT\n";
+     exit(-1);
+     }
+
   ServerChannel serverChannel;
   serverChannel.RunServer("localhost:50055");
+
+  // omrthread_shutdown_library();
+  shutdownJit();
 
   return 0;
 }

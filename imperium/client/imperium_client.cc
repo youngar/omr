@@ -22,39 +22,93 @@
 
 #include <string>
 #include <vector>
+#include <cstdio>
+
+#include "Jit.hpp"
+#include "ilgen/TypeDictionary.hpp"
+#include "ilgen/MethodBuilder.hpp"
+#include "ilgen/JitBuilderRecorderTextFile.hpp"
 
 #include "imperium/imperium.hpp"
 
 using namespace OMR::Imperium;
 using std::cout;
 
+class SimpleMethod : public TR::MethodBuilder
+   {
+   public:
+      SimpleMethod(TR::TypeDictionary *d, TR::JitBuilderRecorder *recorder)
+      : MethodBuilder(d, recorder)
+      {
+      DefineLine(LINETOSTR(__LINE__));
+      DefineFile(__FILE__);
+      DefineName("increment");
+      DefineParameter("value", Int32);
+      DefineReturnType(Int32);
+      }
+
+   bool
+   buildIL()
+      {
+      // ORIGINAL SIMPLE.cpp
+      Return(
+         Add(
+            Load("value"),
+            ConstInt32(1)));
+      return true;
+      }
+};
+
 int main(int argc, char** argv) {
-  char * fileName = strdup("simple.out");
+  char * fileName = std::tmpnam(NULL);
   ClientChannel client;
   client.initClient("localhost:50055"); // Maybe make it private and call it in the constructor?
-  client.generateIL(fileName);
 
-  uint8_t *entry = 0;
-  char * fileNames[] = {fileName, strdup("simple3.out")};
+  omrthread_init_library();
+  bool initialized = initializeJit();
+  if (!initialized)
+     {
+     std::cerr << "FAIL: could not initialize JIT\n";
+     exit(-1);
+     }
 
-  // Param 1: File names as array of char *
-  // Param 2: Number of file names
-  // TODO: get rid of hardcoded array size
-  std::vector<std::string> files = ClientChannel::readFilesAsString(fileNames, 2);
+  TR::TypeDictionary types;
+  // Create a recorder so we can directly control the file for this particular test
+  TR::JitBuilderRecorderTextFile recorder(NULL, fileName);
 
-  ClientMessage m = client.constructMessage(files.at(0), reinterpret_cast<uint64_t>(&entry));
-  ClientMessage m1 = client.constructMessage(files.at(1), reinterpret_cast<uint64_t>(&entry));
-  ClientMessage m2 = client.constructMessage(files.at(0), reinterpret_cast<uint64_t>(&entry));
+  std::cout << "Step 3: compile method builder\n";
+  SimpleMethod method(&types, &recorder);
+  uint8_t * entryPoint;
+  client.requestCompile(fileName, &entryPoint, &method);
 
-  // Populate queue with .out files produced by the same client instance
-  for(int i = 0; i < 1000; i++) {
-    client.addMessageToTheQueue(m);
-    client.addMessageToTheQueue(m1);
-    // omrthread_sleep(200);
-  }
+
+  // client.generateIL(fileName);
+
+  // uint8_t *entry = 0;
+  // char * fileNames[] = {fileName, strdup("simple3.out")};
+  //
+  // // Param 1: File names as array of char *
+  // // Param 2: Number of file names
+  // // TODO: get rid of hardcoded array size
+  // std::vector<std::string> files = ClientChannel::readFilesAsString(fileNames, 2);
+  //
+  // ClientMessage m = client.constructMessage(files.at(0), reinterpret_cast<uint64_t>(&entry));
+  // ClientMessage m1 = client.constructMessage(files.at(1), reinterpret_cast<uint64_t>(&entry));
+  // ClientMessage m2 = client.constructMessage(files.at(0), reinterpret_cast<uint64_t>(&entry));
+  //
+  // // Populate queue with .out files produced by the same client instance
+  // for(int i = 0; i < 1000; i++) {
+  //   client.addMessageToTheQueue(m);
+  //   client.addMessageToTheQueue(m1);
+  //   // omrthread_sleep(200);
+  // }
 
   std::cout << "ABOUT TO CALL CLIENT DESTRUCTOR!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << '\n';
   // TODO: figure out what is causing Segmentation fault: 11 :(
   //       server is hanging for a moment, Seg fault happens on client side
+
+  client.shutdown();
+  omrthread_shutdown_library();
+  shutdownJit();
   return 0;
 }

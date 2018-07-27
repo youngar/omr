@@ -34,55 +34,6 @@
  using namespace OMR::Imperium;
  extern bool jitBuilderShouldCompile;
 
- class SimpleMethod : public TR::MethodBuilder
-    {
-    public:
-       SimpleMethod(TR::TypeDictionary *d, TR::JitBuilderRecorder *recorder)
-       : MethodBuilder(d, recorder)
-       {
-       DefineLine(LINETOSTR(__LINE__));
-       DefineFile(__FILE__);
-       DefineName("increment");
-       DefineParameter("value", Int32);
-       DefineReturnType(Int32);
-
-       // DefineLine(LINETOSTR(__LINE__));
-       // // cout << LINETOSTR(__LINE__) << " // CHECKING VALUE OF DEFINELINE \n";
-       // DefineFile(__FILE__);
-       //
-       // DefineName("increment");
-       //
-       // // COMPLICATED SIMPLE.cpp
-       // DefineParameter("value1", Int32);
-       // DefineParameter("value2", Int32);
-       // DefineReturnType(Int32);
-       }
-
-    bool
-    buildIL()
-       {
-       // std::cout << "SimpleMethod::buildIL() running!\n";
-
-       // ORIGINAL SIMPLE.cpp
-       Return(
-          Add(
-             Load("value"),
-             ConstInt32(1)));
-
-       // // COMPLICATED SIMPLE.cpp
-       // Return(
-       //    Add(
-       //      Add(
-       //        Load("value1"),
-       //        ConstInt32(17)
-       //      ),
-       //      Add(
-       //        Load("value2"),
-       //        ConstInt32(14))));
-       return true;
-       }
- };
-
    /****************
    * ClientChannel *
    ****************/
@@ -94,9 +45,10 @@
    */
   ClientChannel::ClientChannel()
      {
-      omrthread_init_library();
 
       attachSelf();
+
+      jitBuilderShouldCompile = false;
 
       _writerStatus = ThreadStatus::INITIALIZATION;
       _readerStatus = ThreadStatus::INITIALIZATION;
@@ -112,9 +64,6 @@
   ClientChannel::~ClientChannel()
      {
         std::cout << " *** ClientChannel destructor called!!" << '\n';
-        signalNoJobsLeft();
-        waitForThreadsCompletion();
-        shutdown();
      }
 
   void ClientChannel::SendMessage()
@@ -137,57 +86,42 @@
      createReaderThread();
      }
 
-  void ClientChannel::generateIL(const char * fileName)
+  void ClientChannel::requestCompile(char * fileName, uint8_t ** entry, TR::MethodBuilder *mb)
      {
-     std::cout << "Step 1: initialize JIT\n";
-     bool initialized = initializeJit();
-     if (!initialized)
-        {
-        std::cerr << "FAIL: could not initialize JIT\n";
-        exit(-1);
-        }
+       int32_t rc = compileMethodBuilder(mb, entry);
 
-     std::cout << "Step 2: define type dictionary\n";
-     TR::TypeDictionary types;
-     // Create a recorder so we can directly control the file for this particular test
-     TR::JitBuilderRecorderTextFile recorder(NULL, fileName);
+       std::string fileString;
+       std::ifstream _file(fileName);
+       std::string line;
 
-     std::cout << "Step 3: compile method builder\n";
-     SimpleMethod method(&types, &recorder);
+       if(_file.is_open())
+          {
+           while(getline(_file,line))
+              {
+              fileString += line + '\n';
+              }
+           }
+       else
+          {
+           std::cerr << "Error while trying to open: " << fileName << '\n';
+          }
 
-     //TODO Hack to be able to turn compiling off a global level
-     jitBuilderShouldCompile = false;
-
-     auto fe = JitBuilder::FrontEnd::instance();
-     auto codeCacheManager = fe->codeCacheManager();
-     auto codeCache = codeCacheManager.getFirstCodeCache();
-     void * mem = codeCache->getWarmCodeAlloc();
-
-     uint8_t *entry = 0; // uint8_t ** , address = &entry
-
-     std::cout << " *********************** " << (mem) << " *********************** " << '\n';
-
-     // comp() is in OMRCompilation.hpp
-     // warmAlloc = frontend.codecache.getWarmAlloc();
-     // entry - warmAlloc = size of compiled code --> pass in ClientMessage
-
-     std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
-     int32_t rc = compileMethodBuilder(&method, &entry); // run in client thread
-     std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
-     auto duration = std::chrono::duration_cast<std::chrono::microseconds>( t2 - t1 ).count();
-
-     std::cout << "Duration for compileMethodBuilder in client: " << duration << " microseconds." << '\n';
+      ClientMessage m = constructMessage(fileString, reinterpret_cast<uint64_t>(entry));
+      addMessageToTheQueue(m);
+      std::remove(fileName);
      }
 
   void ClientChannel::shutdown()
   {
+    signalNoJobsLeft();
+    waitForThreadsCompletion();
+
     if(J9THREAD_SUCCESS != omrthread_monitor_destroy(_threadMonitor))
        std::cout << "ERROR WHILE destroying monitor" << '\n';
     if(J9THREAD_SUCCESS != omrthread_monitor_destroy(_queueMonitor))
       std::cout << "ERROR WHILE destroying monitor" << '\n';
 
     omrthread_detach(omrthread_self());
-    omrthread_shutdown_library();
     std::cout << " *** ClientChannel shutdown COMPLETE" << '\n';
   }
 
@@ -276,35 +210,6 @@
      s->handleWrite();
 
      return 1;
-     }
-
-  std::vector<std::string> ClientChannel::readFilesAsString(char * fileNames [], int numOfFiles)
-     {
-      std::vector<std::string> filesString;
-
-      for (size_t i = 0; i < numOfFiles; i++) {
-        std::string fileString;
-        std::ifstream _file(fileNames[i]);
-        std::string line;
-        // std::cout << "Reading " << fileNames[i]  << "...\n";
-        if(_file.is_open())
-           {
-            // std::cout << fileNames[i] << " opened." << '\n';
-            while(getline(_file,line))
-               {
-               fileString += line + '\n';
-               }
-
-            filesString.push_back(fileString);
-            // std::cout << fileString << '\n';
-            }
-        else
-           {
-            std::cerr << "Error while trying to open: " << fileNames[i] << '\n';
-           }
-        }
-
-        return filesString;
      }
 
   ClientMessage ClientChannel::constructMessage(std::string file, uint64_t address)
@@ -445,22 +350,13 @@
      * ServerChannel *
      ****************/
 
-     ServerChannel::ServerChannel()
-        {
+     ServerChannel::ServerChannel() {}
 
-        }
-
-     ServerChannel::~ServerChannel()
-        {
-          std::cout << " *** ServerChannel destructor called!!" << '\n';
-          shutdownJit();
-        }
+     ServerChannel::~ServerChannel() {}
 
      Status ServerChannel::SendMessage(ServerContext* context,
                       ServerReaderWriter<ServerResponse, ClientMessage>* stream)
         {
-          std::string serverStr[6] = {"0000011111", "01010101", "11110000", "000111000", "1010101010101", "1100110011001100"};
-          int count = 0;
 
           ClientMessage clientMessage;
           std::cout << "Server waiting for message from client..." << '\n';
@@ -517,21 +413,12 @@
                 v=10; std::cout << "increment(" << v << ") == " << increment(v) << "\n";
                 v=-15; std::cout << "increment(" << v << ") == " << increment(v) << "\n";
 
-                // int32_t v, u;
-                // v=0; u=1;  std::cout << "increment(" << v << "+" << u << ") == " << increment(v,u) << "\n";
-                // v=1; u=5;  std::cout << "increment(" << v << "+" << u << ") == " << increment(v,u) << "\n";
-                // v=10; u=7; std::cout << "increment(" << v << "+" << u << ") == " << increment(v,u) << "\n";
-                // v=-15; u=33; std::cout << "increment(" << v << "+" << u << ") == " << increment(v,u) << "\n";
-
                 //******************************************************************
 
                 ServerResponse e;
                 e.set_bytestream("01010101010101001");
-                e.set_size((count + 2) * 64);
+                e.set_size(64);
                 // TODO: set address (defined in proto) to entry address sent by client
-
-                // std::cout << "Sending to client: " << count << ": " << serverStr[count] << '\n';
-                count++;
 
                 stream->Write(e);
                 // Sleeps for 1 second
@@ -547,19 +434,8 @@
      bool ServerChannel::RunServer(const char * port)
      {
         // TODO: wrap init Jit in helper func (used in both client and server currently)
-        bool initialized = initializeJit();
-        if (!initialized)
-        {
-         std::cerr << "FAIL: could not initialize JIT\n";
-         exit(-1);
-        }
-        else
-        {
-         std::cout << ">>> JIT INITIALIZED" << '\n';
-        }
 
         std::string server_address(port); // "localhost:50055"
-        // ServerChannel service = this;
 
         ServerBuilder builder;
         builder.AddListeningPort(server_address, grpc::InsecureServerCredentials());
