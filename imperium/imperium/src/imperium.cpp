@@ -29,6 +29,8 @@
  #include "runtime/CodeCacheManager.hpp"
  #include "imperium/imperium.hpp"
 
+ #include <sys/mman.h>
+
  #include <thread>
 
  using namespace OMR::Imperium;
@@ -268,7 +270,23 @@
             while(_stream->Read(&retBytes))
               {
               // print out address received as well
-              std::cout << "Client received: " << retBytes.bytestream() << ", with size: " << retBytes.size() << ". Count: " << (++count) << '\n';
+              std::cout << "Client received: " << retBytes.instructions() << ", with size: " << retBytes.size() << ". Count: " << (++count) << '\n';
+              void * virtualCodeAddress = mmap(
+                                        NULL,
+                                        retBytes.size(),
+                                        PROT_READ | PROT_WRITE | PROT_EXEC,
+                                        MAP_ANONYMOUS | MAP_PRIVATE,
+                                        0,
+                                        0);
+              memcpy(virtualCodeAddress, (const void *)retBytes.instructions().c_str(), retBytes.size());
+              typedef int32_t (SimpleMethodFct)(int32_t);
+              SimpleMethodFct *incr = (SimpleMethodFct *) virtualCodeAddress;
+
+                int32_t v;
+                v=3; std::cout << "incr(" << v << ") == " << incr(v) << "\n";
+                v=6; std::cout << "incr(" << v << ") == " << incr(v) << "\n";
+                v=12; std::cout << "incr(" << v << ") == " << incr(v) << "\n";
+                v=-19; std::cout << "incr(" << v << ") == " << incr(v) << "\n";
               }
 
        // Check if status is OK
@@ -412,15 +430,22 @@
                 // Java JITaaS commit: Option to allocate code cache at specified address
 
                 // TODO: all the below stuff occurs on the server side
-                // auto fe = JitBuilder::FrontEnd::instance();
-                // auto codeCacheManager = fe->codeCacheManager();
-                // auto codeCache = codeCacheManager.getFirstCodeCache();
-                // void * mem = codeCache->getWarmCodeAlloc();
+                auto fe = JitBuilder::FrontEnd::instance();
+                auto codeCacheManager = fe->codeCacheManager();
+                auto codeCache = codeCacheManager.getFirstCodeCache();
+                void * mem = codeCache->getWarmCodeAlloc();
+
+                uint64_t sizeCode = (uint64_t) mem - (uint64_t)entry;
+
                 //
                 // // uint8_t *entry = 0; // uint8_t ** , address = &entry
                 //
-                // std::cout << " *********************** " << (mem) << " *********************** " << '\n';
-                // // (uint8_t *) mem = 0x0000000103800040 ""
+                std::cout << " *********************** " << (mem) << " *********************** " << '\n';
+                std::cout << " *********************** " << (void*)(entry) << " *********************** " << '\n';
+                std::cout << " *********************** " << sizeCode << " *********************** " << '\n';
+                // (uint8_t *) mem = 0x0000000103800040 ""
+
+
 
                 std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
                 auto duration = std::chrono::duration_cast<std::chrono::microseconds>( t2 - t1 ).count();
@@ -441,8 +466,8 @@
                 //******************************************************************
 
                 ServerResponse e;
-                e.set_bytestream("01010101010101001");
-                e.set_size(64);
+                e.set_instructions((char*)entry);
+                e.set_size(sizeCode);
                 // TODO: set address (defined in proto) to entry address sent by client
 
                 stream->Write(e);

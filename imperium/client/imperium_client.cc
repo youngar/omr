@@ -54,7 +54,7 @@ class SimpleMethod : public TR::MethodBuilder
       Return(
          Add(
             Load("value"),
-            ConstInt32(1)));
+            ConstInt32(5)));
       return true;
       }
 };

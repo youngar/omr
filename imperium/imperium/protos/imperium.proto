@@ -37,7 +37,7 @@ message ClientMessage {
 }
 
 message ServerResponse {
-   bytes byteStream = 1;
+   bytes instructions = 1;
    int32 size = 2;
    int64 address = 3;
 }
