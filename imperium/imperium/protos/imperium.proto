@@ -22,22 +22,27 @@
 
 syntax = "proto3";
 
-
 package imperium;
 
 service ImperiumRPC {
    rpc SendMessage (stream ClientMessage) returns (stream ServerResponse) {}
+   rpc RequestCodeCache (CodeCacheRequest) returns (CodeCacheResponse) {}
 }
 
 message ClientMessage {
    string file = 1;
-   int32 version = 2;
-   int64 address = 3;
-   repeated int32 params = 4;
+   int64 address = 2;
 }
 
 message ServerResponse {
    bytes instructions = 1;
    int32 size = 2;
-   int64 address = 3;
+   int64 codeCacheAddress = 3;
+}
+
+message CodeCacheRequest {}
+
+message CodeCacheResponse {
+   int64 codeCacheBaseAddress = 1;
+   int64 size = 2;
 }

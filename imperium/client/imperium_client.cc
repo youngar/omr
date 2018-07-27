@@ -61,8 +61,8 @@ class SimpleMethod : public TR::MethodBuilder
 
 int main(int argc, char** argv) {
   char * fileName = std::tmpnam(NULL);
-  ClientChannel client;
-  client.initClient("localhost:50055"); // Maybe make it private and call it in the constructor?
+  ClientChannel client("localhost:50055");
+  // client.initClient("localhost:50055"); // Maybe make it private and call it in the constructor?
 
   omrthread_init_library();
   bool initialized = initializeJit();

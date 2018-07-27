@@ -60,6 +60,8 @@
  using imperium::ClientMessage;
  using imperium::ServerResponse;
  using imperium::ImperiumRPC;
+ using imperium::CodeCacheRequest;
+ using imperium::CodeCacheResponse;
 
 
  namespace TR {class MethodBuilder;}
@@ -78,6 +80,8 @@ namespace OMR
 
          Status SendMessage(ServerContext* context,
                            ServerReaderWriter<ServerResponse, ClientMessage>* stream) override;
+         Status RequestCodeCache(ServerContext* context,
+                           const CodeCacheRequest* request, CodeCacheResponse* reply) override;
 
          // Server-facing
          bool RunServer(const char * port);
@@ -98,26 +102,28 @@ namespace OMR
          ERROR
          };
 
-         ClientChannel();
+         ClientChannel(std::string serverAddress);
          ~ClientChannel();
 
          typedef std::shared_ptr<ClientReaderWriter<ClientMessage, ServerResponse>> sharedPtr;
 
-         bool initClient(const char * port);
          void requestCompile(char * fileName, uint8_t ** entryPoint, TR::MethodBuilder *mb);
          void shutdown();
 
          private:
+         sharedPtr _stream;
          ClientContext _context;
+         ClientContext _codeCacheContext;
          omrthread_monitor_t _threadMonitor;
          omrthread_monitor_t _queueMonitor;
          ThreadStatus _writerStatus;
          ThreadStatus _readerStatus;
          std::queue<ClientMessage> _queueJobs;
          std::unique_ptr<ImperiumRPC::Stub> _stub;
-         sharedPtr _stream;
+         void * _virtualCodeAddress;
 
          ClientMessage constructMessage(std::string file, uint64_t address);
+         void requestCodeCache();
          bool addMessageToTheQueue(ClientMessage message);
          void signalNoJobsLeft();
          void waitForThreadsCompletion();
@@ -131,7 +137,6 @@ namespace OMR
          static int readerThread(void *data);
          void handleWrite();
          void handleRead();
-         void SendMessage();
          bool isQueueEmpty();
       };
    }

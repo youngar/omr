@@ -24,4 +24,12 @@ add_executable(imperium_server
 	imperium_server.cc
 )
 
+target_compile_options(imperium_server 
+    PUBLIC -no-pie
+)
+
 target_link_libraries(imperium_server imperium)
+
+set_property(TARGET imperium_server
+  APPEND_STRING PROPERTY LINK_FLAGS " -Wl,-no_pie"
+)

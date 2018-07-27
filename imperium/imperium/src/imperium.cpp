@@ -27,6 +27,7 @@
  #include "ilgen/JitBuilderReplayTextFile.hpp"
  #include "ilgen/MethodBuilderReplay.hpp"
  #include "runtime/CodeCacheManager.hpp"
+ #include "runtime/CodeCacheMemorySegment.hpp"
  #include "imperium/imperium.hpp"
 
  #include <sys/mman.h>
@@ -45,9 +46,8 @@
    * Attaches self (main) thread
    * And initializes the monitor
    */
-  ClientChannel::ClientChannel()
+  ClientChannel::ClientChannel(std::string serverAddress)
      {
-
       attachSelf();
 
       jitBuilderShouldCompile = false;
@@ -61,6 +61,31 @@
 
       if(J9THREAD_SUCCESS != omrthread_monitor_init(&_queueMonitor, 0))
         std::cout << "ERROR INITIALIZING monitor" << '\n';
+      
+      std::shared_ptr<Channel> channel = grpc::CreateChannel(
+              serverAddress, grpc::InsecureChannelCredentials());
+
+      _stub = ImperiumRPC::NewStub(channel);
+
+      // Request code cache
+      requestCodeCache();
+      
+      std::cout << "Calling SendMessage from ClientChannel..." << '\n';
+
+      // create code cache and send initial to server (message: init code cache)
+      _stream = _stub->SendMessage(&_context);
+
+      // ClientMessage --> CompileRequest
+      // ServerReponse --> CompileComplete
+
+      // Call createWriterThread which creates a thread that writes
+      // to the server based on the queue
+      // It will handle sending off .out files to the server
+      createWriterThread();
+
+      // Call createReaderThread which creates a thread that waits
+      // and listens for messages from the server
+      createReaderThread();
      }
 
   ClientChannel::~ClientChannel()
@@ -68,24 +93,25 @@
         std::cout << " *** ClientChannel destructor called!!" << '\n';
      }
 
-  void ClientChannel::SendMessage()
+  void ClientChannel::requestCodeCache() 
      {
-     std::cout << "Calling SendMessage from ClientChannel..." << '\n';
+        ClientContext codeCacheContext;
+        CodeCacheRequest request;
+        CodeCacheResponse reply;
+        Status status = _stub->RequestCodeCache(&codeCacheContext, request, &reply);
+        
+        std::cout << "\n\n******* RECEIVED REPLY FOR CODE CACHE ******** base address: " << std::hex << reply.codecachebaseaddress() << " size: " << std::dec << reply.size() << "\n\n";
+        _virtualCodeAddress = mmap(
+                                        (void *) (reply.codecachebaseaddress() - 8),
+                                        reply.size(),
+                                        PROT_READ | PROT_WRITE | PROT_EXEC,
+                                        MAP_ANONYMOUS | MAP_PRIVATE | MAP_FIXED,
+                                        0,
+                                        0); // need to check if -1 returned
+        
+        // sizeof(TR::CodeCacheMemorySegment)
 
-     // create code cache and send initial to server (message: init code cache)
-     _stream = _stub->SendMessage(&_context);
-
-     // ClientMessage --> CompileRequest
-     // ServerReponse --> CompileComplete
-
-     // Call createWriterThread which creates a thread that writes
-     // to the server based on the queue
-     // It will handle sending off .out files to the server
-     createWriterThread();
-
-     // Call createReaderThread which creates a thread that waits
-     // and listens for messages from the server
-     createReaderThread();
+        std::cout << "\n\n******* VIRTUAL CODE ADDRESS: " << _virtualCodeAddress << "\n\n";
      }
 
   void ClientChannel::requestCompile(char * fileName, uint8_t ** entry, TR::MethodBuilder *mb)
@@ -111,7 +137,7 @@
       ClientMessage m = constructMessage(fileString, reinterpret_cast<uint64_t>(entry));
       addMessageToTheQueue(m);
       std::remove(fileName);
-     }
+     }  
 
   void ClientChannel::shutdown()
   {
@@ -270,17 +296,11 @@
             while(_stream->Read(&retBytes))
               {
               // print out address received as well
-              std::cout << "Client received: " << retBytes.instructions() << ", with size: " << retBytes.size() << ". Count: " << (++count) << '\n';
-              void * virtualCodeAddress = mmap(
-                                        NULL,
-                                        retBytes.size(),
-                                        PROT_READ | PROT_WRITE | PROT_EXEC,
-                                        MAP_ANONYMOUS | MAP_PRIVATE,
-                                        0,
-                                        0);
-              memcpy(virtualCodeAddress, (const void *)retBytes.instructions().c_str(), retBytes.size());
+              std::cout << "Client received: " << retBytes.instructions() << ", with size: " << retBytes.size() << ", with address: " << std::hex << retBytes.codecacheaddress() << std::dec << ". Count: " << (++count) << '\n';
+              
+              memcpy(_virtualCodeAddress, (const void *)retBytes.instructions().c_str(), retBytes.size());
               typedef int32_t (SimpleMethodFct)(int32_t);
-              SimpleMethodFct *incr = (SimpleMethodFct *) virtualCodeAddress;
+              SimpleMethodFct *incr = (SimpleMethodFct *) _virtualCodeAddress;
 
                 int32_t v;
                 v=3; std::cout << "incr(" << v << ") == " << incr(v) << "\n";
@@ -350,20 +370,6 @@
        omrthread_exit(_threadMonitor);
        }
 
-     bool ClientChannel::initClient(const char * port)
-       {
-       if(_stub != NULL)
-          {
-            TR_ASSERT_FATAL(0, "Client was already initialized. Quiting...");
-          }
-       std::shared_ptr<Channel> channel = grpc::CreateChannel(
-              port, grpc::InsecureChannelCredentials());
-
-       _stub = ImperiumRPC::NewStub(channel);
-
-       SendMessage();
-       }
-
      /****************
      * ServerChannel *
      ****************/
@@ -384,6 +390,25 @@
              std::cout << "ERROR WHILE destroying monitor" << '\n';
 
           omrthread_detach(omrthread_self());
+        }
+
+     Status ServerChannel::RequestCodeCache(ServerContext* context, const CodeCacheRequest* request, CodeCacheResponse* reply)  
+        {
+          std::cout << "\n*********** REQUESTING CODE CACHE *************" << "\n";
+
+          auto fe = JitBuilder::FrontEnd::instance();
+          auto codeCacheManager = fe->codeCacheManager();
+          auto codeCache = codeCacheManager.getFirstCodeCache();
+          void * codeBase = codeCache->getCodeBase();
+          void * codeTop = codeCache->getCodeTop();
+          uint64_t size = (uint64_t) codeTop - (uint64_t) codeBase;
+
+          std::cout << "\n\n****** Size: " << size << ", with base address: " << std::hex << (uint64_t) codeBase << std::dec << "\n\n";
+
+          reply->set_size(size);
+          reply->set_codecachebaseaddress((uint64_t) codeBase);
+
+          return Status::OK;
         }
 
      Status ServerChannel::SendMessage(ServerContext* context,
@@ -437,15 +462,12 @@
 
                 uint64_t sizeCode = (uint64_t) mem - (uint64_t)entry;
 
-                //
                 // // uint8_t *entry = 0; // uint8_t ** , address = &entry
-                //
-                std::cout << " *********************** " << (mem) << " *********************** " << '\n';
-                std::cout << " *********************** " << (void*)(entry) << " *********************** " << '\n';
-                std::cout << " *********************** " << sizeCode << " *********************** " << '\n';
+                
+                std::cout << " *********ENTRY********* " << (void*)(entry) << " *********************** " << '\n';
+                std::cout << " **********MEM********** " << (mem) << " *********************** " << '\n';
+                std::cout << " *******CODESIZE******** " << sizeCode << " *********************** " << '\n';
                 // (uint8_t *) mem = 0x0000000103800040 ""
-
-
 
                 std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
                 auto duration = std::chrono::duration_cast<std::chrono::microseconds>( t2 - t1 ).count();
@@ -466,9 +488,9 @@
                 //******************************************************************
 
                 ServerResponse e;
-                e.set_instructions((char*)entry);
+                e.set_instructions((char*) entry);
                 e.set_size(sizeCode);
-                // TODO: set address (defined in proto) to entry address sent by client
+                e.set_codecacheaddress((uint64_t) entry);
 
                 stream->Write(e);
                 // Sleeps for 1 second
