@@ -72,40 +72,19 @@ int main(int argc, char** argv) {
      exit(-1);
      }
 
-  TR::TypeDictionary types;
-  // Create a recorder so we can directly control the file for this particular test
-  TR::JitBuilderRecorderTextFile recorder(NULL, fileName);
+  for (size_t i = 0; i < 1; i++)
+     {
+       TR::TypeDictionary types;
+       // Create a recorder so we can directly control the file for this particular test
+       TR::JitBuilderRecorderTextFile recorder(NULL, fileName);
 
-  std::cout << "Step 3: compile method builder\n";
-  SimpleMethod method(&types, &recorder);
-  uint8_t * entryPoint;
-  client.requestCompile(fileName, &entryPoint, &method);
-
-
-  // client.generateIL(fileName);
-
-  // uint8_t *entry = 0;
-  // char * fileNames[] = {fileName, strdup("simple3.out")};
-  //
-  // // Param 1: File names as array of char *
-  // // Param 2: Number of file names
-  // // TODO: get rid of hardcoded array size
-  // std::vector<std::string> files = ClientChannel::readFilesAsString(fileNames, 2);
-  //
-  // ClientMessage m = client.constructMessage(files.at(0), reinterpret_cast<uint64_t>(&entry));
-  // ClientMessage m1 = client.constructMessage(files.at(1), reinterpret_cast<uint64_t>(&entry));
-  // ClientMessage m2 = client.constructMessage(files.at(0), reinterpret_cast<uint64_t>(&entry));
-  //
-  // // Populate queue with .out files produced by the same client instance
-  // for(int i = 0; i < 1000; i++) {
-  //   client.addMessageToTheQueue(m);
-  //   client.addMessageToTheQueue(m1);
-  //   // omrthread_sleep(200);
-  // }
+       std::cout << "Step #: compile method builder\n";
+       SimpleMethod method(&types, &recorder);
+       uint8_t * entryPoint;
+       client.requestCompile(fileName, &entryPoint, &method);
+     }
 
   std::cout << "ABOUT TO CALL CLIENT DESTRUCTOR!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << '\n';
-  // TODO: figure out what is causing Segmentation fault: 11 :(
-  //       server is hanging for a moment, Seg fault happens on client side
 
   client.shutdown();
   omrthread_shutdown_library();

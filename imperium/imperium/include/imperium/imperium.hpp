@@ -81,6 +81,9 @@ namespace OMR
 
          // Server-facing
          bool RunServer(const char * port);
+
+         private:
+         omrthread_monitor_t _compileMonitor;
       };
 
       class ClientChannel

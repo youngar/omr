@@ -28,7 +28,7 @@ using namespace OMR::Imperium;
 
 int main(int argc, char** argv) {
 
-  // omrthread_init_library();
+  omrthread_init_library();
   bool initialized = initializeJit();
   if (!initialized)
      {
@@ -39,7 +39,7 @@ int main(int argc, char** argv) {
   ServerChannel serverChannel;
   serverChannel.RunServer("localhost:50055");
 
-  // omrthread_shutdown_library();
+  omrthread_shutdown_library();
   shutdownJit();
 
   return 0;

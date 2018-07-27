@@ -350,9 +350,23 @@
      * ServerChannel *
      ****************/
 
-     ServerChannel::ServerChannel() {}
+     ServerChannel::ServerChannel()
+        {
+          omrthread_t thisThread;
+          omrthread_attach_ex(&thisThread,
+                              J9THREAD_ATTR_DEFAULT /* default attr */);
 
-     ServerChannel::~ServerChannel() {}
+          if(J9THREAD_SUCCESS != omrthread_monitor_init(&_compileMonitor, 0))
+             std::cout << "ERROR INITIALIZING monitor" << '\n';
+        }
+
+     ServerChannel::~ServerChannel()
+        {
+          if(J9THREAD_SUCCESS != omrthread_monitor_destroy(_compileMonitor))
+             std::cout << "ERROR WHILE destroying monitor" << '\n';
+
+          omrthread_detach(omrthread_self());
+        }
 
      Status ServerChannel::SendMessage(ServerContext* context,
                       ServerReaderWriter<ServerResponse, ClientMessage>* stream)
@@ -361,13 +375,20 @@
           ClientMessage clientMessage;
           std::cout << "Server waiting for message from client..." << '\n';
 
+          omrthread_t thisThread;
+          omrthread_attach_ex(&thisThread,
+                              J9THREAD_ATTR_DEFAULT /* default attr */);
+
           while (stream->Read(&clientMessage))
              {
                 std::cout << "Server received file: " << clientMessage.file() << '\n';
                 std::cout << "Server entry point address: " << clientMessage.address() << '\n';
 
+                omrthread_monitor_enter(_compileMonitor);
                 TR::JitBuilderReplayTextFile replay(clientMessage.file());
                 TR::JitBuilderRecorderTextFile recorder(NULL, "simple2.out");
+
+                std::cout << "################################################# Thread ID: " << thisThread << '\n';
 
                 TR::TypeDictionary types;
                 uint8_t *entry = 0;
@@ -377,7 +398,11 @@
 
                 //************************************************************
                 std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
+
+                // Only one thread can compile at a time.
+
                 int32_t rc = compileMethodBuilder(&mb, &entry); // Process buildIL
+                omrthread_monitor_exit(_compileMonitor);
 
                 // TODO
                 // send entry back to client, calculate size and send back to client
@@ -424,6 +449,8 @@
                 // Sleeps for 1 second
                 // std::this_thread::sleep_for (std::chrono::seconds(1));
              }
+
+         omrthread_detach(thisThread);
 
          if (context->IsCancelled()) {
            return Status(StatusCode::CANCELLED, "Deadline exceeded or Client cancelled, abandoning.");
