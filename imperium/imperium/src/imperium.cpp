@@ -357,16 +357,14 @@
      {
        std::cout << "******************************** Calling handle read..." << '\n';
        ServerResponse retBytes;
-       while (_writerStatus != ThreadStatus::SHUTDOWN_REQUESTED)
-          {
             // TODO: we don't need to read results if we're shutting down.  Right
             // now it will block until the stream is closed.
+            static int count = 0;
             while(_stream->Read(&retBytes))
               {
               // print out address received as well
-              std::cout << "Client received: " << retBytes.bytestream() << ", with size: " << retBytes.size() << '\n';
+              std::cout << "Client received: " << retBytes.bytestream() << ", with size: " << retBytes.size() << ". Count: " << (++count) << '\n';
               }
-          }
 
        // Check if status is OK
        Status status = _stream->Finish();
@@ -398,7 +396,7 @@
      {
 
        omrthread_monitor_enter(_queueMonitor);
-       while(_writerStatus != ThreadStatus::SHUTDOWN_REQUESTED)
+       while(_writerStatus != ThreadStatus::SHUTDOWN_REQUESTED || !isQueueEmpty())
           {
           if (!isQueueEmpty())
             {
@@ -417,6 +415,8 @@
               omrthread_monitor_wait(_queueMonitor);
             }
           }
+
+       omrthread_monitor_exit(_queueMonitor);
 
        _stream->WritesDone();
 
@@ -526,11 +526,11 @@
                 //******************************************************************
 
                 ServerResponse e;
-                e.set_bytestream(serverStr[count]);
+                e.set_bytestream("01010101010101001");
                 e.set_size((count + 2) * 64);
                 // TODO: set address (defined in proto) to entry address sent by client
 
-                std::cout << "Sending to client: " << count << ": " << serverStr[count] << '\n';
+                // std::cout << "Sending to client: " << count << ": " << serverStr[count] << '\n';
                 count++;
 
                 stream->Write(e);

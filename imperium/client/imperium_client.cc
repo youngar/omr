@@ -50,7 +50,7 @@ int main(int argc, char** argv) {
   for(int i = 0; i < 1000; i++) {
     client.addMessageToTheQueue(m);
     client.addMessageToTheQueue(m1);
-    omrthread_sleep(200);
+    // omrthread_sleep(200);
   }
 
   std::cout << "ABOUT TO CALL CLIENT DESTRUCTOR!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << '\n';
