@@ -258,6 +258,10 @@ OMR::JitBuilderReplayTextFile::handleServiceIlBuilder(uint32_t mbID, char * toke
       {
          handleSub(ilmb, tokens);
       }
+      else if(strcmp(serviceString, STATEMENT_MUL) == 0)
+      {
+         handleMul(ilmb, tokens);
+      }
       else if (strcmp(serviceString, STATEMENT_LESSTHAN) == 0) {
         handleLessThan(ilmb, tokens);
       }
@@ -478,6 +482,28 @@ OMR::JitBuilderReplayTextFile::handleAdd(TR::IlBuilder * ilmb, char * tokens)
 
       StoreIDPointerPair(IDtoStore, subResult);
       }
+
+  void
+  OMR::JitBuilderReplayTextFile::handleMul(TR::IlBuilder * ilmb, char * tokens)
+    {
+    // Def S16 "3 [Mul]"
+    // B2 S16 V15 V11 V13
+    std::cout << "Calling handleMul helper.\n";
+
+    uint32_t IDtoStore = getNumberFromToken(tokens);
+    tokens = std::strtok(NULL, SPACE);
+
+    uint32_t param1ID = getNumberFromToken(tokens);
+    tokens = std::strtok(NULL, SPACE);
+    uint32_t param2ID = getNumberFromToken(tokens);
+
+    TR::IlValue * param1IlValue = static_cast<TR::IlValue *>(lookupPointer(param1ID));
+    TR::IlValue * param2IlValue = static_cast<TR::IlValue *>(lookupPointer(param2ID));
+
+    TR::IlValue * addResult = ilmb->Mul(param1IlValue, param2IlValue);
+
+    StoreIDPointerPair(IDtoStore, addResult);
+    }
 
 // Add New Builder June.29
   void

@@ -793,7 +793,7 @@ OMR::IlBuilderRecorder::Mul(TR::IlValue *left, TR::IlValue *right)
       TR::IlValue *returnValue = newValue();
       TR::JitBuilderRecorder *rec = recorder();
       if (rec)
-//         binaryOp(returnValue, left, right, rec->STATEMENT_MUL);//???
+         binaryOp(returnValue, left, right, rec->STATEMENT_MUL);
       return returnValue;
       }
 

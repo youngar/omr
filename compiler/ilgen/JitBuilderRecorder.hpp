@@ -132,6 +132,7 @@ class JitBuilderRecorder
    const char *STATEMENT_UNSIGNEDCONVERTTO          = "UnsignedConvertTo";
    const char *STATEMENT_ADD                        = "Add";
    const char *STATEMENT_SUB                        = "Sub";
+   const char *STATEMENT_MUL                        = "Mul";
    const char *STATEMENT_LESSTHAN                   = "LessThan";
    const char *STATEMENT_NOTEQUALTO                 = "NotEqualTo";
    const char *STATEMENT_APPENDBUILDER              = "AppendBuilder";

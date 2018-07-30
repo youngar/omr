@@ -1478,9 +1478,9 @@ OMR::IlBuilder::MulWithOverflow(TR::IlBuilder **handler, TR::IlValue *left, TR::
 TR::IlValue *
 OMR::IlBuilder::Mul(TR::IlValue *left, TR::IlValue *right)
    {
-   TR::IlValue *returnValue;//=TR:IlBuilderRecorder::Mul(left, right);
+   TR::IlValue *returnValue = TR::IlBuilderRecorder::Mul(left, right);
    if(shouldCompile()){
-     TR::IlValue *returnValue=binaryOpFromOpMap(TR::ILOpCode::multiplyOpCode, left, right);
+     binaryOpFromOpMap(TR::ILOpCode::multiplyOpCode, returnValue, left, right);
    }
   // TraceIL("IlBuilder[ %p ]::%d is Mul %d * %d\n", this, returnValue->getID(), left->getID(), right->getID());
    return returnValue;
