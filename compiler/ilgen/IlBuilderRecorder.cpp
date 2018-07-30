@@ -797,6 +797,45 @@ OMR::IlBuilderRecorder::Mul(TR::IlValue *left, TR::IlValue *right)
       return returnValue;
       }
 
+TR::IlValue *
+OMR::IlBuilderRecorder::Div(TR::IlValue *left, TR::IlValue *right)
+   {
+   TR::IlValue *returnValue = newValue();
+   TR::JitBuilderRecorder *rec = recorder();
+   if (rec)
+      binaryOp(returnValue, left, right, rec->STATEMENT_DIV);
+   return returnValue;
+   }
+
+TR::IlValue *
+OMR::IlBuilderRecorder::And(TR::IlValue *left, TR::IlValue *right)
+   {
+   TR::IlValue *returnValue = newValue();
+   TR::JitBuilderRecorder *rec = recorder();
+   if (rec)
+      binaryOp(returnValue, left, right, rec->STATEMENT_AND);
+   return returnValue;
+   }
+
+TR::IlValue *
+OMR::IlBuilderRecorder::Or(TR::IlValue *left, TR::IlValue *right)
+   {
+   TR::IlValue *returnValue = newValue();
+   TR::JitBuilderRecorder *rec = recorder();
+   if (rec)
+      binaryOp(returnValue, left, right, rec->STATEMENT_OR);
+   return returnValue;
+   }
+
+TR::IlValue *
+OMR::IlBuilderRecorder::Xor(TR::IlValue *left, TR::IlValue *right)
+   {
+   TR::IlValue *returnValue = newValue();
+   TR::JitBuilderRecorder *rec = recorder();
+   if (rec)
+      binaryOp(returnValue, left, right, rec->STATEMENT_XOR);
+   return returnValue;
+   }
 
 
 

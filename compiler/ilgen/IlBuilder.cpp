@@ -1489,7 +1489,9 @@ OMR::IlBuilder::Mul(TR::IlValue *left, TR::IlValue *right)
 TR::IlValue *
 OMR::IlBuilder::Div(TR::IlValue *left, TR::IlValue *right)
    {
-   TR::IlValue *returnValue=binaryOpFromOpMap(TR::ILOpCode::divideOpCode, left, right);
+   TR::IlValue *returnValue = TR::IlBuilderRecorder::Div(left, right);
+   binaryOpFromOpMap(TR::ILOpCode::divideOpCode, returnValue, left, right);
+  //  TR::IlValue *returnValue=binaryOpFromOpMap(TR::ILOpCode::divideOpCode, left, right);
    TraceIL("IlBuilder[ %p ]::%d is Div %d / %d\n", this, returnValue->getID(), left->getID(), right->getID());
    return returnValue;
    }
@@ -1518,7 +1520,9 @@ OMR::IlBuilder::Rem(TR::IlValue *left, TR::IlValue *right)
 TR::IlValue *
 OMR::IlBuilder::And(TR::IlValue *left, TR::IlValue *right)
    {
-   TR::IlValue *returnValue=binaryOpFromOpMap(TR::ILOpCode::andOpCode, left, right);
+    TR::IlValue *returnValue = TR::IlBuilderRecorder::And(left, right);
+    binaryOpFromOpMap(TR::ILOpCode::andOpCode, returnValue, left, right);
+  //  TR::IlValue *returnValue=binaryOpFromOpMap(TR::ILOpCode::andOpCode, left, right);
    TraceIL("IlBuilder[ %p ]::%d is And %d & %d\n", this, returnValue->getID(), left->getID(), right->getID());
    return returnValue;
    }
@@ -1526,7 +1530,9 @@ OMR::IlBuilder::And(TR::IlValue *left, TR::IlValue *right)
 TR::IlValue *
 OMR::IlBuilder::Or(TR::IlValue *left, TR::IlValue *right)
    {
-   TR::IlValue *returnValue=binaryOpFromOpMap(TR::ILOpCode::orOpCode, left, right);
+   TR::IlValue *returnValue = TR::IlBuilderRecorder::Or(left, right);
+   binaryOpFromOpMap(TR::ILOpCode::orOpCode, returnValue, left, right);
+  //  TR::IlValue *returnValue=binaryOpFromOpMap(TR::ILOpCode::orOpCode, left, right);
    TraceIL("IlBuilder[ %p ]::%d is Or %d | %d\n", this, returnValue->getID(), left->getID(), right->getID());
    return returnValue;
    }
@@ -1534,7 +1540,9 @@ OMR::IlBuilder::Or(TR::IlValue *left, TR::IlValue *right)
 TR::IlValue *
 OMR::IlBuilder::Xor(TR::IlValue *left, TR::IlValue *right)
    {
-   TR::IlValue *returnValue=binaryOpFromOpMap(TR::ILOpCode::xorOpCode, left, right);
+   TR::IlValue *returnValue = TR::IlBuilderRecorder::Xor(left, right);
+   binaryOpFromOpMap(TR::ILOpCode::xorOpCode, returnValue, left, right);
+  //  TR::IlValue *returnValue=binaryOpFromOpMap(TR::ILOpCode::xorOpCode, left, right);
    TraceIL("IlBuilder[ %p ]::%d is Xor %d ^ %d\n", this, returnValue->getID(), left->getID(), right->getID());
    return returnValue;
    }
