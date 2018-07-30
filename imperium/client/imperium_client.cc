@@ -43,7 +43,10 @@ class SimpleMethod : public TR::MethodBuilder
       DefineLine(LINETOSTR(__LINE__));
       DefineFile(__FILE__);
       DefineName("increment");
-      DefineParameter("value", Int32);
+      // DefineParameter("value", Int32);
+
+      // DefineName("fib_iter"); // defines _method
+      DefineParameter("n", Int32);
       DefineReturnType(Int32);
       }
 
@@ -51,10 +54,45 @@ class SimpleMethod : public TR::MethodBuilder
    buildIL()
       {
       // ORIGINAL SIMPLE.cpp
-      Return(
-         Add(
-            Load("value"),
-            ConstInt32(5)));
+      // Return(
+      //    Div(
+      //       Load("value"),
+      //       ConstInt32(5)));
+
+   TR::IlBuilder *returnN = NULL;
+   IfThen(&returnN,
+      LessThan(
+         Load("n"),
+         ConstInt32(2)));
+
+   // Only executed if "n < 2"
+   returnN->Return(
+   returnN->   Load("n"));
+
+   Store("LastSum",
+      ConstInt32(0));
+
+   Store("Sum",
+      ConstInt32(1));
+
+   TR::IlBuilder *iloop = NULL;
+   ForLoopUp("i", &iloop,
+           ConstInt32(1),
+           Load("n"),
+           ConstInt32(1));
+
+   iloop->Store("tempSum",
+   iloop->   Add(
+   iloop->      Load("Sum"),
+   iloop->      Load("LastSum")));
+   iloop->Store("LastSum",
+   iloop->   Load("Sum"));
+   iloop->Store("Sum",
+   iloop->   Load("tempSum"));
+
+   Return(
+      Load("Sum"));
+
       return true;
       }
 };

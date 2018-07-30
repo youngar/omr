@@ -1490,7 +1490,7 @@ TR::IlValue *
 OMR::IlBuilder::Div(TR::IlValue *left, TR::IlValue *right)
    {
    TR::IlValue *returnValue = TR::IlBuilderRecorder::Div(left, right);
-   binaryOpFromOpMap(TR::ILOpCode::divideOpCode, returnValue, left, right);
+      binaryOpFromOpMap(TR::ILOpCode::divideOpCode, returnValue, left, right);
   //  TR::IlValue *returnValue=binaryOpFromOpMap(TR::ILOpCode::divideOpCode, left, right);
    TraceIL("IlBuilder[ %p ]::%d is Div %d / %d\n", this, returnValue->getID(), left->getID(), right->getID());
    return returnValue;
@@ -2540,6 +2540,9 @@ OMR::IlBuilder::ForLoop(bool countsUp,
       bBreak = *breakBuilder = self()->OrphanBuilder();
       }
 
+  // Do not record the loopContinue 
+  TR::JitBuilderRecorder *savedRecorder = clearRecorder();
+
    TR::IlBuilder *loopContinue = self()->OrphanBuilder();
 
    TR::IlBuilder *bContinue = NULL;
@@ -2549,12 +2552,13 @@ OMR::IlBuilder::ForLoop(bool countsUp,
       bContinue = *continueBuilder = loopContinue;
       }
 
+   restoreRecorder(savedRecorder);
    TR::IlBuilderRecorder::ForLoop(countsUp, indVar, *loopCode, bBreak, bContinue, initial, end, increment);
 
    methodSymbol()->setMayHaveLoops(true);
 
    // No services will be logged after this point; all objects must be created by now
-   TR::JitBuilderRecorder *savedRecorder = clearRecorder();
+   savedRecorder = clearRecorder();
 
    TraceIL("IlBuilder[ %p ]::ForLoop ind %s initial %d end %d increment %d loopCode %p countsUp %d\n", this, indVar, initial->getID(), end->getID(), increment->getID(), *loopCode, countsUp);
 

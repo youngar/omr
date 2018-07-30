@@ -480,10 +480,10 @@
                 SimpleMethodFunction *increment = (SimpleMethodFunction *) entry;
 
                 int32_t v;
-                v=0; std::cout << "increment(" << v << ") == " << increment(v) << "\n";
-                v=1; std::cout << "increment(" << v << ") == " << increment(v) << "\n";
                 v=10; std::cout << "increment(" << v << ") == " << increment(v) << "\n";
-                v=-15; std::cout << "increment(" << v << ") == " << increment(v) << "\n";
+                v=15; std::cout << "increment(" << v << ") == " << increment(v) << "\n";
+                v=150; std::cout << "increment(" << v << ") == " << increment(v) << "\n";
+                v=-135; std::cout << "increment(" << v << ") == " << increment(v) << "\n";
 
                 //******************************************************************
 
