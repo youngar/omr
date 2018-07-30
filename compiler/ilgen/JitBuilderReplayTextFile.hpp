@@ -77,6 +77,7 @@
     void handleLoad(TR::IlBuilder * ilmb, char * tokens);
     void handleAdd(TR::IlBuilder * ilmb, char * tokens);
     void handleSub(TR::IlBuilder * ilmb, char * tokens);
+    void handleMul(TR::IlBuilder * ilmb, char * tokens);
     void handleDiv(TR::IlBuilder * ilmb, char * tokens);
     void handleAnd(TR::IlBuilder * ilmb, char * tokens);
     void handleOr(TR::IlBuilder * ilmb, char * tokens);

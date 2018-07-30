@@ -129,6 +129,7 @@
      const char *STATEMENT_UNSIGNEDCONVERTTO          = "UnsignedConvertTo";
      const char *STATEMENT_ADD                        = "Add";
      const char *STATEMENT_SUB                        = "Sub";
+     const char *STATEMENT_MUL                        = "Mul";
      const char *STATEMENT_DIV                        = "Div";
      const char *STATEMENT_AND                        = "And";
      const char *STATEMENT_OR                         = "Or";
