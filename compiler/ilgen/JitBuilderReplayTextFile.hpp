@@ -83,6 +83,7 @@
     void handleOr(TR::IlBuilder * ilmb, char * tokens);
     void handleXor(TR::IlBuilder * ilmb, char * tokens);
     void handleStore(TR::IlBuilder * ilmb, char * tokens);
+    void handleForLoop(TR::IlBuilder * ilmb, char * tokens);
 
     void handleNewIlBuilder(TR::IlBuilder * ilmb, char * tokens);
     void handleLessThan(TR::IlBuilder * ilmb, char * tokens);

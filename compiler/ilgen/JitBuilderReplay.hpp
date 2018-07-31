@@ -32,6 +32,7 @@
  namespace TR { class IlBuilderReplay; }
  namespace TR { class MethodBuilderReplay; }
  namespace TR { class MethodBuilder; }
+ namespace TR { class IlBuilder; }
 
  namespace OMR
  {
@@ -65,10 +66,16 @@
      virtual void handlePrimitiveType(TR::MethodBuilder * mb, char * tokens)     { }
      virtual void handleDefineReturnType(TR::MethodBuilder * mb, char * tokens)  { }
 
-     virtual void handleAdd(char * tokens)        { }
-     virtual void handleLoad(char * tokens)       { }
-     virtual void handleConstInt32(char * tokens) { }
-     virtual void handleReturn(char * tokens)     { }
+     virtual void handleAdd(TR::IlBuilder * ilmb, char * tokens)        { }
+     virtual void handleMul(TR::IlBuilder * ilmb, char * tokens)        { }
+     virtual void handleDiv(TR::IlBuilder * ilmb, char * tokens)        { }
+     virtual void handleOr(TR::IlBuilder * ilmb, char * tokens)         { }
+     virtual void handleAnd(TR::IlBuilder * ilmb, char * tokens)        { }
+     virtual void handleXor(TR::IlBuilder * ilmb, char * tokens)        { }
+     virtual void handleLoad(TR::IlBuilder * ilmb, char * tokens)       { }
+     virtual void handleConstInt32(TR::IlBuilder * ilmb, char * tokens) { }
+     virtual void handleForLoop(TR::IlBuilder * ilmb, char * tokens)    { }
+     virtual void handleReturn(TR::IlBuilder * ilmb, char * tokens)     { }
      virtual bool handleService(char * service)   { return false; }
 
      // Define Map that maps IDs to pointers

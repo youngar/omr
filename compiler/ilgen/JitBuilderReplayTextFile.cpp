@@ -290,6 +290,10 @@ OMR::JitBuilderReplayTextFile::handleServiceIlBuilder(uint32_t mbID, char * toke
          {
          handleIfThenElse(ilmb, tokens);
          }
+      else if(strcmp(serviceString, STATEMENT_FORLOOP) == 0)
+         {
+         handleForLoop(ilmb, tokens);
+         }
       else
          {
          TR_ASSERT_FATAL(0, "handleServiceIlBuilder asked to handle unknown serive %s", serviceString);
@@ -668,13 +672,77 @@ OMR::JitBuilderReplayTextFile::handleXor(TR::IlBuilder * ilmb, char * tokens)
       uint32_t conditionID = getNumberFromToken(tokens);
 
       TR::IlBuilder * IfBlock   = static_cast<TR::IlBuilder *>(lookupPointer(IfID));
-      TR::IlBuilder * ElseBlock = static_cast<TR::IlBuilder *>(lookupPointer(ElseID));
-
+      
       TR::IlValue * conditionValue = static_cast<TR::IlValue *>(lookupPointer(conditionID));
 
-      ilmb->IfThenElse(&IfBlock, &ElseBlock, conditionValue);
-
+      if(ElseID == 0)
+         ilmb->IfThen(&IfBlock, conditionValue);
+      else {
+        TR::IlBuilder * ElseBlock = static_cast<TR::IlBuilder *>(lookupPointer(ElseID));
+        ilmb->IfThenElse(&IfBlock, &ElseBlock, conditionValue);
       }
+         
+      }
+
+   void
+   OMR::JitBuilderReplayTextFile::handleForLoop(TR::IlBuilder * ilmb, char * tokens)
+      {
+      // Def S30 "7 [ForLoop]" 
+      // B2 S30  1 "1 [i]" B29 Def Def V26 V27 V28 
+      std::cout << "Calling handleForLoop helper.\n";
+
+      bool boolParam;
+      uint32_t boolean = getNumberFromToken(tokens);
+
+      if(boolean == 1)
+          boolParam = true;
+      else
+          boolParam = false;
+      
+      tokens = std::strtok(NULL, SPACE);
+      uint32_t strLen = getNumberFromToken(tokens);
+      tokens = std::strtok(NULL, SPACE);
+
+      char * indVar = getServiceStringFromToken(strLen, tokens);
+      tokens = std::strtok(NULL, SPACE);
+
+      uint32_t builderID = getNumberFromToken(tokens);
+      TR::IlBuilder * body = static_cast<TR::IlBuilder *>(lookupPointer(builderID));
+      tokens = std::strtok(NULL, SPACE);
+
+      TR::IlBuilder * breakKey;
+      TR::IlBuilder * continueKey;
+
+      uint32_t breakID = getNumberFromToken(tokens);
+      breakKey = static_cast<TR::IlBuilder *>(lookupPointer(breakID));
+         
+      tokens = std::strtok(NULL, SPACE);
+
+      uint32_t continueID = getNumberFromToken(tokens);
+      continueKey = static_cast<TR::IlBuilder *>(lookupPointer(continueID));
+
+      tokens = std::strtok(NULL, SPACE);
+
+      uint32_t initID = getNumberFromToken(tokens);
+      TR::IlValue * initValue = static_cast<TR::IlValue *>(lookupPointer(initID));
+      tokens = std::strtok(NULL, SPACE);
+
+      uint32_t iterateID = getNumberFromToken(tokens);
+      TR::IlValue * iterateValue = static_cast<TR::IlValue *>(lookupPointer(iterateID));
+      tokens = std::strtok(NULL, SPACE);
+      
+      uint32_t incrementID = getNumberFromToken(tokens);
+      TR::IlValue * incrementValue = static_cast<TR::IlValue *>(lookupPointer(incrementID));
+
+      if(breakID == 0 && continueID == 0)
+         ilmb->ForLoop(boolParam, indVar, &body, NULL, NULL, initValue, iterateValue, incrementValue);
+      else if(breakID == 0)
+         ilmb->ForLoop(boolParam, indVar, &body, NULL, &continueKey, initValue, iterateValue, incrementValue);
+      else if(continueID == 0)
+         ilmb->ForLoop(boolParam, indVar, &body, &breakKey, NULL, initValue, iterateValue, incrementValue);
+      else
+         ilmb->ForLoop(boolParam, indVar, &body, &breakKey, &continueKey, initValue, iterateValue, incrementValue);
+     }
 
 
 void

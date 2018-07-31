@@ -27,7 +27,6 @@
 #include <errno.h>
 #include <string>
 #include <cstring>
-#include <queue>
 
 #include "Jit.hpp"
 #include "ilgen/TypeDictionary.hpp"
@@ -35,8 +34,6 @@
 #include "ilgen/JitBuilderReplayTextFile.hpp"
 #include "ilgen/MethodBuilderReplay.hpp"
 #include "Simple.hpp"
-
-#include "../../../include_core/omrthread.h"
 
 using std::cout;
 using std::cerr;
@@ -76,19 +73,19 @@ main(int argc, char *argv[])
    if (jitBuilderShouldCompile)
       {
       cout << "Step 4: invoke compiled code and print results\n";
-      // typedef int32_t (SimpleMethodFunction)(int32_t);
-      typedef int32_t (SimpleMethodFunction)();
+      typedef int32_t (SimpleMethodFunction)(int32_t);
+      // typedef int32_t (SimpleMethodFunction)();
       SimpleMethodFunction *increment = (SimpleMethodFunction *) entry;
 
-      cout << "Returning: " << increment() << "\n";
+      // cout << "Returning: " << increment() << "\n";
 
       // *****************************************************************
       // MOST SIMPLE SIMPLE.cpp
-      // int32_t v;
-      // v=0; cout << "increment(" << v << ") == " << increment(v) << "\n";
-      // v=1; cout << "increment(" << v << ") == " << increment(v) << "\n";
-      // v=10; cout << "increment(" << v << ") == " << increment(v) << "\n";
-      // v=-15; cout << "increment(" << v << ") == " << increment(v) << "\n";
+      int32_t v;
+      v=0; cout << "increment(" << v << ") == " << increment(v) << "\n";
+      v=1; cout << "increment(" << v << ") == " << increment(v) << "\n";
+      v=10; cout << "increment(" << v << ") == " << increment(v) << "\n";
+      v=-15; cout << "increment(" << v << ") == " << increment(v) << "\n";
 
       // *****************************************************************
       // COMPLICATED SIMPLE.cpp
@@ -133,11 +130,10 @@ SimpleMethod::SimpleMethod(TR::TypeDictionary *d, TR::JitBuilderRecorder *record
    DefineName("increment");
 
    // ORIGINAL SIMPLE.cpp
-  //  DefineParameter("value", Int32);
+   DefineParameter("value", Int32);
 
    // COMPLICATED SIMPLE.cpp
    // DefineParameter("value1", Int32);
-   // DefineParameter("value2", Int32);
    DefineReturnType(Int32);
    }
 
@@ -150,13 +146,12 @@ SimpleMethod::buildIL()
    // Return(
    //    ConstInt32(88));
 
-  Return(Mul(ConstInt32(5), ConstInt32(5)));
    // *****************************************************************
    // ORIGINAL SIMPLE.cpp
-  //  Return(
-  //     Add(
-  //        Load("value"),
-  //        ConstInt32(1)));
+   Return(
+      Add(
+         Load("value"),
+         ConstInt32(1)));
 
    // *****************************************************************
    // COMPLICATED SIMPLE.cpp
@@ -170,6 +165,6 @@ SimpleMethod::buildIL()
    //        Load("value2"),
    //        ConstInt32(14))));
 
-   // IlValue * value1 = Load("value1");
+  // IlValue * value1 = Load("value1");
    return true;
    }

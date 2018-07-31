@@ -1992,11 +1992,11 @@ OMR::IlBuilderRecorder::ForLoop(bool countsUp,
    if (rec)
       {
       rec->BeginStatement(asIlBuilder(), rec->STATEMENT_FORLOOP);
-      rec->Number((int8_t)countsUp);
+      // rec->Number((int8_t)countsUp);
       if(countsUp)
          rec->Number(1); // True
       else
-         rec->Number(0); // False
+         rec->Number(0); // False 
       rec->String(indVar);
       rec->Builder(bLoop);
       rec->Builder(bBreak);
