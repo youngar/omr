@@ -1888,7 +1888,9 @@ OMR::IlBuilder::Call(const char *functionName, int32_t numArgs, ...)
    TR_ASSERT(resolvedMethod, "Could not identify function %s\n", functionName);
 
    TR::SymbolReference *methodSymRef = symRefTab()->findOrCreateStaticMethodSymbol(JITTED_METHOD_INDEX, -1, resolvedMethod);
-   return genCall(methodSymRef, numArgs, argValues);
+   TR::IlValue *returnValue = TR::IlBuilderRecorder::Call(functionName, resolvedMethod->returnType(), numArgs, argValues);
+   genCall(returnValue, methodSymRef, numArgs, argValues);
+   return returnValue;
    }
 
 TR::IlValue *
@@ -1901,7 +1903,34 @@ OMR::IlBuilder::Call(const char *functionName, int32_t numArgs, TR::IlValue ** a
    TR_ASSERT(resolvedMethod, "Could not identify function %s\n", functionName);
 
    TR::SymbolReference *methodSymRef = symRefTab()->findOrCreateStaticMethodSymbol(JITTED_METHOD_INDEX, -1, resolvedMethod);
-   return genCall(methodSymRef, numArgs, argValues);
+   TR::IlValue *returnValue = TR::IlBuilderRecorder::Call(functionName, resolvedMethod->returnType(), numArgs, argValues);
+   genCall(returnValue, methodSymRef, numArgs, argValues);
+   return returnValue;
+   }
+
+void
+OMR::IlBuilder::genCall(TR::IlValue *returnValue, TR::SymbolReference *methodSymRef, int32_t numArgs, TR::IlValue ** argValues, bool isDirectCall /* true by default*/)
+   {
+   TR::DataType returnType = methodSymRef->getSymbol()->castToMethodSymbol()->getMethod()->returnType();
+   TR::Node *callNode = TR::Node::createWithSymRef(isDirectCall? TR::ILOpCode::getDirectCall(returnType): TR::ILOpCode::getIndirectCall(returnType), numArgs, methodSymRef);
+
+   // TODO: should really verify argument types here
+   int32_t childIndex = 0;
+   for (int32_t a=0;a < numArgs;a++)
+      {
+      TR::IlValue *arg = argValues[a];
+      if (arg->getDataType() == TR::Int8 || arg->getDataType() == TR::Int16 || (Word == Int64 && arg->getDataType() == TR::Int32))
+         arg = ConvertTo(Word, arg);
+      callNode->setAndIncChild(childIndex++, loadValue(arg));
+      }
+
+   // callNode must be anchored by itself
+   genTreeTop(callNode);
+
+   if (returnType != TR::NoType)
+      {
+      closeValue(returnValue, callNode->getDataType(), callNode);
+      }
    }
 
 TR::IlValue *

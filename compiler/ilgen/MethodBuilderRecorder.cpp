@@ -165,8 +165,8 @@ OMR::MethodBuilderRecorder::DefineLocal(const char *name, TR::IlType *dt)
       dt->RecordFirstTime(rec);
 
       rec->BeginStatement(asMethodBuilder(), rec->STATEMENT_DEFINELOCAL);
-      rec->String(name);
       rec->Type(dt);
+      rec->String(name);
       rec->EndStatement();
       }
    }

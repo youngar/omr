@@ -138,7 +138,12 @@ main(int argc, char *argv[])
 
       printf("Step 6: verify output file\n");
       TR::MethodBuilderReplay mb(&types2, &replay, &recorder2); // Process Constructor
-      int32_t rc = compileMethodBuilder(&mb, &entry2); // Process buildIL
+      rc = compileMethodBuilder(&mb, &entry2); // Process buildIL
+      if (rc != 0)
+         {
+         fprintf(stderr,"FAIL: compilation error %d\n", rc);
+         exit(-2);
+         }
       
       IterativeFibFunctionType *iter_fib2=(IterativeFibFunctionType *)entry2;
    

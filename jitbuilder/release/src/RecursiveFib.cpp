@@ -29,8 +29,13 @@
 
 #include "Jit.hpp"
 #include "ilgen/TypeDictionary.hpp"
+#include "ilgen/JitBuilderRecorderTextFile.hpp"
+#include "ilgen/JitBuilderReplayTextFile.hpp"
+#include "ilgen/MethodBuilderReplay.hpp"
 #include "ilgen/MethodBuilder.hpp"
 #include "RecursiveFib.hpp"
+
+extern bool jitBuilderShouldCompile;
 
 static void
 printString(int64_t stringPointer)
@@ -47,8 +52,8 @@ printInt32(int32_t value)
    fprintf(stderr, "%d", value);
    }
 
-RecursiveFibonnaciMethod::RecursiveFibonnaciMethod(TR::TypeDictionary *types)
-   : MethodBuilder(types)
+RecursiveFibonnaciMethod::RecursiveFibonnaciMethod(TR::TypeDictionary *types, TR::JitBuilderRecorder *recorder)
+   : MethodBuilder(types, recorder)
    {
    DefineLine(LINETOSTR(__LINE__));
    DefineFile(__FILE__);
@@ -102,6 +107,7 @@ RecursiveFibonnaciMethod::buildIL()
    recursiveCase->            Load("n"),
    recursiveCase->            ConstInt32(2)))));
 
+#if DEBUG
    Call("printString", 1,
       ConstInt64((int64_t)prefix));
    Call("printInt32", 1,
@@ -112,6 +118,7 @@ RecursiveFibonnaciMethod::buildIL()
       Load("result"));
    Call("printString", 1,
       ConstInt64((int64_t)suffix));
+#endif
 
    Return(
       Load("result"));
@@ -133,8 +140,15 @@ main(int argc, char *argv[])
    printf("Step 2: define relevant types\n");
    TR::TypeDictionary types;
 
+   // Create a recorder so we can directly control the file for this particular test
+   TR::JitBuilderRecorderTextFile recorder(NULL, "recFib.out");
+
    printf("Step 3: compile method builder\n");
-   RecursiveFibonnaciMethod method(&types);
+   RecursiveFibonnaciMethod method(&types, &recorder);
+
+   //TODO Hack to be able to turn compiling off a global level
+   jitBuilderShouldCompile = false;
+
    uint8_t *entry=0;
    int32_t rc = compileMethodBuilder(&method, &entry);
    if (rc != 0)
@@ -143,12 +157,41 @@ main(int argc, char *argv[])
       exit(-2);
       }
 
-   printf("Step 4: invoke compiled code\n");
-   RecursiveFibFunctionType *fib = (RecursiveFibFunctionType *)entry;
-   for (int32_t n=0;n < 20;n++)
-      printf("fib(%2d) = %d\n", n, fib(n));
+   if (jitBuilderShouldCompile)
+      {
+      printf("Step 4: invoke compiled code\n");
+      RecursiveFibFunctionType *fib = (RecursiveFibFunctionType *)entry;
+      for (int32_t n=0;n < 20;n++)
+         printf("fib(%2d) = %d\n", n, fib(n));
+      }
+   else
+      {
+      printf("Step 5: Replay\n");
+      jitBuilderShouldCompile = true;
+      TR::JitBuilderReplayTextFile replay("recFib.out");
+      TR::JitBuilderRecorderTextFile recorder2(NULL, "recFib2.out");
 
-   printf ("Step 5: shutdown JIT\n");
+      TR::TypeDictionary types2;
+      uint8_t *entry2 = 0;
+
+      printf("Step 6: verify output file\n");
+      TR::MethodBuilderReplay mb(&types2, &replay, &recorder2); // Process Constructor
+      int32_t rc = compileMethodBuilder(&mb, &entry2); // Process buildIL
+
+      if (rc != 0)
+         {
+         fprintf(stderr,"FAIL: compilation error %d\n", rc);
+         exit(-2);
+         }
+
+      printf("Step 7: invoke compiled code\n");
+      RecursiveFibFunctionType *fib = (RecursiveFibFunctionType *)entry2;
+      for (int32_t n=0;n < 20;n++)
+         printf("fib(%2d) = %d\n", n, fib(n));
+
+      }
+
+   printf ("Step 8: shutdown JIT\n");
    shutdownJit();
 
    printf("PASS\n");

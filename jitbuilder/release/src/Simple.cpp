@@ -59,7 +59,7 @@ main(int argc, char *argv[])
    SimpleMethod method(&types, &recorder);
 
    //TODO Hack to be able to turn compiling off a global level
-   jitBuilderShouldCompile = true;
+   jitBuilderShouldCompile = false;
 
    uint8_t *entry = 0;
    int32_t rc = compileMethodBuilder(&method, &entry);
@@ -111,10 +111,26 @@ main(int argc, char *argv[])
 
       cout << "Step 6: verify output file\n";
       TR::MethodBuilderReplay mb(&types2, &replay, &recorder2); // Process Constructor
-      int32_t rc = compileMethodBuilder(&mb, &entry2); // Process buildIL
+      rc = compileMethodBuilder(&mb, &entry2); // Process buildIL
+
+      if (rc != 0)
+         {
+         cerr << "FAIL: compilation error " << rc << "\n";
+         exit(-2);
+         }
+
+      cout << "Step 7: run compiled code from replay\n";
+      typedef int32_t (SimpleMethodFunction)(int32_t);
+      // typedef int32_t (SimpleMethodFunction)();
+      SimpleMethodFunction *increment = (SimpleMethodFunction *) entry2;
+      int32_t v;
+      v=0; cout << "increment(" << v << ") == " << increment(v) << "\n";
+      v=1; cout << "increment(" << v << ") == " << increment(v) << "\n";
+      v=10; cout << "increment(" << v << ") == " << increment(v) << "\n";
+      v=-15; cout << "increment(" << v << ") == " << increment(v) << "\n";
       }
 
-   cout << "Step 7: shutdown JIT\n";
+   cout << "Step 8: shutdown JIT\n";
    shutdownJit();
    }
 

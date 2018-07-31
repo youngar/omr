@@ -72,8 +72,12 @@
     void handleDefineParameter(TR::MethodBuilder * mb, char * tokens);
     void handlePrimitiveType(TR::MethodBuilder * mb, char * tokens);
     void handleDefineReturnType(TR::MethodBuilder * mb, char * tokens);
+    void handleDefineFunction(TR::MethodBuilder * mb, char * tokens);
+
+    void handleDefineLocal(TR::IlBuilder *mb, char *tokens);
 
     void handleConstInt32(TR::IlBuilder * ilmb, char * tokens);
+    void handleConstInt64(TR::IlBuilder * ilmb, char * tokens);
     void handleLoad(TR::IlBuilder * ilmb, char * tokens);
     void handleAdd(TR::IlBuilder * ilmb, char * tokens);
     void handleSub(TR::IlBuilder * ilmb, char * tokens);
@@ -88,6 +92,8 @@
     void handleNewIlBuilder(TR::IlBuilder * ilmb, char * tokens);
     void handleLessThan(TR::IlBuilder * ilmb, char * tokens);
     void handleIfThenElse(TR::IlBuilder * ilmb, char * tokens);
+    void handleCall(TR::IlBuilder * ilmb, char * tokens);
+    void handleConvertTo(TR::IlBuilder * ilmb, char * tokens);
 
     void handleReturnValue(TR::IlBuilder * ilmb, char * tokens);
 

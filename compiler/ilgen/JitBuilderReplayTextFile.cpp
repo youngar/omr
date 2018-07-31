@@ -217,10 +217,18 @@ OMR::JitBuilderReplayTextFile::handleServiceMethodBuilder(uint32_t mbID, char * 
       {
       handleDefineReturnType(mb, tokens);
       }
+   else if(strcmp(serviceString, STATEMENT_DEFINEFUNCTION) == 0)
+      {
+      handleDefineFunction(mb, tokens);
+      }
    else if(strcmp(serviceString, STATEMENT_DONECONSTRUCTOR) == 0)
       {
       std::cout << "Constructor DONE. About to call buildIl.\n";
       return false;
+      }
+   else
+      {
+      TR_ASSERT_FATAL(0, "handleServiceMethodBuilder asked to handle unknown serive %s", serviceString);
       }
 
    return true;
@@ -234,9 +242,17 @@ OMR::JitBuilderReplayTextFile::handleServiceIlBuilder(uint32_t mbID, char * toke
 
       const char * serviceString = getServiceStringFromMap(&tokens);
 
-      if(strcmp(serviceString, STATEMENT_CONSTINT32) == 0)
+      if(strcmp(serviceString, STATEMENT_DEFINELOCAL) == 0)
+         {
+         handleDefineLocal(ilmb, tokens);
+         }
+      else if(strcmp(serviceString, STATEMENT_CONSTINT32) == 0)
          {
          handleConstInt32(ilmb, tokens);
+         }
+      else if(strcmp(serviceString, STATEMENT_CONSTINT64) == 0)
+         {
+         handleConstInt64(ilmb, tokens);
          }
       else if(strcmp(serviceString, STATEMENT_LOAD) == 0)
          {
@@ -293,6 +309,14 @@ OMR::JitBuilderReplayTextFile::handleServiceIlBuilder(uint32_t mbID, char * toke
       else if(strcmp(serviceString, STATEMENT_FORLOOP) == 0)
          {
          handleForLoop(ilmb, tokens);
+         }
+      else if(strcmp(serviceString, STATEMENT_CALL) == 0)
+         {
+         handleCall(ilmb, tokens);
+         }
+      else if(strcmp(serviceString, STATEMENT_CONVERTTO) == 0)
+         {
+         handleConvertTo(ilmb, tokens);
          }
       else
          {
@@ -401,6 +425,74 @@ OMR::JitBuilderReplayTextFile::handleDefineReturnType(TR::MethodBuilder * mb, ch
    }
 
 void
+OMR::JitBuilderReplayTextFile::handleDefineFunction(TR::MethodBuilder * mb, char * tokens)
+   {
+   //Def S13 "14 [DefineFunction]"
+   //B2 S13 "11 [printString]" "68 [/Users/charliegracie/git/omr/jitbuilder/release/src/RecursiveFib.cpp]" "2 [67]" {0x102ef45c0} T11 1 T12
+   std::cout << "Calling handleDefineFunction helper.\n";
+
+   uint32_t strLen = getNumberFromToken(tokens);
+   tokens = std::strtok(NULL, SPACE);
+   const char * functionName = getServiceStringFromToken(strLen, tokens);
+   tokens = std::strtok(NULL, SPACE);
+
+   strLen = getNumberFromToken(tokens);
+   tokens = std::strtok(NULL, SPACE);
+   const char * fileName = getServiceStringFromToken(strLen, tokens);
+   tokens = std::strtok(NULL, SPACE);
+
+   strLen = getNumberFromToken(tokens);
+   tokens = std::strtok(NULL, SPACE);
+   const char * lineNumber = getServiceStringFromToken(strLen, tokens);
+   tokens = std::strtok(NULL, SPACE);
+
+   int64_t entryPoint = strtol(tokens + 1, NULL, 16);
+   tokens = std::strtok(NULL, SPACE);
+
+   uint32_t returnTypeID = getNumberFromToken(tokens);
+   TR::IlType * returnType = static_cast<TR::IlType *>(lookupPointer(returnTypeID));
+   tokens = std::strtok(NULL, SPACE);
+
+   uint32_t paramCount = getNumberFromToken(tokens);
+   tokens = std::strtok(NULL, SPACE);
+
+   TR::IlType **paramTypes = (TR::IlType **)malloc(paramCount * sizeof(TR::IlType *));
+   TR_ASSERT_FATAL(NULL != paramTypes, "Unable to allocate values array for handleDefineFunction");
+
+   for (int i = 0; i < paramCount; i++)
+      {
+      uint32_t valueID = getNumberFromToken(tokens);
+      TR::IlType * value = static_cast<TR::IlType *>(lookupPointer(valueID));
+      tokens = std::strtok(NULL, SPACE);
+
+      paramTypes[i] = value;
+      }
+
+   mb->DefineFunction(functionName, fileName, lineNumber, (void *)entryPoint, returnType, (int32_t)paramCount, paramTypes);
+
+   //TODO free paramTypes......
+   }
+
+void
+OMR::JitBuilderReplayTextFile::handleDefineLocal(TR::IlBuilder *m, char *tokens)
+   {
+   //B2 S25 "6 [result]" T7
+   std::cout << "Calling handleDefineLocal helper.\n";
+
+   TR::MethodBuilder *mb = static_cast<TR::MethodBuilder *>(m);
+
+   uint32_t typeID = getNumberFromToken(tokens);
+   TR::IlType *type = static_cast<TR::IlType *>(lookupPointer(typeID));
+   tokens = std::strtok(NULL, SPACE);
+
+   uint32_t strLen = getNumberFromToken(tokens);
+   tokens = std::strtok(NULL, SPACE);
+   const char * defineLocalParam = getServiceStringFromToken(strLen, tokens);
+
+   mb->DefineLocal(defineLocalParam, type);
+   }
+
+void
 OMR::JitBuilderReplayTextFile::handleConstInt32(TR::IlBuilder * ilmb, char * tokens)
    {
    // Put into map: key ID, value IlValue*
@@ -416,6 +508,19 @@ OMR::JitBuilderReplayTextFile::handleConstInt32(TR::IlBuilder * ilmb, char * tok
    StoreIDPointerPair(ID, val);
    }
 
+void
+OMR::JitBuilderReplayTextFile::handleConstInt64(TR::IlBuilder * ilmb, char * tokens)
+   {
+   // Put into map: key ID, value IlValue*
+   std::cout << "Calling handleConstInt64 helper.\n";
+
+   uint32_t ID = getNumberFromToken(tokens);
+   tokens = std::strtok(NULL, SPACE);
+
+   int64_t value = atol(tokens);
+   IlValue * val = ilmb->ConstInt64(value);
+   StoreIDPointerPair(ID, val);
+   }
 
 void
 OMR::JitBuilderReplayTextFile::handleLoad(TR::IlBuilder * ilmb, char * tokens)
@@ -684,76 +789,138 @@ OMR::JitBuilderReplayTextFile::handleXor(TR::IlBuilder * ilmb, char * tokens)
          
       }
 
-   void
-   OMR::JitBuilderReplayTextFile::handleForLoop(TR::IlBuilder * ilmb, char * tokens)
+void
+OMR::JitBuilderReplayTextFile::handleForLoop(TR::IlBuilder * ilmb, char * tokens)
+   {
+   // Def S30 "7 [ForLoop]"
+   // B2 S30  1 "1 [i]" B29 Def Def V26 V27 V28
+   std::cout << "Calling handleForLoop helper.\n";
+
+   bool boolParam;
+   uint32_t boolean = getNumberFromToken(tokens);
+
+   if(boolean == 1)
+       boolParam = true;
+   else
+       boolParam = false;
+
+   tokens = std::strtok(NULL, SPACE);
+   uint32_t strLen = getNumberFromToken(tokens);
+   tokens = std::strtok(NULL, SPACE);
+
+   char * indVar = getServiceStringFromToken(strLen, tokens);
+   tokens = std::strtok(NULL, SPACE);
+
+   uint32_t builderID = getNumberFromToken(tokens);
+   TR::IlBuilder * body = static_cast<TR::IlBuilder *>(lookupPointer(builderID));
+   tokens = std::strtok(NULL, SPACE);
+
+   TR::IlBuilder * breakKey;
+   TR::IlBuilder * continueKey;
+
+   uint32_t breakID = getNumberFromToken(tokens);
+   breakKey = static_cast<TR::IlBuilder *>(lookupPointer(breakID));
+
+   tokens = std::strtok(NULL, SPACE);
+
+   uint32_t continueID = getNumberFromToken(tokens);
+   continueKey = static_cast<TR::IlBuilder *>(lookupPointer(continueID));
+
+   tokens = std::strtok(NULL, SPACE);
+
+   uint32_t initID = getNumberFromToken(tokens);
+   TR::IlValue * initValue = static_cast<TR::IlValue *>(lookupPointer(initID));
+   tokens = std::strtok(NULL, SPACE);
+
+   uint32_t iterateID = getNumberFromToken(tokens);
+   TR::IlValue * iterateValue = static_cast<TR::IlValue *>(lookupPointer(iterateID));
+   tokens = std::strtok(NULL, SPACE);
+
+   uint32_t incrementID = getNumberFromToken(tokens);
+   TR::IlValue * incrementValue = static_cast<TR::IlValue *>(lookupPointer(incrementID));
+
+   if(breakID == 0 && continueID == 0)
+      ilmb->ForLoop(boolParam, indVar, &body, NULL, NULL, initValue, iterateValue, incrementValue);
+   else if(breakID == 0)
+      ilmb->ForLoop(boolParam, indVar, &body, NULL, &continueKey, initValue, iterateValue, incrementValue);
+   else if(continueID == 0)
+      ilmb->ForLoop(boolParam, indVar, &body, &breakKey, NULL, initValue, iterateValue, incrementValue);
+   else
+      ilmb->ForLoop(boolParam, indVar, &body, &breakKey, &continueKey, initValue, iterateValue, incrementValue);
+  }
+
+void
+OMR::JitBuilderReplayTextFile::handleCall(TR::IlBuilder * ilmb, char * tokens)
+   {
+   //Def S32 "4 [Call]"
+   //B23 S32 "3 [fib]" 1 V30 V33
+   std::cout << "Calling handleCall helper.\n";
+
+   uint32_t strLen = getNumberFromToken(tokens);
+   tokens = std::strtok(NULL, SPACE);
+   const char * functionName = getServiceStringFromToken(strLen, tokens);
+   tokens = std::strtok(NULL, SPACE);
+
+   uint32_t numberOfParams = getNumberFromToken(tokens);
+   tokens = std::strtok(NULL, SPACE);
+
+   TR::IlValue **values = (TR::IlValue **)malloc(numberOfParams * sizeof(TR::IlValue *));
+   TR_ASSERT_FATAL(NULL != values, "Unable to allocate values array for handleCall");
+
+   for (int i = 0; i < numberOfParams; i++)
       {
-      // Def S30 "7 [ForLoop]" 
-      // B2 S30  1 "1 [i]" B29 Def Def V26 V27 V28 
-      std::cout << "Calling handleForLoop helper.\n";
-
-      bool boolParam;
-      uint32_t boolean = getNumberFromToken(tokens);
-
-      if(boolean == 1)
-          boolParam = true;
-      else
-          boolParam = false;
-      
-      tokens = std::strtok(NULL, SPACE);
-      uint32_t strLen = getNumberFromToken(tokens);
+      uint32_t valueID = getNumberFromToken(tokens);
+      TR::IlValue * value = static_cast<TR::IlValue *>(lookupPointer(valueID));
       tokens = std::strtok(NULL, SPACE);
 
-      char * indVar = getServiceStringFromToken(strLen, tokens);
-      tokens = std::strtok(NULL, SPACE);
+      values[i] = value;
+      }
 
-      uint32_t builderID = getNumberFromToken(tokens);
-      TR::IlBuilder * body = static_cast<TR::IlBuilder *>(lookupPointer(builderID));
-      tokens = std::strtok(NULL, SPACE);
+   bool hasReturn = (tokens != NULL);
 
-      TR::IlBuilder * breakKey;
-      TR::IlBuilder * continueKey;
+   TR::IlValue *returnValue = ilmb->Call(functionName, (int32_t)numberOfParams, values);
 
-      uint32_t breakID = getNumberFromToken(tokens);
-      breakKey = static_cast<TR::IlBuilder *>(lookupPointer(breakID));
-         
-      tokens = std::strtok(NULL, SPACE);
+   if (hasReturn)
+      {
+      TR_ASSERT_FATAL(NULL != returnValue, "Call did not return a result as expected");
+      uint32_t IDtoStore = getNumberFromToken(tokens);
+      StoreIDPointerPair(IDtoStore, returnValue);
+      }
 
-      uint32_t continueID = getNumberFromToken(tokens);
-      continueKey = static_cast<TR::IlBuilder *>(lookupPointer(continueID));
+   //TODO free values.....
+   }
 
-      tokens = std::strtok(NULL, SPACE);
+void
+OMR::JitBuilderReplayTextFile::handleConvertTo(TR::IlBuilder * ilmb, char * tokens)
+   {
+   //Def S35 "9 [ConvertTo]"
+   //B23 S35 V34 T12 V30
+   std::cout << "Calling handleConvertTo helper.\n";
 
-      uint32_t initID = getNumberFromToken(tokens);
-      TR::IlValue * initValue = static_cast<TR::IlValue *>(lookupPointer(initID));
-      tokens = std::strtok(NULL, SPACE);
+   uint32_t IDtoStore = getNumberFromToken(tokens);
+   tokens = std::strtok(NULL, SPACE);
 
-      uint32_t iterateID = getNumberFromToken(tokens);
-      TR::IlValue * iterateValue = static_cast<TR::IlValue *>(lookupPointer(iterateID));
-      tokens = std::strtok(NULL, SPACE);
-      
-      uint32_t incrementID = getNumberFromToken(tokens);
-      TR::IlValue * incrementValue = static_cast<TR::IlValue *>(lookupPointer(incrementID));
+   uint32_t param1ID = getNumberFromToken(tokens);
+   tokens = std::strtok(NULL, SPACE);
+   uint32_t param2ID = getNumberFromToken(tokens);
 
-      if(breakID == 0 && continueID == 0)
-         ilmb->ForLoop(boolParam, indVar, &body, NULL, NULL, initValue, iterateValue, incrementValue);
-      else if(breakID == 0)
-         ilmb->ForLoop(boolParam, indVar, &body, NULL, &continueKey, initValue, iterateValue, incrementValue);
-      else if(continueID == 0)
-         ilmb->ForLoop(boolParam, indVar, &body, &breakKey, NULL, initValue, iterateValue, incrementValue);
-      else
-         ilmb->ForLoop(boolParam, indVar, &body, &breakKey, &continueKey, initValue, iterateValue, incrementValue);
-     }
+   TR::IlType * param1IlValue = static_cast<TR::IlType *>(lookupPointer(param1ID));
+   TR::IlValue * param2IlValue = static_cast<TR::IlValue *>(lookupPointer(param2ID));
 
+   TR::IlValue * addResult = ilmb->ConvertTo(param1IlValue, param2IlValue);
+
+   StoreIDPointerPair(IDtoStore, addResult);
+   }
 
 void
 OMR::JitBuilderReplayTextFile::handleReturnValue(TR::IlBuilder * ilmb, char * tokens)
    {
-      std::cout << "Calling handleReturnValue helper.\n";
+   std::cout << "Calling handleReturnValue helper.\n";
 
-      uint32_t ID = getNumberFromToken(tokens);
-      TR::IlValue * value = static_cast<TR::IlValue *>(lookupPointer(ID));
+   uint32_t ID = getNumberFromToken(tokens);
+   TR::IlValue * value = static_cast<TR::IlValue *>(lookupPointer(ID));
 
-      ilmb->Return(value);
+   ilmb->Return(value);
    }
 
 bool
