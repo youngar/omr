@@ -699,6 +699,7 @@ OMR::IlBuilder::VectorStore(const char *varName, TR::IlValue *value)
 void
 OMR::IlBuilder::StoreAt(TR::IlValue *address, TR::IlValue *value)
    {
+   TR::IlBuilderRecorder::StoreAt(address, value);
    TR_ASSERT(address->getDataType() == TR::Address, "StoreAt needs an address operand");
 
    TraceIL("IlBuilder[ %p ]::StoreAt address %d gets %d\n", this, address->getID(), value->getID());
@@ -729,6 +730,7 @@ OMR::IlBuilder::VectorStoreAt(TR::IlValue *address, TR::IlValue *value)
 TR::IlValue *
 OMR::IlBuilder::CreateLocalArray(int32_t numElements, TR::IlType *elementType)
    {
+   TR::IlValue *returnValue = IlBuilderRecorder::CreateLocalArray(numElements, elementType);
    uint32_t size = numElements * elementType->getSize();
    TR::SymbolReference *localArraySymRef = symRefTab()->createLocalPrimArray(size,
                                                                              methodSymbol(),
@@ -820,8 +822,9 @@ OMR::IlBuilder::LoadIndirect(const char *type, const char *field, TR::IlValue *o
 TR::IlValue *
 OMR::IlBuilder::LoadAt(TR::IlType *dt, TR::IlValue *address)
    {
+   TR::IlValue *returnValue = IlBuilderRecorder::LoadAt(dt, address);
    TR_ASSERT(address->getDataType() == TR::Address, "LoadAt needs an address operand");
-   TR::IlValue *returnValue = indirectLoadNode(dt, loadValue(address));
+   returnValue = indirectLoadNode(dt, loadValue(address));
    TraceIL("IlBuilder[ %p ]::%d is LoadAt type %d address %d\n", this, returnValue->getID(), dt->getPrimitiveType(), address->getID());
    return returnValue;
    }
@@ -874,7 +877,8 @@ OMR::IlBuilder::IndexAt(TR::IlType *dt, TR::IlValue *base, TR::IlValue *index)
    TR::Node *offsetNode = TR::Node::create(mulOp, 2, indexNode, elemSizeNode);
    TR::Node *addrNode = TR::Node::create(addOp, 2, baseNode, offsetNode);
 
-   TR::IlValue *address = newValue(Address, addrNode);
+   TR::IlValue *address = IlBuilderRecorder::IndexAt(dt, base, index);
+   address = newValue(Address, addrNode);
 
    TraceIL("IlBuilder[ %p ]::%d is IndexAt(%s) base %d index %d\n", this, address->getID(), dt->getName(), base->getID(), index->getID());
 
@@ -997,7 +1001,8 @@ OMR::IlBuilder::ConstString(const char * const value)
 TR::IlValue *
 OMR::IlBuilder::ConstAddress(const void * const value)
    {
-   TR::IlValue *returnValue = newValue(Address, TR::Node::aconst((uintptrj_t)value));
+   TR::IlValue *returnValue = TR::IlBuilderRecorder::ConstAddress(value);
+   returnValue = newValue(Address, TR::Node::aconst((uintptrj_t)value));
    TraceIL("IlBuilder[ %p ]::%d is ConstAddress %p\n", this, returnValue->getID(), value);
    return returnValue;
    }
@@ -2200,6 +2205,7 @@ OMR::IlBuilder::IfCmpEqualZero(TR::IlBuilder **target, TR::IlValue *condition)
 void
 OMR::IlBuilder::IfCmpEqualZero(TR::IlBuilder *target, TR::IlValue *condition)
    {
+   IlBuilderRecorder::IfCmpEqualZero(target, condition);
    TR_ASSERT(target != NULL, "This IfCmpEqualZero requires a non-NULL builder object");
    TraceIL("IlBuilder[ %p ]::IfCmpEqualZero %d == 0? -> [ %p ] B%d\n", this, condition->getID(), target, target->getEntry()->getNumber());
    ifCmpEqualZero(condition, target->getEntry());

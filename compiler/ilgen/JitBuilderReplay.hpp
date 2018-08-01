@@ -149,6 +149,7 @@
      const char *STATEMENT_RETURN                     = "Return";
      const char *STATEMENT_RETURNVALUE                = "ReturnValue";
      const char *STATEMENT_IFTHENELSE                 = "IfThenElse";
+     const char *STATEMENT_IFCMPEQUALZERO             = "IfCmpEqualZero";
      const char *STATEMENT_FORLOOP                    = "ForLoop";
      const char *STATEMENT_CALL                       = "Call";
      const char *STATEMENT_DONECONSTRUCTOR            = "DoneConstructor";
