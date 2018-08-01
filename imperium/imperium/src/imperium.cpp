@@ -105,7 +105,7 @@
                                         (void *) (reply.codecachebaseaddress() - 0x8),
                                         reply.size(),
                                         PROT_READ | PROT_WRITE | PROT_EXEC,
-                                        MAP_ANONYMOUS | MAP_PRIVATE | MAP_FIXED,
+                                        MAP_ANONYMOUS | MAP_PRIVATE,
                                         0,
                                         0); // need to check if -1 returned
         
@@ -142,10 +142,17 @@
 
         Status status = _stub->CompileMethod(&codeCacheContext, request, &reply);
         
-        memcpy((void*) reply.codecacheaddress(), (const void *) reply.instructions().c_str(), reply.size());
+        auto fe = JitBuilder::FrontEnd::instance();
+        auto codeCacheManager = fe->codeCacheManager();
+        auto codeCache = codeCacheManager.getFirstCodeCache();
+        void * mem = codeCache->getWarmCodeAlloc();
+        void * codeBase = codeCache->getCodeBase();
+        void * memLocation = (void *) ((uint64_t) reply.codecacheoffset() + (uint64_t) codeBase);
+
+        memcpy(memLocation , (const void *) reply.instructions().c_str(), reply.size());
         typedef int32_t (SimpleMethodFct)(int32_t);
-        SimpleMethodFct *incr = (SimpleMethodFct *) reply.codecacheaddress();
-        *entry = (uint8_t *) reply.codecacheaddress();
+        SimpleMethodFct *incr = (SimpleMethodFct *) memLocation;
+        *entry = (uint8_t *) memLocation;
      }
 
   void ClientChannel::requestCompile(char * fileName, uint8_t ** entry, TR::MethodBuilder *mb)
@@ -330,11 +337,11 @@
             while(_stream->Read(&retBytes))
               {
               // print out address received as well
-              std::cout << "Client received: " << retBytes.instructions() << ", with size: " << retBytes.size() << ", with address: " << std::hex << retBytes.codecacheaddress() << std::dec << ". Count: " << (++count) << '\n';
+              std::cout << "Client received: " << retBytes.instructions() << ", with size: " << retBytes.size() << ", with address: " << std::hex << retBytes.codecacheoffset() << std::dec << ". Count: " << (++count) << '\n';
               
-              memcpy((void*) retBytes.codecacheaddress(), (const void *) retBytes.instructions().c_str(), retBytes.size());
+              memcpy((void*) retBytes.codecacheoffset(), (const void *) retBytes.instructions().c_str(), retBytes.size());
               typedef int32_t (SimpleMethodFct)(int32_t);
-              SimpleMethodFct *incr = (SimpleMethodFct *) retBytes.codecacheaddress();
+              SimpleMethodFct *incr = (SimpleMethodFct *) retBytes.codecacheoffset();
 
                 int32_t v;
                 v=3; std::cout << "incr(" << v << ") == " << incr(v) << "\n";
@@ -536,8 +543,10 @@
         auto codeCacheManager = fe->codeCacheManager();
         auto codeCache = codeCacheManager.getFirstCodeCache();
         void * mem = codeCache->getWarmCodeAlloc();
+        void * codeBase = codeCache->getCodeBase();
 
-        uint64_t sizeCode = (uint64_t) mem - (uint64_t)entry;
+        uint64_t offset = (uint64_t) entry - (uint64_t) codeBase;
+        uint64_t sizeCode = (uint64_t) mem - (uint64_t) entry;
 
         // // uint8_t *entry = 0; // uint8_t ** , address = &entry
         
@@ -567,7 +576,7 @@
         // ServerResponse e;
         reply->set_instructions((char*) entry, sizeCode);
         reply->set_size(sizeCode);
-        reply->set_codecacheaddress((uint64_t) entry);
+        reply->set_codecacheoffset(offset);
 
         // return e;
      }

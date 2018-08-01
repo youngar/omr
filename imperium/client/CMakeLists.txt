@@ -24,12 +24,4 @@ add_executable(imperium_client
 	imperium_client.cc
 )
 
-target_compile_options(imperium_client 
-    PUBLIC -no-pie
-)
-
 target_link_libraries(imperium_client imperium)
-
-set_property(TARGET imperium_client
-  APPEND_STRING PROPERTY LINK_FLAGS " -Wl,-no_pie"
-)
