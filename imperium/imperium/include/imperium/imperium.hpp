@@ -78,10 +78,13 @@ namespace OMR
          ServerChannel();
          ~ServerChannel();
 
-         Status SendMessage(ServerContext* context,
+         Status CompileMethodAsync(ServerContext* context,
                            ServerReaderWriter<ServerResponse, ClientMessage>* stream) override;
          Status RequestCodeCache(ServerContext* context,
                            const CodeCacheRequest* request, CodeCacheResponse* reply) override;
+         Status CompileMethod(ServerContext* context,
+                           const ClientMessage* request, ServerResponse* reply) override;
+         void generateServerResponse(const ClientMessage * clientMessage, ServerResponse * reply);
 
          // Server-facing
          bool RunServer(const char * port);
@@ -108,6 +111,8 @@ namespace OMR
          typedef std::shared_ptr<ClientReaderWriter<ClientMessage, ServerResponse>> sharedPtr;
 
          void requestCompile(char * fileName, uint8_t ** entryPoint, TR::MethodBuilder *mb);
+         void requestCompileSync(char * fileName, uint8_t ** entry, TR::MethodBuilder *mb);
+
          void shutdown();
 
          private:

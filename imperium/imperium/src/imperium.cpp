@@ -70,10 +70,10 @@
       // Request code cache
       requestCodeCache();
       
-      std::cout << "Calling SendMessage from ClientChannel..." << '\n';
+      std::cout << "Calling CompileMethodAsync from ClientChannel..." << '\n';
 
       // create code cache and send initial to server (message: init code cache)
-      _stream = _stub->SendMessage(&_context);
+      // _stream = _stub->CompileMethodAsync(&_context);
 
       // ClientMessage --> CompileRequest
       // ServerReponse --> CompileComplete
@@ -81,11 +81,11 @@
       // Call createWriterThread which creates a thread that writes
       // to the server based on the queue
       // It will handle sending off .out files to the server
-      createWriterThread();
+      // createWriterThread();
 
       // Call createReaderThread which creates a thread that waits
       // and listens for messages from the server
-      createReaderThread();
+      // createReaderThread();
      }
 
   ClientChannel::~ClientChannel()
@@ -112,6 +112,40 @@
         // sizeof(TR::CodeCacheMemorySegment)
 
         std::cout << "\n\n******* VIRTUAL CODE ADDRESS: " << _virtualCodeAddress << "\n\n";
+     }
+
+  void ClientChannel::requestCompileSync(char * fileName, uint8_t ** entry, TR::MethodBuilder *mb) 
+     {
+        ClientContext codeCacheContext;
+        ServerResponse reply;
+
+        int32_t rc = compileMethodBuilder(mb, entry);
+
+        std::string fileString;
+        std::ifstream _file(fileName);
+        std::string line;
+
+        if(_file.is_open())
+            {
+            while(getline(_file,line))
+                {
+                fileString += line + '\n';
+                }
+            }
+        else
+            {
+            std::cerr << "Error while trying to open: " << fileName << '\n';
+            }
+
+        ClientMessage request = constructMessage(fileString, reinterpret_cast<uint64_t>(entry));
+        std::remove(fileName);
+
+        Status status = _stub->CompileMethod(&codeCacheContext, request, &reply);
+        
+        memcpy((void*) reply.codecacheaddress(), (const void *) reply.instructions().c_str(), reply.size());
+        typedef int32_t (SimpleMethodFct)(int32_t);
+        SimpleMethodFct *incr = (SimpleMethodFct *) reply.codecacheaddress();
+        *entry = (uint8_t *) reply.codecacheaddress();
      }
 
   void ClientChannel::requestCompile(char * fileName, uint8_t ** entry, TR::MethodBuilder *mb)
@@ -142,7 +176,7 @@
   void ClientChannel::shutdown()
   {
     signalNoJobsLeft();
-    waitForThreadsCompletion();
+    // waitForThreadsCompletion();
 
     if(J9THREAD_SUCCESS != omrthread_monitor_destroy(_threadMonitor))
        std::cout << "ERROR WHILE destroying monitor" << '\n';
@@ -411,11 +445,12 @@
           return Status::OK;
         }
 
-     Status ServerChannel::SendMessage(ServerContext* context,
+     Status ServerChannel::CompileMethodAsync(ServerContext* context,
                       ServerReaderWriter<ServerResponse, ClientMessage>* stream)
         {
 
           ClientMessage clientMessage;
+          ServerResponse reply;
           std::cout << "Server waiting for message from client..." << '\n';
 
           omrthread_t thisThread;
@@ -424,86 +459,118 @@
 
           while (stream->Read(&clientMessage))
              {
-                std::cout << "Server received file: " << clientMessage.file() << '\n';
-                std::cout << "Server entry point address: " << clientMessage.address() << '\n';
-
-                omrthread_monitor_enter(_compileMonitor);
-                TR::JitBuilderReplayTextFile replay(clientMessage.file());
-                TR::JitBuilderRecorderTextFile recorder(NULL, "simple2.out");
-
-                std::cout << "################################################# Thread ID: " << thisThread << '\n';
-
-                TR::TypeDictionary types;
-                uint8_t *entry = 0;
-
-                std::cout << "Step 1: verify output file\n";
-                TR::MethodBuilderReplay mb(&types, &replay, &recorder); // Process Constructor
-
-                //************************************************************
-                std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
-
-                // Only one thread can compile at a time.
-
-                int32_t rc = compileMethodBuilder(&mb, &entry); // Process buildIL
-                omrthread_monitor_exit(_compileMonitor);
-
-                // TODO
-                // send entry back to client, calculate size and send back to client
-                // copy bytes between entry point and code cache warm alloc
-                // void * or uint8_t * should give size in bytes
-
-                // Java JITaaS commit: Option to allocate code cache at specified address
-
-                // TODO: all the below stuff occurs on the server side
-                auto fe = JitBuilder::FrontEnd::instance();
-                auto codeCacheManager = fe->codeCacheManager();
-                auto codeCache = codeCacheManager.getFirstCodeCache();
-                void * mem = codeCache->getWarmCodeAlloc();
-
-                uint64_t sizeCode = (uint64_t) mem - (uint64_t)entry;
-
-                // // uint8_t *entry = 0; // uint8_t ** , address = &entry
-                
-                std::cout << " *********ENTRY********* " << (void*)(entry) << " *********************** " << '\n';
-                std::cout << " **********MEM********** " << (mem) << " *********************** " << '\n';
-                std::cout << " *******CODESIZE******** " << sizeCode << " *********************** " << '\n';
-                // (uint8_t *) mem = 0x0000000103800040 ""
-
-                std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
-                auto duration = std::chrono::duration_cast<std::chrono::microseconds>( t2 - t1 ).count();
-
-                std::cout << "Duration for compileMethodBuilder in server: " << duration << " microseconds." << '\n';
-                //************************************************************
-                // TODO: remove function calls and put in the client side
-                //       need to send back compiled code, then run that code on client
-                typedef int32_t (SimpleMethodFunction)(int32_t);
-                SimpleMethodFunction *increment = (SimpleMethodFunction *) entry;
-
-                int32_t v;
-                v=3; std::cout << "increment(" << v << ") == " << increment(v) << "\n";
-                v=12; std::cout << "increment(" << v << ") == " << increment(v) << "\n";
-                v=15; std::cout << "increment(" << v << ") == " << increment(v) << "\n";
-                v=-135; std::cout << "increment(" << v << ") == " << increment(v) << "\n";
-
-                //******************************************************************
-
-                ServerResponse e;
-                e.set_instructions((char*) entry, sizeCode);
-                e.set_size(sizeCode);
-                e.set_codecacheaddress((uint64_t) entry);
-
-                stream->Write(e);
+                generateServerResponse(&clientMessage, &reply);
+                stream->Write(reply);
                 // Sleeps for 1 second
                 // std::this_thread::sleep_for (std::chrono::seconds(1));
              }
 
-         omrthread_detach(thisThread);
+          omrthread_detach(thisThread);
 
-         if (context->IsCancelled()) {
-           return Status(StatusCode::CANCELLED, "Deadline exceeded or Client cancelled, abandoning.");
-         }
-         return Status::OK;
+          if (context->IsCancelled()) {
+            return Status(StatusCode::CANCELLED, "Deadline exceeded or Client cancelled, abandoning.");
+          }
+          return Status::OK;
         }
+
+     Status ServerChannel::CompileMethod(ServerContext* context, const ClientMessage* request, ServerResponse* reply)  
+        {
+          std::cout << "\n*********** COMPILE METHOD SYNC *************" << "\n";
+          omrthread_t thisThread;
+          omrthread_attach_ex(&thisThread,
+                              J9THREAD_ATTR_DEFAULT /* default attr */);
+
+          auto fe = JitBuilder::FrontEnd::instance();
+          auto codeCacheManager = fe->codeCacheManager();
+          auto codeCache = codeCacheManager.getFirstCodeCache();
+          void * codeBase = codeCache->getCodeBase();
+          void * codeTop = codeCache->getCodeTop();
+          uint64_t size = (uint64_t) codeTop - (uint64_t) codeBase;
+
+          std::cout << "\n\n****** Size: " << size << ", with base address: " << std::hex << (uint64_t) codeBase << std::dec << "\n\n";
+
+          generateServerResponse(request, reply);
+          omrthread_detach(thisThread);
+
+          return Status::OK;
+        }
+
+     void ServerChannel::generateServerResponse(const ClientMessage * clientMessage, ServerResponse * reply)
+     {
+        std::cout << "Server received file: " << clientMessage->file() << '\n';
+        std::cout << "Server entry point address: " << std::hex << clientMessage->address() << std::dec << '\n';
+
+        omrthread_monitor_enter(_compileMonitor);
+                std::cout << "####################### generateServerResponse: entered mon ##########################" << '\n';
+
+        TR::JitBuilderReplayTextFile replay(clientMessage->file());
+                        std::cout << "####################### generateServerResponse: replay ##########################" << '\n';
+
+        TR::JitBuilderRecorderTextFile recorder(NULL, "simple2.out");
+
+        std::cout << "################################################# Thread ID: " << omrthread_self() << '\n';
+
+        TR::TypeDictionary types;
+        uint8_t *entry = 0;
+
+        std::cout << "Step 1: verify output file\n";
+        TR::MethodBuilderReplay mb(&types, &replay, &recorder); // Process Constructor
+
+        //************************************************************
+        std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
+
+        // Only one thread can compile at a time.
+
+        int32_t rc = compileMethodBuilder(&mb, &entry); // Process buildIL
+        omrthread_monitor_exit(_compileMonitor);
+
+        // TODO
+        // send entry back to client, calculate size and send back to client
+        // copy bytes between entry point and code cache warm alloc
+        // void * or uint8_t * should give size in bytes
+
+        // Java JITaaS commit: Option to allocate code cache at specified address
+
+        // TODO: all the below stuff occurs on the server side
+        auto fe = JitBuilder::FrontEnd::instance();
+        auto codeCacheManager = fe->codeCacheManager();
+        auto codeCache = codeCacheManager.getFirstCodeCache();
+        void * mem = codeCache->getWarmCodeAlloc();
+
+        uint64_t sizeCode = (uint64_t) mem - (uint64_t)entry;
+
+        // // uint8_t *entry = 0; // uint8_t ** , address = &entry
+        
+        std::cout << " *********ENTRY********* " << (void*)(entry) << " *********************** " << '\n';
+        std::cout << " **********MEM********** " << (mem) << " *********************** " << '\n';
+        std::cout << " *******CODESIZE******** " << sizeCode << " *********************** " << '\n';
+        // (uint8_t *) mem = 0x0000000103800040 ""
+
+        std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>( t2 - t1 ).count();
+
+        std::cout << "Duration for compileMethodBuilder in server: " << duration << " microseconds." << '\n';
+        //************************************************************
+        // TODO: remove function calls and put in the client side
+        //       need to send back compiled code, then run that code on client
+        typedef int32_t (SimpleMethodFunction)(int32_t);
+        SimpleMethodFunction *increment = (SimpleMethodFunction *) entry;
+
+        int32_t v;
+        v=3; std::cout << "increment(" << v << ") == " << increment(v) << "\n";
+        v=12; std::cout << "increment(" << v << ") == " << increment(v) << "\n";
+        v=15; std::cout << "increment(" << v << ") == " << increment(v) << "\n";
+        v=-135; std::cout << "increment(" << v << ") == " << increment(v) << "\n";
+
+        //******************************************************************
+
+        // ServerResponse e;
+        reply->set_instructions((char*) entry, sizeCode);
+        reply->set_size(sizeCode);
+        reply->set_codecacheaddress((uint64_t) entry);
+
+        // return e;
+     }
 
      bool ServerChannel::RunServer(const char * port)
      {

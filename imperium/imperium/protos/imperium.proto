@@ -25,8 +25,9 @@ syntax = "proto3";
 package imperium;
 
 service ImperiumRPC {
-   rpc SendMessage (stream ClientMessage) returns (stream ServerResponse) {}
+   rpc CompileMethodAsync (stream ClientMessage) returns (stream ServerResponse) {} // FKA SendMessage
    rpc RequestCodeCache (CodeCacheRequest) returns (CodeCacheResponse) {}
+   rpc CompileMethod (ClientMessage) returns (ServerResponse) {}
 }
 
 message ClientMessage {

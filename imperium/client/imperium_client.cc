@@ -119,7 +119,17 @@ int main(int argc, char** argv) {
        std::cout << "Step #: compile method builder\n";
        SimpleMethod method(&types, &recorder);
        uint8_t * entryPoint;
-       client.requestCompile(fileName, &entryPoint, &method);
+       client.requestCompileSync(fileName, &entryPoint, &method);
+      //  client.requestCompile(fileName, &entryPoint, &method);
+
+       typedef int32_t (SimpleMethodFct)(int32_t);
+       SimpleMethodFct *incr = (SimpleMethodFct *) entryPoint;
+
+        int32_t v;
+        v=3; std::cout << "incr(" << v << ") == " << incr(v) << "\n";
+        v=6; std::cout << "incr(" << v << ") == " << incr(v) << "\n";
+        v=12; std::cout << "incr(" << v << ") == " << incr(v) << "\n";
+        v=-19; std::cout << "incr(" << v << ") == " << incr(v) << "\n";
      }
 
   std::cout << "ABOUT TO CALL CLIENT DESTRUCTOR!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << '\n';
