@@ -1566,6 +1566,16 @@ OMR::IlBuilder::shiftOpNodeFromNodes(TR::ILOpCodes op,
    return TR::Node::create(op, 2, leftNode, rightNode);
    }
 
+void
+OMR::IlBuilder::shiftOpFromNodes(TR::ILOpCodes op,
+                            TR::IlValue *returnValue,
+                            TR::Node *leftNode,
+                            TR::Node *rightNode)
+   {
+   TR::Node *result = shiftOpNodeFromNodes(op, leftNode, rightNode);
+   closeValue(returnValue, result->getDataType(), result);
+   }
+
 TR::IlValue *
 OMR::IlBuilder::shiftOpFromNodes(TR::ILOpCodes op,
                             TR::Node *leftNode,
@@ -1574,6 +1584,25 @@ OMR::IlBuilder::shiftOpFromNodes(TR::ILOpCodes op,
    TR::Node *result = shiftOpNodeFromNodes(op, leftNode, rightNode);
    TR::IlValue *returnValue = newValue(result->getDataType(), result);
    return returnValue;
+   }
+
+void
+OMR::IlBuilder::shiftOpFromOpMap(OpCodeMapper mapOp,
+                            TR::IlValue *returnValue,
+                            TR::IlValue *left,
+                            TR::IlValue *right)
+   {
+   TR::Node *leftNode = loadValue(left);
+   TR::DataType leftType = leftNode->getDataType();
+   TR_ASSERT(leftType.isIntegral(), "left operand of shift must be integer type");
+
+   TR::Node *rightNode = loadValue(right);
+   if (!rightNode->getDataType().isInt32())
+      right = ConvertTo(Int32, right);
+
+   doVectorConversions(&leftNode, &rightNode);
+
+   shiftOpFromNodes(mapOp(leftType), returnValue, leftNode, rightNode);
    }
 
 TR::IlValue *
@@ -1613,7 +1642,9 @@ OMR::IlBuilder::ShiftR(TR::IlValue *v, TR::IlValue *amount)
 TR::IlValue *
 OMR::IlBuilder::UnsignedShiftR(TR::IlValue *v, TR::IlValue *amount)
    {
-   TR::IlValue *returnValue=shiftOpFromOpMap(TR::ILOpCode::unsignedShiftRightOpCode, v, amount);
+  //  TR::IlValue *returnValue=shiftOpFromOpMap(TR::ILOpCode::unsignedShiftRightOpCode, v, amount);
+   TR::IlValue *returnValue = TR::IlBuilderRecorder::UnsignedShiftR(v, amount);
+   shiftOpFromOpMap(TR::ILOpCode::unsignedShiftRightOpCode, returnValue, v, amount);
    TraceIL("IlBuilder[ %p ]::%d is unsigned shr %d >> %d\n", this, returnValue->getID(), v->getID(), amount->getID());
    return returnValue;
    }
@@ -1789,7 +1820,8 @@ TR::IlValue *
 OMR::IlBuilder::GreaterThan(TR::IlValue *left, TR::IlValue *right)
    {
    integerizeAddresses(&left, &right);
-   TR::IlValue *returnValue=compareOp(TR_cmpGT, false, left, right);
+   TR::IlValue *returnValue = TR::IlBuilderRecorder::GreaterThan(left, right);
+   compareOp(TR_cmpGT, false, returnValue, left, right);
    TraceIL("IlBuilder[ %p ]::%d is GreaterThan %d > %d?\n", this, returnValue->getID(), left->getID(), right->getID());
    return returnValue;
    }

@@ -142,10 +142,12 @@
      const char *STATEMENT_OR                         = "Or";
      const char *STATEMENT_XOR                        = "Xor";
      const char *STATEMENT_LESSTHAN                   = "LessThan";
+     const char *STATEMENT_GREATERTHAN                = "GreaterThan";
      const char *STATEMENT_NOTEQUALTO                 = "NotEqualTo";
      const char *STATEMENT_APPENDBUILDER              = "AppendBuilder";
      const char *STATEMENT_APPENDBYTECODEBUILDER      = "AppendBytecodeBuilder";
      const char *STATEMENT_GOTO                       = "Goto";
+     const char *STATEMENT_UNSIGNEDSHIFTR             = "UnsignedShiftR";
      const char *STATEMENT_RETURN                     = "Return";
      const char *STATEMENT_RETURNVALUE                = "ReturnValue";
      const char *STATEMENT_IFTHENELSE                 = "IfThenElse";

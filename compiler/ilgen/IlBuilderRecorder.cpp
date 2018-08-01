@@ -157,6 +157,20 @@ OMR::IlBuilderRecorder::binaryOp(const TR::IlValue *returnValue, const TR::IlVal
    }
 
 void
+OMR::IlBuilderRecorder::shiftOp(const TR::IlValue *returnValue, const TR::IlValue *v, const TR::IlValue *amount, const char *s)
+   {
+   TR::JitBuilderRecorder *rec = recorder();
+   TR_ASSERT(rec, "cannot call IlBuilderRecorder::shiftOp if recorder is NULL");
+
+   rec->StoreID(returnValue);
+   rec->BeginStatement(asIlBuilder(), s);
+   rec->Value(returnValue);
+   rec->Value(v);
+   rec->Value(amount);
+   rec->EndStatement();
+   }
+
+void
 OMR::IlBuilderRecorder::AppendBuilder(TR::IlBuilder *builder)
    {
    TR::JitBuilderRecorder *rec = recorder();
@@ -625,6 +639,16 @@ OMR::IlBuilderRecorder::LessThan(TR::IlValue *left, TR::IlValue *right)
    }
 
 TR::IlValue *
+OMR::IlBuilderRecorder::GreaterThan(TR::IlValue *left, TR::IlValue *right)
+   {
+   TR::IlValue *returnValue = newValue();
+   TR::JitBuilderRecorder *rec = recorder();
+   if (rec)
+      binaryOp(returnValue, left, right, rec->STATEMENT_GREATERTHAN);
+   return returnValue;
+   }
+
+TR::IlValue *
 OMR::IlBuilderRecorder::ConstString(const char * const value)
    {
    TR::IlValue *returnValue = newValue();
@@ -725,6 +749,16 @@ OMR::IlBuilderRecorder::unaryOp(TR::IlValue *returnValue, TR::IlValue *v, const 
    }
 
 TR::IlValue *
+OMR::IlBuilderRecorder::UnsignedShiftR(TR::IlValue *v, TR::IlValue *amount)
+   {
+   TR::IlValue *returnValue = newValue();
+   TR::JitBuilderRecorder *rec = recorder();
+   if (rec)
+      shiftOp(returnValue, v, amount, rec->STATEMENT_UNSIGNEDSHIFTR);
+   return returnValue;
+   }
+
+TR::IlValue *
 OMR::IlBuilderRecorder::NotEqualTo(TR::IlValue *left, TR::IlValue *right)
    {
    TR::IlValue *returnValue = newValue();
@@ -789,13 +823,13 @@ OMR::IlBuilderRecorder::Sub(TR::IlValue *left, TR::IlValue *right)
 
 TR::IlValue *
 OMR::IlBuilderRecorder::Mul(TR::IlValue *left, TR::IlValue *right)
-      {
-      TR::IlValue *returnValue = newValue();
-      TR::JitBuilderRecorder *rec = recorder();
-      if (rec)
-         binaryOp(returnValue, left, right, rec->STATEMENT_MUL);
-      return returnValue;
-      }
+   {
+   TR::IlValue *returnValue = newValue();
+   TR::JitBuilderRecorder *rec = recorder();
+   if (rec)
+      binaryOp(returnValue, left, right, rec->STATEMENT_MUL);
+   return returnValue;
+   }
 
 TR::IlValue *
 OMR::IlBuilderRecorder::Div(TR::IlValue *left, TR::IlValue *right)

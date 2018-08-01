@@ -246,6 +246,10 @@ OMR::JitBuilderReplayTextFile::handleServiceIlBuilder(uint32_t mbID, char * toke
          {
          handleDefineLocal(ilmb, tokens);
          }
+      else if(strcmp(serviceString, STATEMENT_CONSTINT8) == 0)
+         {
+         handleConstInt8(ilmb, tokens);
+         }
       else if(strcmp(serviceString, STATEMENT_CONSTINT32) == 0)
          {
          handleConstInt32(ilmb, tokens);
@@ -253,6 +257,10 @@ OMR::JitBuilderReplayTextFile::handleServiceIlBuilder(uint32_t mbID, char * toke
       else if(strcmp(serviceString, STATEMENT_CONSTINT64) == 0)
          {
          handleConstInt64(ilmb, tokens);
+         }
+      else if(strcmp(serviceString, STATEMENT_CONSTDOUBLE) == 0)
+         {
+         handleConstDouble(ilmb, tokens);
          }
       else if(strcmp(serviceString, STATEMENT_LOAD) == 0)
          {
@@ -297,6 +305,14 @@ OMR::JitBuilderReplayTextFile::handleServiceIlBuilder(uint32_t mbID, char * toke
       else if (strcmp(serviceString, STATEMENT_LESSTHAN) == 0) 
          {
          handleLessThan(ilmb, tokens);
+         }
+      else if (strcmp(serviceString, STATEMENT_GREATERTHAN) == 0) 
+         {
+         handleGreaterThan(ilmb, tokens);
+         }
+      else if (strcmp(serviceString, STATEMENT_NOTEQUALTO) == 0) 
+         {
+         handleNotEqualTo(ilmb, tokens);
          }
       else if(strcmp(serviceString, STATEMENT_NEWILBUILDER) == 0) 
          {
@@ -493,6 +509,22 @@ OMR::JitBuilderReplayTextFile::handleDefineLocal(TR::IlBuilder *m, char *tokens)
    }
 
 void
+OMR::JitBuilderReplayTextFile::handleConstInt8(TR::IlBuilder * ilmb, char * tokens)
+   {
+   // Put into map: key ID, value IlValue*
+   std::cout << "Calling handleConstInt8 helper.\n";
+
+   uint32_t ID = getNumberFromToken(tokens);
+   tokens = std::strtok(NULL, SPACE);
+   uint32_t value = getNumberFromToken(tokens);
+
+   // std::cout << "Found ID: " << ID << ", and value: " << value << ". Storing into map.\n";
+
+   IlValue * val = ilmb->ConstInt8(value);
+   StoreIDPointerPair(ID, val);
+   }
+
+void
 OMR::JitBuilderReplayTextFile::handleConstInt32(TR::IlBuilder * ilmb, char * tokens)
    {
    // Put into map: key ID, value IlValue*
@@ -519,6 +551,20 @@ OMR::JitBuilderReplayTextFile::handleConstInt64(TR::IlBuilder * ilmb, char * tok
 
    int64_t value = atol(tokens);
    IlValue * val = ilmb->ConstInt64(value);
+   StoreIDPointerPair(ID, val);
+   }
+
+void
+OMR::JitBuilderReplayTextFile::handleConstDouble(TR::IlBuilder * ilmb, char * tokens)
+   {
+   // Put into map: key ID, value IlValue*
+   std::cout << "Calling handleConstDouble helper.\n";
+
+   uint32_t ID = getNumberFromToken(tokens);
+   tokens = std::strtok(NULL, SPACE);
+
+   int64_t value = atol(tokens);
+   IlValue * val = ilmb->ConstDouble(value);
    StoreIDPointerPair(ID, val);
    }
 
@@ -754,6 +800,43 @@ OMR::JitBuilderReplayTextFile::handleXor(TR::IlBuilder * ilmb, char * tokens)
 
   }
 
+  void
+  OMR::JitBuilderReplayTextFile::handleGreaterThan(TR::IlBuilder * ilmb, char * tokens){
+    std::cout << "Calling handleGreaterThan helper.\n";
+
+    uint32_t IDtoStore = getNumberFromToken(tokens);
+    tokens = std::strtok(NULL, SPACE);
+
+    uint32_t param1ID = getNumberFromToken(tokens);
+    tokens = std::strtok(NULL, SPACE);
+    uint32_t param2ID = getNumberFromToken(tokens);
+
+    TR::IlValue * leftValue  = static_cast<TR::IlValue *>(lookupPointer(param1ID));
+    TR::IlValue * rightValue = static_cast<TR::IlValue *>(lookupPointer(param2ID));
+
+    TR::IlValue * result = ilmb->GreaterThan(leftValue, rightValue);
+
+    StoreIDPointerPair(IDtoStore, result);
+  }
+
+  void
+  OMR::JitBuilderReplayTextFile::handleNotEqualTo(TR::IlBuilder * ilmb, char * tokens){
+    std::cout << "Calling handleNotEqualTo helper.\n";
+
+    uint32_t IDtoStore = getNumberFromToken(tokens);
+    tokens = std::strtok(NULL, SPACE);
+
+    uint32_t param1ID = getNumberFromToken(tokens);
+    tokens = std::strtok(NULL, SPACE);
+    uint32_t param2ID = getNumberFromToken(tokens);
+
+    TR::IlValue * leftValue  = static_cast<TR::IlValue *>(lookupPointer(param1ID));
+    TR::IlValue * rightValue = static_cast<TR::IlValue *>(lookupPointer(param2ID));
+
+    TR::IlValue * result = ilmb->NotEqualTo(leftValue, rightValue);
+
+    StoreIDPointerPair(IDtoStore, result);
+  }
 
 
    // Add IfThenElse June.29

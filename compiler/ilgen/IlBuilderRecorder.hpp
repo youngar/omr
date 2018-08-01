@@ -304,6 +304,7 @@ protected:
    void convertTo(TR::IlValue *returnValue, TR::IlType *dt, TR::IlValue *v, const char *s);
    void binaryOp(const TR::IlValue *returnValue, const TR::IlValue *left, const TR::IlValue *right, const char *s);
    void unaryOp(TR::IlValue *returnValue, TR::IlValue *v, const char *s);
+   void shiftOp(const TR::IlValue *returnValue, const TR::IlValue *v, const TR::IlValue *amount, const char *s);
 
    TR::JitBuilderRecorder *recorder() const;
    TR::JitBuilderRecorder *clearRecorder();
