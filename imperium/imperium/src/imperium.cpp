@@ -50,7 +50,7 @@
      {
       attachSelf();
 
-      jitBuilderShouldCompile = false;
+      jitBuilderShouldCompile = true;
 
       _writerStatus = ThreadStatus::INITIALIZATION;
       _readerStatus = ThreadStatus::INITIALIZATION;
@@ -100,9 +100,9 @@
         CodeCacheResponse reply;
         Status status = _stub->RequestCodeCache(&codeCacheContext, request, &reply);
         
-        std::cout << "\n\n******* RECEIVED REPLY FOR CODE CACHE ******** base address: " << std::hex << reply.codecachebaseaddress() << " size: " << std::dec << reply.size() << "\n\n";
+        std::cout << "\n\n******* RECEIVED REPLY FOR CODE CACHE ******** base address: " << std::hex << reply.codecachebaseaddress() << " charlie address: " << (reply.codecachebaseaddress() - 0x8) << " size: " << std::dec << reply.size() <<"\n\n";
         _virtualCodeAddress = mmap(
-                                        (void *) (reply.codecachebaseaddress() - 8),
+                                        (void *) (reply.codecachebaseaddress() - 0x8),
                                         reply.size(),
                                         PROT_READ | PROT_WRITE | PROT_EXEC,
                                         MAP_ANONYMOUS | MAP_PRIVATE | MAP_FIXED,
@@ -298,9 +298,9 @@
               // print out address received as well
               std::cout << "Client received: " << retBytes.instructions() << ", with size: " << retBytes.size() << ", with address: " << std::hex << retBytes.codecacheaddress() << std::dec << ". Count: " << (++count) << '\n';
               
-              memcpy(_virtualCodeAddress, (const void *)retBytes.instructions().c_str(), retBytes.size());
+              memcpy((void*) retBytes.codecacheaddress(), (const void *) retBytes.instructions().c_str(), retBytes.size());
               typedef int32_t (SimpleMethodFct)(int32_t);
-              SimpleMethodFct *incr = (SimpleMethodFct *) _virtualCodeAddress;
+              SimpleMethodFct *incr = (SimpleMethodFct *) retBytes.codecacheaddress();
 
                 int32_t v;
                 v=3; std::cout << "incr(" << v << ") == " << incr(v) << "\n";
@@ -480,15 +480,15 @@
                 SimpleMethodFunction *increment = (SimpleMethodFunction *) entry;
 
                 int32_t v;
-                v=10; std::cout << "increment(" << v << ") == " << increment(v) << "\n";
+                v=3; std::cout << "increment(" << v << ") == " << increment(v) << "\n";
+                v=12; std::cout << "increment(" << v << ") == " << increment(v) << "\n";
                 v=15; std::cout << "increment(" << v << ") == " << increment(v) << "\n";
-                v=150; std::cout << "increment(" << v << ") == " << increment(v) << "\n";
                 v=-135; std::cout << "increment(" << v << ") == " << increment(v) << "\n";
 
                 //******************************************************************
 
                 ServerResponse e;
-                e.set_instructions((char*) entry);
+                e.set_instructions((char*) entry, sizeCode);
                 e.set_size(sizeCode);
                 e.set_codecacheaddress((uint64_t) entry);
 
