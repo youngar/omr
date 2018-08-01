@@ -35,7 +35,7 @@ class MandelbrotMethod : public TR::MethodBuilder
    TR::IlType *pDouble;
 
    public:
-   MandelbrotMethod(TR::TypeDictionary *types);
+   MandelbrotMethod(TR::TypeDictionary *types, TR::JitBuilderRecorder *recorder);
    virtual bool buildIL();
    };
 

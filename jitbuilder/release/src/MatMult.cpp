@@ -337,23 +337,23 @@ main(int argc, char *argv[])
    test(C, A, B, N);
    printMatrix(C, N, "C");
 
-   printf("Step 6: compile VectorMatMult method builder\n");
-   VectorMatMult vecmethod(&vectypes);
-   uint8_t *vecentry=0;
-   rc = compileMethodBuilder(&vecmethod, &vecentry);
-   if (rc != 0)
-      {
-      fprintf(stderr,"FAIL: compilation error %d\n", rc);
-      exit(-2);
-      }
+//    printf("Step 6: compile VectorMatMult method builder\n");
+//    VectorMatMult vecmethod(&vectypes);
+//    uint8_t *vecentry=0;
+//    rc = compileMethodBuilder(&vecmethod, &vecentry);
+//    if (rc != 0)
+//       {
+//       fprintf(stderr,"FAIL: compilation error %d\n", rc);
+//       exit(-2);
+//       }
 
-   printf("Step 7: invoke MatMult compiled code\n");
-   MatMultFunctionType *vectest = (MatMultFunctionType *)vecentry;
-   vectest(D, A, B, N);
-   printMatrix(D, N, "D");
+//    printf("Step 7: invoke MatMult compiled code\n");
+//    MatMultFunctionType *vectest = (MatMultFunctionType *)vecentry;
+//    vectest(D, A, B, N);
+//    printMatrix(D, N, "D");
 
-   printf ("Step 8: shutdown JIT\n");
-   shutdownJit();
+//    printf ("Step 8: shutdown JIT\n");
+//    shutdownJit();
 
    printf("PASS\n");
    }

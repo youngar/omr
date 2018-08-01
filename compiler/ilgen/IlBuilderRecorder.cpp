@@ -871,6 +871,19 @@ OMR::IlBuilderRecorder::Xor(TR::IlValue *left, TR::IlValue *right)
    return returnValue;
    }
 
+void
+OMR::IlBuilderRecorder::IfCmpEqualZero(TR::IlBuilder *target, TR::IlValue *condition)
+   {
+   TR::JitBuilderRecorder *rec = recorder();
+
+   if(rec)
+      {
+      rec->BeginStatement(asIlBuilder(), rec->STATEMENT_IFCMPEQUALZERO);
+      rec->Builder(target);
+      rec->Value(condition);
+      rec->EndStatement();
+      }
+   }
 
 
 // TR::IlValue *

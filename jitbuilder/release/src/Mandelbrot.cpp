@@ -29,11 +29,14 @@
 
 #include "Jit.hpp"
 #include "ilgen/TypeDictionary.hpp"
+#include "ilgen/JitBuilderRecorderTextFile.hpp"
+#include "ilgen/JitBuilderReplayTextFile.hpp"
+#include "ilgen/MethodBuilderReplay.hpp"
 #include "Mandelbrot.hpp"
 
 
-MandelbrotMethod::MandelbrotMethod(TR::TypeDictionary *types)
-   : TR::MethodBuilder(types)
+MandelbrotMethod::MandelbrotMethod(TR::TypeDictionary *types, TR::JitBuilderRecorder *recorder)
+   : TR::MethodBuilder(types, recorder)
    {
    DefineLine(LINETOSTR(__LINE__));
    DefineFile(__FILE__);
@@ -321,8 +324,10 @@ main(int argc, char *argv[])
    printf("Step 2: define relevant types\n");
    TR::TypeDictionary types;
 
+   TR::JitBuilderRecorderTextFile recorder(NULL, "mandelbrot.out");
+
    printf("Step 3: compile method builder\n");
-   MandelbrotMethod mandelbrotMethod(&types);
+   MandelbrotMethod mandelbrotMethod(&types, &recorder);
    uint8_t *entry=0;
    int32_t rc = compileMethodBuilder(&mandelbrotMethod, &entry);
    if (rc != 0)
