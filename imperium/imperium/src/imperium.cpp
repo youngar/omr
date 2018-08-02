@@ -101,18 +101,7 @@
         Status status = _stub->RequestCodeCache(&codeCacheContext, request, &reply);
         
         std::cout << "\n\n******* RECEIVED REPLY FOR CODE CACHE ******** base address: " << std::hex << reply.codecachebaseaddress() << " charlie address: " << (reply.codecachebaseaddress() - 0x8) << " size: " << std::dec << reply.size() <<"\n\n";
-        _virtualCodeAddress = mmap(
-                                        (void *) (reply.codecachebaseaddress() - 0x8),
-                                        reply.size(),
-                                        PROT_READ | PROT_WRITE | PROT_EXEC,
-                                        MAP_ANONYMOUS | MAP_PRIVATE,
-                                        0,
-                                        0); // need to check if -1 returned
-        
-        // sizeof(TR::CodeCacheMemorySegment)
-
-        std::cout << "\n\n******* VIRTUAL CODE ADDRESS: " << _virtualCodeAddress << "\n\n";
-     }
+      }
 
   void ClientChannel::requestCompileSync(char * fileName, uint8_t ** entry, TR::MethodBuilder *mb) 
      {

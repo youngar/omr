@@ -539,6 +539,7 @@ public:
 
    virtual void Record(TR::JitBuilderRecorder *recorder)
       {
+      _baseType->RecordFirstTime(recorder);
       recorder->BeginStatement(recorder->STATEMENT_POINTERTYPE);
       recorder->Type(this);
       recorder->Type(_baseType);

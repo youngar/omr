@@ -609,6 +609,31 @@ OMR::IlBuilder::indirectStoreNode(TR::Node *addr, TR::Node *v)
    genTreeTop(TR::Node::createWithSymRef(storeOp, 2, addr, v, 0, storeSymRef));
    }
 
+void
+OMR::IlBuilder::indirectLoadNode(TR::IlValue *returnValue, TR::IlType *dt, TR::Node *addr, bool isVectorLoad)
+   {
+   TR_ASSERT(dt->isPointer(), "indirectLoadNode must apply to pointer type");
+   TR::IlType * baseType = dt->baseType();
+   TR::DataType primType = baseType->getPrimitiveType();
+   TR_ASSERT(primType != TR::NoType, "Dereferencing an untyped pointer.");
+   TR::DataType symRefType = primType;
+   if (isVectorLoad)
+      symRefType = symRefType.scalarToVector();
+
+   TR::SymbolReference *storeSymRef = symRefTab()->findOrCreateArrayShadowSymbolRef(symRefType, addr);
+
+   TR::ILOpCodes loadOp = comp()->il.opCodeForIndirectArrayLoad(primType);
+   if (isVectorLoad)
+      {
+      loadOp = TR::ILOpCode::convertScalarToVector(loadOp);
+      baseType = _types->PrimitiveType(symRefType);
+      }
+
+   TR::Node *loadNode = TR::Node::createWithSymRef(loadOp, 1, 1, addr, storeSymRef);
+
+   closeValue(returnValue, baseType, loadNode);
+   }
+
 TR::IlValue *
 OMR::IlBuilder::indirectLoadNode(TR::IlType *dt, TR::Node *addr, bool isVectorLoad)
    {
@@ -742,10 +767,10 @@ OMR::IlBuilder::CreateLocalArray(int32_t numElements, TR::IlType *elementType)
    _methodBuilder->defineSymbol(name, localArraySymRef);
 
    TR::Node *arrayAddress = TR::Node::createWithSymRef(TR::loadaddr, 0, localArraySymRef);
-   TR::IlValue *arrayAddressValue = newValue(TR::Address, arrayAddress);
+   closeValue(returnValue, TR::Address, arrayAddress);
 
-   TraceIL("IlBuilder[ %p ]::CreateLocalArray array allocated %d bytes, address in %d\n", this, size, arrayAddressValue->getID());
-   return arrayAddressValue;
+  //  TraceIL("IlBuilder[ %p ]::CreateLocalArray array allocated %d bytes, address in %d\n", this, size, arrayAddressValue->getID());
+   return returnValue;
 
    }
 
@@ -824,7 +849,7 @@ OMR::IlBuilder::LoadAt(TR::IlType *dt, TR::IlValue *address)
    {
    TR::IlValue *returnValue = IlBuilderRecorder::LoadAt(dt, address);
    TR_ASSERT(address->getDataType() == TR::Address, "LoadAt needs an address operand");
-   returnValue = indirectLoadNode(dt, loadValue(address));
+   indirectLoadNode(returnValue, dt, loadValue(address));
    TraceIL("IlBuilder[ %p ]::%d is LoadAt type %d address %d\n", this, returnValue->getID(), dt->getPrimitiveType(), address->getID());
    return returnValue;
    }
@@ -878,7 +903,7 @@ OMR::IlBuilder::IndexAt(TR::IlType *dt, TR::IlValue *base, TR::IlValue *index)
    TR::Node *addrNode = TR::Node::create(addOp, 2, baseNode, offsetNode);
 
    TR::IlValue *address = IlBuilderRecorder::IndexAt(dt, base, index);
-   address = newValue(Address, addrNode);
+   closeValue(address, Address, addrNode);
 
    TraceIL("IlBuilder[ %p ]::%d is IndexAt(%s) base %d index %d\n", this, address->getID(), dt->getName(), base->getID(), index->getID());
 
