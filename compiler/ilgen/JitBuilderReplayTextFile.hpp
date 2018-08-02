@@ -71,12 +71,13 @@
     void handleDefineName(TR::MethodBuilder * mb, char * tokens);
     void handleDefineParameter(TR::MethodBuilder * mb, char * tokens);
     void handleDefineArrayParameter(TR::MethodBuilder * mb, char * tokens);
-    void handlePrimitiveType(TR::MethodBuilder * mb, char * tokens);
     void handleDefineReturnType(TR::MethodBuilder * mb, char * tokens);
     void handleDefineFunction(TR::MethodBuilder * mb, char * tokens);
     void handleAllLocalsHaveBeenDefined(TR::MethodBuilder * mb, char * tokens);
     void handleDefineLocal(TR::MethodBuilder *mb, char *tokens);
     void handleDefineLocal(TR::IlBuilder *ilmb, char *tokens);
+    void handlePrimitiveType(TR::IlBuilder * ilmb, char * tokens);
+
 
     void handleConstInt8(TR::IlBuilder * ilmb, char * tokens);
     void handleConstInt32(TR::IlBuilder * ilmb, char * tokens);

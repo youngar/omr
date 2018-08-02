@@ -382,6 +382,10 @@ OMR::JitBuilderReplayTextFile::handleServiceIlBuilder(uint32_t mbID, char * toke
          {
          handleCreateLocalArray(ilmb, tokens);
          }
+      else if(strcmp(serviceString, STATEMENT_PRIMITIVETYPE) == 0)
+         {
+         handlePrimitiveType(ilmb, tokens);
+         }
       else
          {
          TR_ASSERT_FATAL(0, "handleServiceIlBuilder asked to handle unknown serive %s", serviceString);
@@ -479,7 +483,7 @@ OMR::JitBuilderReplayTextFile::handleDefineArrayParameter(TR::MethodBuilder * mb
     mb->DefineArrayParameter(defineParameterParam, type);
    }
 
-void OMR::JitBuilderReplayTextFile::handlePrimitiveType(TR::MethodBuilder * mb, char * tokens)
+void OMR::JitBuilderReplayTextFile::handlePrimitiveType(TR::IlBuilder * mb, char * tokens)
    {
     std::cout << "Calling handlePrimitiveType helper.\n";
     // Store IlType in map with respective ID from tokens
