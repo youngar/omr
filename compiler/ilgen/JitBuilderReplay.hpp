@@ -66,36 +66,40 @@
      virtual void handleDefineParameter(TR::MethodBuilder * mb, char * tokens)   { }
      virtual void handlePrimitiveType(TR::MethodBuilder * mb, char * tokens)     { }
      virtual void handleDefineReturnType(TR::MethodBuilder * mb, char * tokens)  { }
-     virtual void handleDefineFunction(TR::MethodBuilder * mb, char * tokens)  { }
-     virtual void handleDoneLocal(TR::MethodBuilder * mb, char * tokens)  { }
+     virtual void handleDefineFunction(TR::MethodBuilder * mb, char * tokens)    { }
+     virtual void handleDoneLocal(TR::MethodBuilder * mb, char * tokens)         { }
 
-     virtual void handleAdd(TR::IlBuilder * ilmb, char * tokens)        { }
-     virtual void handleSub(TR::IlBuilder * ilmb, char * tokens)        { }
-     virtual void handleMul(TR::IlBuilder * ilmb, char * tokens)        { }
-     virtual void handleDiv(TR::IlBuilder * ilmb, char * tokens)        { }
-     virtual void handleAnd(TR::IlBuilder * ilmb, char * tokens)        { }
-     virtual void handleOr(TR::IlBuilder * ilmb, char * tokens)         { }
-     virtual void handleXor(TR::IlBuilder * ilmb, char * tokens)        { }
-     virtual void handleLoad(TR::IlBuilder * ilmb, char * tokens)       { }
-     virtual void handleConstInt8(TR::IlBuilder * ilmb, char * tokens) { }
-     virtual void handleConstInt32(TR::IlBuilder * ilmb, char * tokens) { }
-     virtual void handleConstInt64(TR::IlBuilder * ilmb, char * tokens) { }
-     virtual void handleConstDouble(TR::IlBuilder * ilmb, char * tokens) { }
-     virtual void handleConvertTo(TR::IlBuilder * ilmb, char * tokens)    { }
-     virtual void handleCall(TR::IlBuilder * ilmb, char * tokens)    { }
-     virtual void handleForLoop(TR::IlBuilder * ilmb, char * tokens)    { }
-     virtual void handleReturn(TR::IlBuilder * ilmb, char * tokens)     { }
-     virtual void handleReturnValue(TR::IlBuilder * ilmb, char * tokens)     { }
-     virtual bool handleService(char * service)   { return false; }
-     virtual void handleLessThan(TR::IlBuilder * ilmb, char * tokens) { }
-     virtual void handleGreaterThan(TR::IlBuilder * ilmb, char * tokens) { }
-     virtual void handleNotEqualTo(TR::IlBuilder * ilmb, char * tokens) { }
-     virtual void handleIfThenElse(TR::IlBuilder * ilmb, char * tokens) { }
+     virtual void handleAdd(TR::IlBuilder * ilmb, char * tokens)                 { }
+     virtual void handleSub(TR::IlBuilder * ilmb, char * tokens)                 { }
+     virtual void handleMul(TR::IlBuilder * ilmb, char * tokens)                 { }
+     virtual void handleDiv(TR::IlBuilder * ilmb, char * tokens)                 { }
+     virtual void handleCreateLocalArray(TR::IlBuilder * ilmb, char * tokens)    { }
+     virtual void handleAnd(TR::IlBuilder * ilmb, char * tokens)                 { }
+     virtual void handleOr(TR::IlBuilder * ilmb, char * tokens)                  { }
+     virtual void handleXor(TR::IlBuilder * ilmb, char * tokens)                 { }
+     virtual void handleLoad(TR::IlBuilder * ilmb, char * tokens)                { }
+     virtual void handleLoadAt(TR::IlBuilder * ilmb, char * tokens)              { }
+     virtual void handleStore(TR::IlBuilder * ilmb, char * tokens)               { }
+     virtual void handleStoreAt(TR::IlBuilder * ilmb, char * tokens)             { }
+     virtual void handleIndexAt(TR::IlBuilder * ilmb, char * tokens)             { }
+     virtual void handleConstInt8(TR::IlBuilder * ilmb, char * tokens)           { }
+     virtual void handleConstInt32(TR::IlBuilder * ilmb, char * tokens)          { }
+     virtual void handleConstInt64(TR::IlBuilder * ilmb, char * tokens)          { }
+     virtual void handleConstDouble(TR::IlBuilder * ilmb, char * tokens)         { }
+     virtual void handleConvertTo(TR::IlBuilder * ilmb, char * tokens)           { }
+     virtual void handleCall(TR::IlBuilder * ilmb, char * tokens)                { }
+     virtual void handleForLoop(TR::IlBuilder * ilmb, char * tokens)             { }
+     virtual void handleReturn(TR::IlBuilder * ilmb, char * tokens)              { }
+     virtual void handleReturnValue(TR::IlBuilder * ilmb, char * tokens)         { }
+     virtual bool handleService(char * service)                                  { return false; }
+     virtual void handleLessThan(TR::IlBuilder * ilmb, char * tokens)            { }
+     virtual void handleGreaterThan(TR::IlBuilder * ilmb, char * tokens)         { }
+     virtual void handleNotEqualTo(TR::IlBuilder * ilmb, char * tokens)          { }
+     virtual void handleIfThenElse(TR::IlBuilder * ilmb, char * tokens)          { }
      virtual void handleAllLocalsHaveBeenDefined(TR::IlBuilder * ilmb, char * tokens) { }
-     virtual void handleUnsignedShiftR(TR::IlBuilder * ilmb, char * tokens) { }
-     virtual void handleIfCmpEqualZero(TR::IlBuilder * ilmb, char * tokens) { }
-     virtual void handleIndexAt(TR::IlBuilder * ilmb, char * tokens) { }
-     virtual void handleNewIlBuilder(TR::IlBuilder * ilmb, char * tokens) { }
+     virtual void handleUnsignedShiftR(TR::IlBuilder * ilmb, char * tokens)      { }
+     virtual void handleIfCmpEqualZero(TR::IlBuilder * ilmb, char * tokens)      { }
+     virtual void handleNewIlBuilder(TR::IlBuilder * ilmb, char * tokens)        { }
 
      // Define Map that maps IDs to pointers
 
