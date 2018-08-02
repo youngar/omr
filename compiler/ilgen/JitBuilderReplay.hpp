@@ -64,6 +64,7 @@
      virtual void handleDefineFile(TR::MethodBuilder * mb, char * tokens)        { }
      virtual void handleDefineName(TR::MethodBuilder * mb, char * tokens)        { }
      virtual void handleDefineParameter(TR::MethodBuilder * mb, char * tokens)   { }
+     virtual void handleDefineArrayParameter(TR::MethodBuilder * mb, char * tokens)   { }
      virtual void handlePrimitiveType(TR::MethodBuilder * mb, char * tokens)     { }
      virtual void handleDefineReturnType(TR::MethodBuilder * mb, char * tokens)  { }
      virtual void handleDefineFunction(TR::MethodBuilder * mb, char * tokens)    { }

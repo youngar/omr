@@ -209,6 +209,10 @@ OMR::JitBuilderReplayTextFile::handleServiceMethodBuilder(uint32_t mbID, char * 
       {
       handleDefineParameter(mb, tokens);
       }
+   else if(strcmp(serviceString, STATEMENT_DEFINEARRAYPARAMETER) == 0)
+      {
+      handleDefineArrayParameter(mb, tokens);
+      }
    else if(strcmp(serviceString, STATEMENT_DEFINELOCAL) == 0)
       {
       handleDefineLocal(mb, tokens);
@@ -216,6 +220,10 @@ OMR::JitBuilderReplayTextFile::handleServiceMethodBuilder(uint32_t mbID, char * 
    else if(strcmp(serviceString, STATEMENT_PRIMITIVETYPE) == 0)
       {
       handlePrimitiveType(mb, tokens);
+      }
+   else if(strcmp(serviceString, STATEMENT_POINTERTYPE) == 0)
+      {
+      handlePointerType(mb, tokens);
       }
    else if(strcmp(serviceString, STATEMENT_DEFINERETURNTYPE) == 0)
       {
@@ -253,6 +261,10 @@ OMR::JitBuilderReplayTextFile::handleServiceIlBuilder(uint32_t mbID, char * toke
       if(strcmp(serviceString, STATEMENT_DEFINELOCAL) == 0)
          {
          handleDefineLocal(ilmb, tokens);
+         }
+      else if(strcmp(serviceString, STATEMENT_ALLLOCALSHAVEBEENDEFINED) == 0)
+         {
+         handleAllLocalsHaveBeenDefined(static_cast<TR::MethodBuilder *>(ilmb), tokens);
          }
       else if(strcmp(serviceString, STATEMENT_CONSTINT8) == 0)
          {
@@ -447,6 +459,24 @@ OMR::JitBuilderReplayTextFile::handleDefineParameter(TR::MethodBuilder * mb, cha
     const char * defineParameterParam = getServiceStringFromToken(strLen, tokens);
 
     mb->DefineParameter(defineParameterParam, type);
+   }
+
+void
+OMR::JitBuilderReplayTextFile::handleDefineArrayParameter(TR::MethodBuilder * mb, char * tokens)
+   {
+    // Def S13 "20 [DefineArrayParameter]" 
+    // B2 S13 T10 "6 [buffer]" 
+    std::cout << "Calling handleDefineArrayParameter helper.\n";
+
+    uint32_t typeID = getNumberFromToken(tokens);
+    TR::IlType *type = static_cast<TR::IlType *>(lookupPointer(typeID));
+    tokens = std::strtok(NULL, SPACE);
+
+    uint32_t strLen = getNumberFromToken(tokens);
+    tokens = std::strtok(NULL, SPACE);
+    const char * defineParameterParam = getServiceStringFromToken(strLen, tokens);
+
+    mb->DefineArrayParameter(defineParameterParam, type);
    }
 
 void OMR::JitBuilderReplayTextFile::handlePrimitiveType(TR::MethodBuilder * mb, char * tokens)
@@ -1118,6 +1148,25 @@ OMR::JitBuilderReplayTextFile::handleConvertTo(TR::IlBuilder * ilmb, char * toke
    }
 
 void
+OMR::JitBuilderReplayTextFile::handlePointerType(TR::IlBuilder * ilmb, char * tokens)
+   {
+   // Def S12 "11 [PointerType]" 
+   // B2 S12 T10 T11 
+   std::cout << "Calling handlePointerType helper.\n";
+
+   uint32_t IDtoStore = getNumberFromToken(tokens);
+   tokens = std::strtok(NULL, SPACE);
+
+   uint32_t param1ID = getNumberFromToken(tokens);
+
+   TR::IlType * param1IlValue = static_cast<TR::IlType *>(lookupPointer(param1ID));
+
+   TR::IlType * addResult = ilmb->typeDictionary()->PointerTo(param1IlValue);
+
+   StoreIDPointerPair(IDtoStore, addResult);
+   }
+
+void
 OMR::JitBuilderReplayTextFile::handleReturnValue(TR::IlBuilder * ilmb, char * tokens)
    {
    std::cout << "Calling handleReturnValue helper.\n";
@@ -1226,6 +1275,7 @@ OMR::JitBuilderReplayTextFile::parseConstructor()
                    constructorFlag = handleService(METHOD_BUILDER, tokens);
                }
          }
+         return true;
    }
 
 bool
