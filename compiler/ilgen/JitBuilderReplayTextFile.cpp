@@ -608,7 +608,7 @@ OMR::JitBuilderReplayTextFile::handleConstInt8(TR::IlBuilder * ilmb, char * toke
 
    // std::cout << "Found ID: " << ID << ", and value: " << value << ". Storing into map.\n";
 
-   int8_t value = atol(tokens);
+   int8_t value = atoi(tokens);
    IlValue * val = ilmb->ConstInt8(value);
    StoreIDPointerPair(ID, val);
    }

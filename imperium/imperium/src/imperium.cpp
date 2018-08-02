@@ -332,11 +332,11 @@
               typedef int32_t (SimpleMethodFct)(int32_t);
               SimpleMethodFct *incr = (SimpleMethodFct *) retBytes.codecacheoffset();
 
-                int32_t v;
-                v=3; std::cout << "incr(" << v << ") == " << incr(v) << "\n";
-                v=6; std::cout << "incr(" << v << ") == " << incr(v) << "\n";
-                v=12; std::cout << "incr(" << v << ") == " << incr(v) << "\n";
-                v=-19; std::cout << "incr(" << v << ") == " << incr(v) << "\n";
+//                 int32_t v;
+//                 v=3; std::cout << "incr(" << v << ") == " << incr(v) << "\n";
+//                 v=6; std::cout << "incr(" << v << ") == " << incr(v) << "\n";
+//                 v=12; std::cout << "incr(" << v << ") == " << incr(v) << "\n";
+//                 v=-19; std::cout << "incr(" << v << ") == " << incr(v) << "\n";
               }
 
        // Check if status is OK
@@ -551,14 +551,14 @@
         //************************************************************
         // TODO: remove function calls and put in the client side
         //       need to send back compiled code, then run that code on client
-        typedef int32_t (SimpleMethodFunction)(int32_t);
-        SimpleMethodFunction *increment = (SimpleMethodFunction *) entry;
+        // typedef int32_t (SimpleMethodFunction)(int32_t);
+        // SimpleMethodFunction *increment = (SimpleMethodFunction *) entry;
 
-        int32_t v;
-        v=3; std::cout << "increment(" << v << ") == " << increment(v) << "\n";
-        v=12; std::cout << "increment(" << v << ") == " << increment(v) << "\n";
-        v=15; std::cout << "increment(" << v << ") == " << increment(v) << "\n";
-        v=-135; std::cout << "increment(" << v << ") == " << increment(v) << "\n";
+        // int32_t v;
+        // v=3; std::cout << "increment(" << v << ") == " << increment(v) << "\n";
+        // v=12; std::cout << "increment(" << v << ") == " << increment(v) << "\n";
+        // v=15; std::cout << "increment(" << v << ") == " << increment(v) << "\n";
+        // v=-135; std::cout << "increment(" << v << ") == " << increment(v) << "\n";
 
         //******************************************************************
 

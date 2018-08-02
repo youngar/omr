@@ -48,7 +48,7 @@ OMR::JitBuilderRecorderTextFile::String(const char * const string)
 void
 OMR::JitBuilderRecorderTextFile::Number(int8_t num)
    {
-   _file << num << " ";
+   _file << (int32_t) num << " ";
    }
 
 void
