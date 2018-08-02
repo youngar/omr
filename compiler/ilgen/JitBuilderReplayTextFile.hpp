@@ -73,8 +73,8 @@
     void handlePrimitiveType(TR::MethodBuilder * mb, char * tokens);
     void handleDefineReturnType(TR::MethodBuilder * mb, char * tokens);
     void handleDefineFunction(TR::MethodBuilder * mb, char * tokens);
-
-    void handleDefineLocal(TR::IlBuilder *mb, char *tokens);
+    void handleAllLocalsHaveBeenDefined(TR::MethodBuilder * mb, char * tokens);
+    void handleDefineLocal(TR::MethodBuilder *mb, char *tokens);
 
     void handleConstInt8(TR::IlBuilder * ilmb, char * tokens);
     void handleConstInt32(TR::IlBuilder * ilmb, char * tokens);
@@ -100,6 +100,10 @@
     void handleConvertTo(TR::IlBuilder * ilmb, char * tokens);
 
     void handleReturnValue(TR::IlBuilder * ilmb, char * tokens);
+
+    void handleUnsignedShiftR(TR::IlBuilder * ilmb, char * tokens);
+    void handleIfCmpEqualZero(TR::IlBuilder * ilmb, char * tokens);
+    void handleIndexAt(TR::IlBuilder * ilmb, char * tokens);
 
     uint32_t getNumberFromToken(char * token);
 

@@ -209,6 +209,10 @@ OMR::JitBuilderReplayTextFile::handleServiceMethodBuilder(uint32_t mbID, char * 
       {
       handleDefineParameter(mb, tokens);
       }
+   else if(strcmp(serviceString, STATEMENT_DEFINELOCAL) == 0)
+      {
+      handleDefineLocal(mb, tokens);
+      }
    else if(strcmp(serviceString, STATEMENT_PRIMITIVETYPE) == 0)
       {
       handlePrimitiveType(mb, tokens);
@@ -220,6 +224,10 @@ OMR::JitBuilderReplayTextFile::handleServiceMethodBuilder(uint32_t mbID, char * 
    else if(strcmp(serviceString, STATEMENT_DEFINEFUNCTION) == 0)
       {
       handleDefineFunction(mb, tokens);
+      }
+   else if(strcmp(serviceString, STATEMENT_ALLLOCALSHAVEBEENDEFINED) == 0)
+      {
+      handleAllLocalsHaveBeenDefined(mb, tokens);
       }
    else if(strcmp(serviceString, STATEMENT_DONECONSTRUCTOR) == 0)
       {
@@ -242,11 +250,7 @@ OMR::JitBuilderReplayTextFile::handleServiceIlBuilder(uint32_t mbID, char * toke
 
       const char * serviceString = getServiceStringFromMap(&tokens);
 
-      if(strcmp(serviceString, STATEMENT_DEFINELOCAL) == 0)
-         {
-         handleDefineLocal(ilmb, tokens);
-         }
-      else if(strcmp(serviceString, STATEMENT_CONSTINT8) == 0)
+      if(strcmp(serviceString, STATEMENT_CONSTINT8) == 0)
          {
          handleConstInt8(ilmb, tokens);
          }
@@ -333,6 +337,18 @@ OMR::JitBuilderReplayTextFile::handleServiceIlBuilder(uint32_t mbID, char * toke
       else if(strcmp(serviceString, STATEMENT_CONVERTTO) == 0)
          {
          handleConvertTo(ilmb, tokens);
+         }
+      else if(strcmp(serviceString, STATEMENT_UNSIGNEDSHIFTR) == 0)
+         {
+         handleUnsignedShiftR(ilmb, tokens);
+         }
+      else if(strcmp(serviceString, STATEMENT_IFCMPEQUALZERO) == 0)
+         {
+         handleIfCmpEqualZero(ilmb, tokens);
+         }
+      else if(strcmp(serviceString, STATEMENT_INDEXAT) == 0)
+         {
+         handleIndexAt(ilmb, tokens);
          }
       else
          {
@@ -490,12 +506,10 @@ OMR::JitBuilderReplayTextFile::handleDefineFunction(TR::MethodBuilder * mb, char
    }
 
 void
-OMR::JitBuilderReplayTextFile::handleDefineLocal(TR::IlBuilder *m, char *tokens)
+OMR::JitBuilderReplayTextFile::handleDefineLocal(TR::MethodBuilder *mb, char *tokens)
    {
    //B2 S25 "6 [result]" T7
    std::cout << "Calling handleDefineLocal helper.\n";
-
-   TR::MethodBuilder *mb = static_cast<TR::MethodBuilder *>(m);
 
    uint32_t typeID = getNumberFromToken(tokens);
    TR::IlType *type = static_cast<TR::IlType *>(lookupPointer(typeID));
@@ -506,6 +520,13 @@ OMR::JitBuilderReplayTextFile::handleDefineLocal(TR::IlBuilder *m, char *tokens)
    const char * defineLocalParam = getServiceStringFromToken(strLen, tokens);
 
    mb->DefineLocal(defineLocalParam, type);
+   }
+
+void
+OMR::JitBuilderReplayTextFile::handleAllLocalsHaveBeenDefined(TR::MethodBuilder * mb, char * tokens)
+   {
+     std::cout << "Calling handleAllLocalsHaveBeenDefined helper.\n";
+     mb->AllLocalsHaveBeenDefined();
    }
 
 void
@@ -1004,6 +1025,67 @@ OMR::JitBuilderReplayTextFile::handleReturnValue(TR::IlBuilder * ilmb, char * to
    TR::IlValue * value = static_cast<TR::IlValue *>(lookupPointer(ID));
 
    ilmb->Return(value);
+   }
+
+void
+OMR::JitBuilderReplayTextFile::handleUnsignedShiftR(TR::IlBuilder * ilmb, char * tokens)
+   {
+   std::cout << "Calling handleUnsignedShiftR helper.\n";
+
+   uint32_t IDtoStore = getNumberFromToken(tokens);
+   tokens = std::strtok(NULL, SPACE);
+
+   uint32_t param1ID = getNumberFromToken(tokens);
+   tokens = std::strtok(NULL, SPACE);
+   uint32_t param2ID = getNumberFromToken(tokens);
+
+   TR::IlValue * v  = static_cast<TR::IlValue *>(lookupPointer(param1ID));
+   TR::IlValue * amount = static_cast<TR::IlValue *>(lookupPointer(param2ID));
+
+   TR::IlValue * result = ilmb->UnsignedShiftR(v, amount);
+
+   StoreIDPointerPair(IDtoStore, result);
+   }
+
+void
+OMR::JitBuilderReplayTextFile::handleIfCmpEqualZero(TR::IlBuilder * ilmb, char * tokens)
+   {
+   std::cout << "Calling handleIfCmpEqualZero helper.\n";
+
+   uint32_t IDtoStore = getNumberFromToken(tokens);
+   tokens = std::strtok(NULL, SPACE);
+
+   uint32_t param1ID = getNumberFromToken(tokens);
+   tokens = std::strtok(NULL, SPACE);
+   uint32_t param2ID = getNumberFromToken(tokens);
+
+   TR::IlBuilder * target  = static_cast<TR::IlBuilder *>(lookupPointer(param1ID));
+   TR::IlValue * condition = static_cast<TR::IlValue *>(lookupPointer(param2ID));
+
+   ilmb->IfCmpEqualZero(target, condition);
+   }
+
+void
+OMR::JitBuilderReplayTextFile::handleIndexAt(TR::IlBuilder * ilmb, char * tokens)
+   {
+   std::cout << "Calling handleIndexAt helper.\n";
+
+   uint32_t IDtoStore = getNumberFromToken(tokens);
+   tokens = std::strtok(NULL, SPACE);
+
+   uint32_t param1ID = getNumberFromToken(tokens);
+   tokens = std::strtok(NULL, SPACE);
+   uint32_t param2ID = getNumberFromToken(tokens);
+   tokens = std::strtok(NULL, SPACE);
+   uint32_t param3ID = getNumberFromToken(tokens);
+
+   TR::IlType * dt = static_cast<TR::IlType *>(lookupPointer(param1ID));
+   TR::IlValue * base  = static_cast<TR::IlValue *>(lookupPointer(param2ID));
+   TR::IlValue * index = static_cast<TR::IlValue *>(lookupPointer(param3ID));
+
+   TR::IlValue * result = ilmb->IndexAt(dt, base, index);
+
+   StoreIDPointerPair(IDtoStore, result);
    }
 
 bool
