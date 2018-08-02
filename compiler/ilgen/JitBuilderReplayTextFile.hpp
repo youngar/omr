@@ -81,6 +81,7 @@
     void handleConstInt32(TR::IlBuilder * ilmb, char * tokens);
     void handleConstInt64(TR::IlBuilder * ilmb, char * tokens);
     void handleConstDouble(TR::IlBuilder * ilmb, char * tokens);
+    void handleConstAddress(TR::IlBuilder * ilmb, char * tokens);
     void handleCreateLocalArray(TR::IlBuilder * ilmb, char * tokens);
     void handleLoad(TR::IlBuilder * ilmb, char * tokens);
     void handleLoadAt(TR::IlBuilder * ilmb, char * tokens);

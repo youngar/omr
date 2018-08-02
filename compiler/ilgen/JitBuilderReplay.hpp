@@ -86,6 +86,7 @@
      virtual void handleConstInt32(TR::IlBuilder * ilmb, char * tokens)          { }
      virtual void handleConstInt64(TR::IlBuilder * ilmb, char * tokens)          { }
      virtual void handleConstDouble(TR::IlBuilder * ilmb, char * tokens)         { }
+     virtual void handleConstAddress(TR::IlBuilder * ilmb, char * tokens)         { }
      virtual void handleConvertTo(TR::IlBuilder * ilmb, char * tokens)           { }
      virtual void handleCall(TR::IlBuilder * ilmb, char * tokens)                { }
      virtual void handleForLoop(TR::IlBuilder * ilmb, char * tokens)             { }

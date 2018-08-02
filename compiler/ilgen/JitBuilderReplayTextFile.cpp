@@ -270,6 +270,10 @@ OMR::JitBuilderReplayTextFile::handleServiceIlBuilder(uint32_t mbID, char * toke
          {
          handleConstDouble(ilmb, tokens);
          }
+      else if(strcmp(serviceString, STATEMENT_CONSTADDRESS) == 0)
+         {
+         handleConstAddress(ilmb, tokens);
+         }
       else if(strcmp(serviceString, STATEMENT_LOAD) == 0)
          {
          handleLoad(ilmb, tokens);
@@ -612,6 +616,20 @@ OMR::JitBuilderReplayTextFile::handleConstDouble(TR::IlBuilder * ilmb, char * to
 
    int64_t value = atol(tokens);
    IlValue * val = ilmb->ConstDouble(value);
+   StoreIDPointerPair(ID, val);
+   }
+
+void
+OMR::JitBuilderReplayTextFile::handleConstAddress(TR::IlBuilder * ilmb, char * tokens)
+   {
+   // Put into map: key ID, value IlValue*
+   std::cout << "Calling handleConstAddress helper.\n";
+
+   uint32_t ID = getNumberFromToken(tokens);
+   tokens = std::strtok(NULL, SPACE);
+
+   void * value = (void *) atol(tokens);
+   IlValue * val = ilmb->ConstAddress(value);
    StoreIDPointerPair(ID, val);
    }
 

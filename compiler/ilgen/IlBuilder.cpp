@@ -1027,7 +1027,7 @@ TR::IlValue *
 OMR::IlBuilder::ConstAddress(const void * const value)
    {
    TR::IlValue *returnValue = TR::IlBuilderRecorder::ConstAddress(value);
-   returnValue = newValue(Address, TR::Node::aconst((uintptrj_t)value));
+   closeValue(returnValue, Address, TR::Node::aconst((uintptrj_t)value));
    TraceIL("IlBuilder[ %p ]::%d is ConstAddress %p\n", this, returnValue->getID(), value);
    return returnValue;
    }
