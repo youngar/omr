@@ -266,6 +266,10 @@ OMR::JitBuilderReplayTextFile::handleServiceIlBuilder(uint32_t mbID, char * toke
          {
          handleLoad(ilmb, tokens);
          }
+      else if(strcmp(serviceString, STATEMENT_LOADAT) == 0)
+         {
+         handleLoadAt(ilmb, tokens);
+         }
       else if(strcmp(serviceString, STATEMENT_ADD) == 0)
          {
          handleAdd(ilmb, tokens);
@@ -277,6 +281,10 @@ OMR::JitBuilderReplayTextFile::handleServiceIlBuilder(uint32_t mbID, char * toke
       else if(strcmp(serviceString, STATEMENT_STORE) == 0)
          {
          handleStore(ilmb, tokens);
+         }
+      else if(strcmp(serviceString, STATEMENT_STOREAT) == 0)
+         {
+         handleStoreAt(ilmb, tokens);
          }
       else if(strcmp(serviceString, STATEMENT_SUB) == 0)
          {
@@ -333,6 +341,10 @@ OMR::JitBuilderReplayTextFile::handleServiceIlBuilder(uint32_t mbID, char * toke
       else if(strcmp(serviceString, STATEMENT_CONVERTTO) == 0)
          {
          handleConvertTo(ilmb, tokens);
+         }
+      else if(strcmp(serviceString, STATEMENT_CREATELOCALARRAY) == 0)
+         {
+         handleCreateLocalArray(ilmb, tokens);
          }
       else
          {
@@ -587,7 +599,27 @@ OMR::JitBuilderReplayTextFile::handleLoad(TR::IlBuilder * ilmb, char * tokens)
    StoreIDPointerPair(ID, loadVal);
    }
 
+void
+OMR::JitBuilderReplayTextFile::handleLoadAt(TR::IlBuilder * ilmb, char * tokens)
+   {
+   // Def S112 "6 [LoadAt]" 
+   // B104 S112 V111 T14 V110 
 
+   std::cout << "Calling handleLoadAt helper.\n";
+
+   uint32_t storeID = getNumberFromToken(tokens);
+   tokens = std::strtok(NULL, SPACE);
+
+   uint32_t typeID = getNumberFromToken(tokens);
+   tokens = std::strtok(NULL, SPACE);
+   uint32_t valueID = getNumberFromToken(tokens);
+
+   TR::IlType * param1 = static_cast<TR::IlType *>(lookupPointer(typeID));
+   TR::IlValue * param2 = static_cast<TR::IlValue *>(lookupPointer(valueID));
+
+   IlValue * loadVal = ilmb->LoadAt(param1, param2);
+   StoreIDPointerPair(storeID, loadVal);
+   }
 
    void
    OMR::JitBuilderReplayTextFile::handleStore(TR::IlBuilder * ilmb, char * tokens)
@@ -596,9 +628,6 @@ OMR::JitBuilderReplayTextFile::handleLoad(TR::IlBuilder * ilmb, char * tokens)
       //B2 S22 "7 [result2]" V21
       //B2 S13 V23 "7 [result2]"
       std::cout << "Calling handleStore helper.\n";
-
-    //  uint32_t ID = getNumberFromToken(tokens);
-    //  tokens = std::strtok(NULL, SPACE);
 
       uint32_t strLen = getNumberFromToken(tokens);
       tokens = std::strtok(NULL, SPACE);
@@ -609,6 +638,25 @@ OMR::JitBuilderReplayTextFile::handleLoad(TR::IlBuilder * ilmb, char * tokens)
       TR::IlValue * paramIlValue = static_cast<TR::IlValue *>(lookupPointer(valuetoStore));
 
       ilmb->Store(defineStoreParam, paramIlValue);
+      //StoreIDPointerPair(ID, loadVal);
+      }
+
+   void
+   OMR::JitBuilderReplayTextFile::handleStoreAt(TR::IlBuilder * ilmb, char * tokens)
+      {
+    //   Def S73 "7 [StoreAt]" 
+    //   B52 S73 V60 V71 
+
+      std::cout << "Calling handleStoreAt helper.\n";
+
+      uint32_t addressID = getNumberFromToken(tokens);
+      tokens = std::strtok(NULL, SPACE);
+      uint32_t valuetoStore = getNumberFromToken(tokens);
+
+      TR::IlValue * param1Value = static_cast<TR::IlValue *>(lookupPointer(addressID));
+      TR::IlValue * param2Value = static_cast<TR::IlValue *>(lookupPointer(valuetoStore));
+
+      ilmb->StoreAt(param1Value, param2Value);
       //StoreIDPointerPair(ID, loadVal);
       }
 
@@ -799,6 +847,27 @@ OMR::JitBuilderReplayTextFile::handleXor(TR::IlBuilder * ilmb, char * tokens)
     StoreIDPointerPair(IDtoStore, lessThanResult);
 
   }
+
+  void 
+  OMR::JitBuilderReplayTextFile::handleCreateLocalArray(TR::IlBuilder * ilmb, char * tokens)  
+     {
+    //  Def S22 "16 [CreateLocalArray]" 
+    //  B2 S22 V21 8 T15 
+     std::cout << "Calling handleCreateLocalArray helper.\n";
+
+     uint32_t IDtoStore = getNumberFromToken(tokens);
+     tokens = std::strtok(NULL, SPACE);
+ 
+     uint32_t param1 = getNumberFromToken(tokens);
+     tokens = std::strtok(NULL, SPACE);
+     uint32_t param2ID = getNumberFromToken(tokens);
+
+     TR::IlType * param2 = static_cast<TR::IlType *>(lookupPointer(param2ID));
+ 
+     TR::IlValue * lArray = ilmb->CreateLocalArray((int32_t)param1, param2);
+
+     StoreIDPointerPair(IDtoStore, lArray);
+     }
 
   void
   OMR::JitBuilderReplayTextFile::handleGreaterThan(TR::IlBuilder * ilmb, char * tokens){

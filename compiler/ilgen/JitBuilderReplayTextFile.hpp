@@ -80,7 +80,9 @@
     void handleConstInt32(TR::IlBuilder * ilmb, char * tokens);
     void handleConstInt64(TR::IlBuilder * ilmb, char * tokens);
     void handleConstDouble(TR::IlBuilder * ilmb, char * tokens);
+    void handleCreateLocalArray(TR::IlBuilder * ilmb, char * tokens);
     void handleLoad(TR::IlBuilder * ilmb, char * tokens);
+    void handleLoadAt(TR::IlBuilder * ilmb, char * tokens);
     void handleAdd(TR::IlBuilder * ilmb, char * tokens);
     void handleSub(TR::IlBuilder * ilmb, char * tokens);
     void handleMul(TR::IlBuilder * ilmb, char * tokens);
@@ -89,6 +91,7 @@
     void handleOr(TR::IlBuilder * ilmb, char * tokens);
     void handleXor(TR::IlBuilder * ilmb, char * tokens);
     void handleStore(TR::IlBuilder * ilmb, char * tokens);
+    void handleStoreAt(TR::IlBuilder * ilmb, char * tokens);
     void handleForLoop(TR::IlBuilder * ilmb, char * tokens);
 
     void handleNewIlBuilder(TR::IlBuilder * ilmb, char * tokens);
