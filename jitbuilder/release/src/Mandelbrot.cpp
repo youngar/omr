@@ -336,17 +336,37 @@ main(int argc, char *argv[])
       exit(-2);
       }
 
-   printf("Step 4: run mandelbrot compiled code\n");
-   MandelbrotFunctionType *mandelbrot = (MandelbrotFunctionType *)entry;
+//    printf("Step 4: run mandelbrot compiled code\n");
+//    MandelbrotFunctionType *mandelbrot = (MandelbrotFunctionType *)entry;
+
+   TR::JitBuilderReplayTextFile replay("mandelbrot.out");
+   TR::JitBuilderRecorderTextFile recorder2(NULL, "mandelbrot2.out");
+
+   TR::TypeDictionary types2;
+   uint8_t *entry2 = 0;
+
    const int height = N;
    const int max_x = (N + 7) / 8;
    const int size = height * max_x * sizeof(uint8_t);
    uint8_t *buffer = (uint8_t *) malloc(size);
    double *cr0 = (double *) malloc(8 * max_x * sizeof(double));
 
+   std::cout << "Step 6: verify output file\n";
+   TR::MethodBuilderReplay mb(&types2, &replay, &recorder2); // Process Constructor
+   rc = compileMethodBuilder(&mb, &entry2); // Process buildIL
+
+   if (rc != 0)
+      {
+      std::cerr << "FAIL: compilation error " << rc << "\n";
+      exit(-2);
+      }
+
+   std::cout << "Step 7: run compiled code from replay\n";
+   MandelbrotFunctionType *mandelbrot = (MandelbrotFunctionType *)entry2;
+
    mandelbrot(N, buffer, cr0);
 
-   printf("Step 5: output result buffer\n");
+   printf("Step 8: output result buffer\n");
    FILE *out = (argc == 3) ? fopen(argv[2], "wb") : stdout;
    fprintf(out, "P4\n%u %u\n", max_x, height);
    fwrite(buffer, size, 1, out);

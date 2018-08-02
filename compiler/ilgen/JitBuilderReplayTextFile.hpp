@@ -70,6 +70,7 @@
     void handleDefineFile(TR::MethodBuilder * mb, char * tokens);
     void handleDefineName(TR::MethodBuilder * mb, char * tokens);
     void handleDefineParameter(TR::MethodBuilder * mb, char * tokens);
+    void handleDefineArrayParameter(TR::MethodBuilder * mb, char * tokens);
     void handlePrimitiveType(TR::MethodBuilder * mb, char * tokens);
     void handleDefineReturnType(TR::MethodBuilder * mb, char * tokens);
     void handleDefineFunction(TR::MethodBuilder * mb, char * tokens);
@@ -81,6 +82,7 @@
     void handleConstInt32(TR::IlBuilder * ilmb, char * tokens);
     void handleConstInt64(TR::IlBuilder * ilmb, char * tokens);
     void handleConstDouble(TR::IlBuilder * ilmb, char * tokens);
+    void handlePointerType(TR::IlBuilder * ilmb, char * tokens);
     void handleCreateLocalArray(TR::IlBuilder * ilmb, char * tokens);
     void handleLoad(TR::IlBuilder * ilmb, char * tokens);
     void handleLoadAt(TR::IlBuilder * ilmb, char * tokens);
