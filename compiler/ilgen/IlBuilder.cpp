@@ -1055,6 +1055,7 @@ OMR::IlBuilder::ConvertTo(TR::IlType *t, TR::IlValue *v)
       TraceIL("IlBuilder[ %p ]::%d is ConvertTo (already has type %s) %d\n", this, v->getID(), t->getName(), v->getID());
       return v;
       }
+   
    convertTo(convertedValue, t, v, false);
    TraceIL("IlBuilder[ %p ]::%d is ConvertTo(%s) %d\n", this, convertedValue->getID(), t->getName(), v->getID());
    return convertedValue;
@@ -1273,6 +1274,7 @@ OMR::IlBuilder::Goto(TR::IlBuilder *dest)
 void
 OMR::IlBuilder::Return()
    {
+   TR::IlBuilderRecorder::Return();
    TraceIL("IlBuilder[ %p ]::Return\n", this);
    TR::Node *returnNode = TR::Node::create(TR::ILOpCode::returnOpCode(TR::NoType));
    genTreeTop(returnNode);
@@ -1976,6 +1978,9 @@ OMR::IlBuilder::genCall(TR::IlValue *returnValue, TR::SymbolReference *methodSym
    TR::DataType returnType = methodSymRef->getSymbol()->castToMethodSymbol()->getMethod()->returnType();
    TR::Node *callNode = TR::Node::createWithSymRef(isDirectCall? TR::ILOpCode::getDirectCall(returnType): TR::ILOpCode::getIndirectCall(returnType), numArgs, methodSymRef);
 
+   // Do not record the loopContinue 
+   TR::JitBuilderRecorder *savedRecorder = clearRecorder();
+
    // TODO: should really verify argument types here
    int32_t childIndex = 0;
    for (int32_t a=0;a < numArgs;a++)
@@ -1993,6 +1998,8 @@ OMR::IlBuilder::genCall(TR::IlValue *returnValue, TR::SymbolReference *methodSym
       {
       closeValue(returnValue, callNode->getDataType(), callNode);
       }
+
+   restoreRecorder(savedRecorder);
    }
 
 TR::IlValue *
@@ -2632,15 +2639,15 @@ OMR::IlBuilder::ForLoop(bool countsUp,
    TR_ASSERT(loopCode != NULL, "ForLoop needs to have loopCode builder");
    *loopCode = createBuilderIfNeeded(*loopCode);
 
+   // Do not record the loopContinue 
+   TR::JitBuilderRecorder *savedRecorder = clearRecorder();
+
    TR::IlBuilder *bBreak = NULL;
    if (breakBuilder)
       {
       TR_ASSERT(*breakBuilder == NULL, "ForLoop returns breakBuilder, cannot provide breakBuilder as input");
       bBreak = *breakBuilder = self()->OrphanBuilder();
       }
-
-  // Do not record the loopContinue 
-  TR::JitBuilderRecorder *savedRecorder = clearRecorder();
 
    TR::IlBuilder *loopContinue = self()->OrphanBuilder();
 
@@ -2652,12 +2659,12 @@ OMR::IlBuilder::ForLoop(bool countsUp,
       }
 
    restoreRecorder(savedRecorder);
-   TR::IlBuilderRecorder::ForLoop(countsUp, indVar, *loopCode, bBreak, bContinue, initial, end, increment);
 
-   methodSymbol()->setMayHaveLoops(true);
+   TR::IlBuilderRecorder::ForLoop(countsUp, indVar, *loopCode, bBreak, bContinue, initial, end, increment);
 
    // No services will be logged after this point; all objects must be created by now
    savedRecorder = clearRecorder();
+   methodSymbol()->setMayHaveLoops(true);
 
    TraceIL("IlBuilder[ %p ]::ForLoop ind %s initial %d end %d increment %d loopCode %p countsUp %d\n", this, indVar, initial->getID(), end->getID(), increment->getID(), *loopCode, countsUp);
 

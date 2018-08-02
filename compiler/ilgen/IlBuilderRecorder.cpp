@@ -2042,7 +2042,9 @@ OMR::IlBuilderRecorder::ForLoop(bool countsUp,
          rec->Number(0); // False 
       rec->String(indVar);
       rec->Builder(bLoop);
+      rec->EnsureAvailableID(bBreak);
       rec->Builder(bBreak);
+      rec->EnsureAvailableID(bContinue);
       rec->Builder(bContinue);
       rec->Value(initial);
       rec->Value(end);

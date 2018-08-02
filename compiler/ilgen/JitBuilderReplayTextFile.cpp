@@ -302,6 +302,10 @@ OMR::JitBuilderReplayTextFile::handleServiceIlBuilder(uint32_t mbID, char * toke
          {
          handleReturnValue(ilmb, tokens);
          }
+    else if(strcmp(serviceString, STATEMENT_RETURN) == 0)
+         {
+         handleReturn(ilmb, tokens);
+         }
       else if(strcmp(serviceString, STATEMENT_STORE) == 0)
          {
          handleStore(ilmb, tokens);
@@ -648,7 +652,7 @@ OMR::JitBuilderReplayTextFile::handleConstDouble(TR::IlBuilder * ilmb, char * to
    uint32_t ID = getNumberFromToken(tokens);
    tokens = std::strtok(NULL, SPACE);
 
-   int64_t value = atol(tokens);
+   double value = atof(tokens);
    IlValue * val = ilmb->ConstDouble(value);
    StoreIDPointerPair(ID, val);
    }
@@ -745,6 +749,7 @@ OMR::JitBuilderReplayTextFile::handleLoadAt(TR::IlBuilder * ilmb, char * tokens)
 
       ilmb->StoreAt(param1Value, param2Value);
       //StoreIDPointerPair(ID, loadVal);
+      std::cout << "Finished storeat\n";
       }
 
 void
@@ -1054,16 +1059,11 @@ OMR::JitBuilderReplayTextFile::handleForLoop(TR::IlBuilder * ilmb, char * tokens
    TR::IlBuilder * body = static_cast<TR::IlBuilder *>(lookupPointer(builderID));
    tokens = std::strtok(NULL, SPACE);
 
-   TR::IlBuilder * breakKey;
-   TR::IlBuilder * continueKey;
-
    uint32_t breakID = getNumberFromToken(tokens);
-   breakKey = static_cast<TR::IlBuilder *>(lookupPointer(breakID));
 
    tokens = std::strtok(NULL, SPACE);
 
    uint32_t continueID = getNumberFromToken(tokens);
-   continueKey = static_cast<TR::IlBuilder *>(lookupPointer(continueID));
 
    tokens = std::strtok(NULL, SPACE);
 
@@ -1081,11 +1081,25 @@ OMR::JitBuilderReplayTextFile::handleForLoop(TR::IlBuilder * ilmb, char * tokens
    if(breakID == 0 && continueID == 0)
       ilmb->ForLoop(boolParam, indVar, &body, NULL, NULL, initValue, iterateValue, incrementValue);
    else if(breakID == 0)
-      ilmb->ForLoop(boolParam, indVar, &body, NULL, &continueKey, initValue, iterateValue, incrementValue);
+      {
+      TR::IlBuilder *continueBuilder = NULL;//static_cast<TR::IlBuilder *>(lookupPointer(continueID));
+      ilmb->ForLoop(boolParam, indVar, &body, NULL, &continueBuilder, initValue, iterateValue, incrementValue);
+      StoreIDPointerPair(continueID, continueBuilder);
+      }
    else if(continueID == 0)
-      ilmb->ForLoop(boolParam, indVar, &body, &breakKey, NULL, initValue, iterateValue, incrementValue);
+      {
+      TR::IlBuilder *breakBuilder = NULL;//static_cast<TR::IlBuilder *>(lookupPointer(breakID));
+      ilmb->ForLoop(boolParam, indVar, &body, &breakBuilder, NULL, initValue, iterateValue, incrementValue);
+      StoreIDPointerPair(breakID, breakBuilder);
+      }
    else
-      ilmb->ForLoop(boolParam, indVar, &body, &breakKey, &continueKey, initValue, iterateValue, incrementValue);
+      {
+      TR::IlBuilder *continueBuilder = NULL;//static_cast<TR::IlBuilder *>(lookupPointer(continueID));
+      TR::IlBuilder *breakBuilder = NULL;//static_cast<TR::IlBuilder *>(lookupPointer(breakID));
+      ilmb->ForLoop(boolParam, indVar, &body, &breakBuilder, &continueBuilder, initValue, iterateValue, incrementValue);
+      StoreIDPointerPair(continueID, continueBuilder);
+      StoreIDPointerPair(breakID, breakBuilder);
+      }
   }
 
 void
@@ -1182,6 +1196,14 @@ OMR::JitBuilderReplayTextFile::handleReturnValue(TR::IlBuilder * ilmb, char * to
    }
 
 void
+OMR::JitBuilderReplayTextFile::handleReturn(TR::IlBuilder * ilmb, char * tokens)
+   {
+   std::cout << "Calling handleReturn helper.\n";
+
+   ilmb->Return();
+   }
+
+void
 OMR::JitBuilderReplayTextFile::handleUnsignedShiftR(TR::IlBuilder * ilmb, char * tokens)
    {
    std::cout << "Calling handleUnsignedShiftR helper.\n";
@@ -1204,19 +1226,18 @@ OMR::JitBuilderReplayTextFile::handleUnsignedShiftR(TR::IlBuilder * ilmb, char *
 void
 OMR::JitBuilderReplayTextFile::handleIfCmpEqualZero(TR::IlBuilder * ilmb, char * tokens)
    {
+//    Def S124 "14 [IfCmpEqualZero]" 
+//    B121 S124 B122 V123 
    std::cout << "Calling handleIfCmpEqualZero helper.\n";
-
-   uint32_t IDtoStore = getNumberFromToken(tokens);
-   tokens = std::strtok(NULL, SPACE);
 
    uint32_t param1ID = getNumberFromToken(tokens);
    tokens = std::strtok(NULL, SPACE);
    uint32_t param2ID = getNumberFromToken(tokens);
 
    TR::IlBuilder * target  = static_cast<TR::IlBuilder *>(lookupPointer(param1ID));
-   TR::IlValue * condition = static_cast<TR::IlValue *>(lookupPointer(param2ID));
+   TR::IlValue * value = static_cast<TR::IlValue *>(lookupPointer(param2ID));
 
-   ilmb->IfCmpEqualZero(target, condition);
+   ilmb->IfCmpEqualZero(target, value);
    }
 
 void

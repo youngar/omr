@@ -108,6 +108,7 @@
     void handleConvertTo(TR::IlBuilder * ilmb, char * tokens);
 
     void handleReturnValue(TR::IlBuilder * ilmb, char * tokens);
+    void handleReturn(TR::IlBuilder * ilmb, char * tokens);
 
     void handleUnsignedShiftR(TR::IlBuilder * ilmb, char * tokens);
     void handleIfCmpEqualZero(TR::IlBuilder * ilmb, char * tokens);

@@ -34,6 +34,8 @@
 #include "ilgen/MethodBuilderReplay.hpp"
 #include "Mandelbrot.hpp"
 
+extern bool jitBuilderShouldCompile;
+
 
 MandelbrotMethod::MandelbrotMethod(TR::TypeDictionary *types, TR::JitBuilderRecorder *recorder)
    : TR::MethodBuilder(types, recorder)
@@ -45,7 +47,7 @@ MandelbrotMethod::MandelbrotMethod(TR::TypeDictionary *types, TR::JitBuilderReco
    pInt8 = types->PointerTo(Int8);
 
    DefineName("mandelbrot");
-   DefineParameter     ("N",      Int32);
+   DefineParameter("N", Int32);
    DefineArrayParameter("buffer", pInt8);
    DefineArrayParameter("cr0",    pDouble);
    DefineReturnType(NoType);
@@ -328,6 +330,9 @@ main(int argc, char *argv[])
 
    printf("Step 3: compile method builder\n");
    MandelbrotMethod mandelbrotMethod(&types, &recorder);
+
+   jitBuilderShouldCompile = false;
+
    uint8_t *entry=0;
    int32_t rc = compileMethodBuilder(&mandelbrotMethod, &entry);
    if (rc != 0)
@@ -339,6 +344,7 @@ main(int argc, char *argv[])
 //    printf("Step 4: run mandelbrot compiled code\n");
 //    MandelbrotFunctionType *mandelbrot = (MandelbrotFunctionType *)entry;
 
+   jitBuilderShouldCompile = true;
    TR::JitBuilderReplayTextFile replay("mandelbrot.out");
    TR::JitBuilderRecorderTextFile recorder2(NULL, "mandelbrot2.out");
 
