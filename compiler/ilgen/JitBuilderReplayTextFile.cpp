@@ -733,7 +733,6 @@ OMR::JitBuilderReplayTextFile::handleLoadAt(TR::IlBuilder * ilmb, char * tokens)
       TR::IlValue * paramIlValue = static_cast<TR::IlValue *>(lookupPointer(valuetoStore));
 
       ilmb->Store(defineStoreParam, paramIlValue);
-      //StoreIDPointerPair(ID, loadVal);
       }
 
    void
@@ -752,8 +751,6 @@ OMR::JitBuilderReplayTextFile::handleLoadAt(TR::IlBuilder * ilmb, char * tokens)
       TR::IlValue * param2Value = static_cast<TR::IlValue *>(lookupPointer(valuetoStore));
 
       ilmb->StoreAt(param1Value, param2Value);
-      //StoreIDPointerPair(ID, loadVal);
-      std::cout << "Finished storeat\n";
       }
 
 void

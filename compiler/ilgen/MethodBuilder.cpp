@@ -100,7 +100,7 @@ OMR::MethodBuilder::MethodBuilder(TR::TypeDictionary *types, TR::JitBuilderRecor
    _numBlocksBeforeWorklist(0),
    _countBlocksWorklist(0),
    _connectTreesWorklist(0),
-   _isCompiling(jitBuilderShouldCompile)
+   _isCompiling(true)
    {
    _definingLine[0] = '\0';
    initMaps();
