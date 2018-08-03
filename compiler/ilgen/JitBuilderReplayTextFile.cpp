@@ -660,13 +660,17 @@ OMR::JitBuilderReplayTextFile::handleConstDouble(TR::IlBuilder * ilmb, char * to
 void
 OMR::JitBuilderReplayTextFile::handleConstAddress(TR::IlBuilder * ilmb, char * tokens)
    {
+   // Def S20 "12 [ConstAddress]" 
+   // B2 S20 V18 {0x7ffeeb656d30} 
+
    // Put into map: key ID, value IlValue*
    std::cout << "Calling handleConstAddress helper.\n";
 
    uint32_t ID = getNumberFromToken(tokens);
    tokens = std::strtok(NULL, SPACE);
+   uint64_t address = std::strtol(tokens+1, NULL, 16);
 
-   void * value = (void *) atol(tokens);
+   void * value = (void *) address;
    IlValue * val = ilmb->ConstAddress(value);
    StoreIDPointerPair(ID, val);
    }
