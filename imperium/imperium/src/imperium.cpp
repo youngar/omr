@@ -35,7 +35,6 @@
  #include <thread>
 
  using namespace OMR::Imperium;
- extern bool jitBuilderShouldCompile;
 
    /****************
    * ClientChannel *
@@ -49,8 +48,6 @@
   ClientChannel::ClientChannel(std::string serverAddress)
      {
       attachSelf();
-
-      jitBuilderShouldCompile = true;
 
       _writerStatus = ThreadStatus::INITIALIZATION;
       _readerStatus = ThreadStatus::INITIALIZATION;
@@ -108,7 +105,7 @@
         ClientContext codeCacheContext;
         ServerResponse reply;
 
-        int32_t rc = compileMethodBuilder(mb, entry);
+        int32_t rc = recordMethodBuilder(mb);
 
         std::string fileString;
         std::ifstream _file(fileName);
@@ -146,7 +143,7 @@
 
   void ClientChannel::requestCompile(char * fileName, uint8_t ** entry, TR::MethodBuilder *mb)
      {
-       int32_t rc = compileMethodBuilder(mb, entry);
+       int32_t rc = recordMethodBuilder(mb);
 
        std::string fileString;
        std::ifstream _file(fileName);

@@ -135,8 +135,6 @@ namespace TR { class Options; }
 namespace TR { class CodeCache; }
 namespace TR { class RegisterMappedSymbol; }
 
-extern bool jitBuilderShouldCompile;
-
 
 namespace OMR
 {
@@ -203,7 +201,8 @@ OMR::Compilation::Compilation(
       TR::Options &options,
       TR::Region &heapMemoryRegion,
       TR_Memory *m,
-      TR_OptimizationPlan *optimizationPlan) :
+      TR_OptimizationPlan *optimizationPlan,
+      bool shouldCompile) :
    _signature(compilee->signature(m)),
    _options(&options),
    _heapMemoryRegion(heapMemoryRegion),
@@ -295,7 +294,8 @@ OMR::Compilation::Compilation(
    _gpuKernelLineNumberList(m),
    _gpuPtxCount(0),
    _bitVectorPool(self()),
-   _tlsManager(*self())
+   _tlsManager(*self()),
+   _shouldCompile(shouldCompile)
    {
 
    //Avoid expensive initialization and uneeded option checking if we are doing AOT Loads
@@ -1006,11 +1006,10 @@ int32_t OMR::Compilation::compile()
    // Force a crash during compilation if the crashDuringCompile option is set
    TR_ASSERT_FATAL(!self()->getOption(TR_CrashDuringCompilation), "crashDuringCompile option is set");
 
-   if (jitBuilderShouldCompile){
    LexicalTimer t("compile", self()->signature(), self()->phaseTimer());
    TR::LexicalMemProfiler mp("compile", self()->signature(), self()->phaseMemProfiler());
 
-   if (_ilGenSuccess)
+   if (_ilGenSuccess && _shouldCompile)
       {
       _methodSymbol->detectInternalCycles(_methodSymbol->getFlowGraph(), self());
 
@@ -1182,8 +1181,6 @@ int32_t OMR::Compilation::compile()
    if (self()->getOutFile() != NULL && self()->getOption(TR_TraceAll))
       trfflush(self()->getOutFile());
 
-
-   }
    if (self()->getOption(TR_Timing))
       {
       self()->phaseTimer().DumpSummary(*self());

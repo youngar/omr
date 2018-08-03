@@ -35,8 +35,6 @@
 #include "ilgen/MethodBuilder.hpp"
 #include "RecursiveFib.hpp"
 
-extern bool jitBuilderShouldCompile;
-
 static void
 printString(int64_t stringPointer)
    {
@@ -143,53 +141,37 @@ main(int argc, char *argv[])
    // Create a recorder so we can directly control the file for this particular test
    TR::JitBuilderRecorderTextFile recorder(NULL, "recFib.out");
 
-   printf("Step 3: compile method builder\n");
+   printf("Step 3: record method builder\n");
    RecursiveFibonnaciMethod method(&types, &recorder);
 
-   //TODO Hack to be able to turn compiling off a global level
-   jitBuilderShouldCompile = false;
-
    uint8_t *entry=0;
-   int32_t rc = compileMethodBuilder(&method, &entry);
+   int32_t rc = recordMethodBuilder(&method);
    if (rc != 0)
       {
       fprintf(stderr,"FAIL: compilation error %d\n", rc);
       exit(-2);
       }
 
-   if (jitBuilderShouldCompile)
+   printf("Step 4: Replay\n");
+   TR::JitBuilderReplayTextFile replay("recFib.out");
+   TR::JitBuilderRecorderTextFile recorder2(NULL, "recFib2.out");
+
+   TR::TypeDictionary types2;
+
+   printf("Step 5: verify output file\n");
+   TR::MethodBuilderReplay mb(&types2, &replay, &recorder2); // Process Constructor
+   compileMethodBuilder(&mb, &entry); // Process buildIL
+
+   if (rc != 0)
       {
-      printf("Step 4: invoke compiled code\n");
-      RecursiveFibFunctionType *fib = (RecursiveFibFunctionType *)entry;
-      for (int32_t n=0;n < 20;n++)
-         printf("fib(%2d) = %d\n", n, fib(n));
+      fprintf(stderr,"FAIL: compilation error %d\n", rc);
+      exit(-2);
       }
-   else
-      {
-      printf("Step 5: Replay\n");
-      jitBuilderShouldCompile = true;
-      TR::JitBuilderReplayTextFile replay("recFib.out");
-      TR::JitBuilderRecorderTextFile recorder2(NULL, "recFib2.out");
 
-      TR::TypeDictionary types2;
-      uint8_t *entry2 = 0;
-
-      printf("Step 6: verify output file\n");
-      TR::MethodBuilderReplay mb(&types2, &replay, &recorder2); // Process Constructor
-      int32_t rc = compileMethodBuilder(&mb, &entry2); // Process buildIL
-
-      if (rc != 0)
-         {
-         fprintf(stderr,"FAIL: compilation error %d\n", rc);
-         exit(-2);
-         }
-
-      printf("Step 7: invoke compiled code\n");
-      RecursiveFibFunctionType *fib = (RecursiveFibFunctionType *)entry2;
-      for (int32_t n=0;n < 20;n++)
-         printf("fib(%2d) = %d\n", n, fib(n));
-
-      }
+   printf("Step 6: invoke compiled code\n");
+   RecursiveFibFunctionType *fib = (RecursiveFibFunctionType *)entry;
+   for (int32_t n=0;n < 20;n++)
+      printf("fib(%2d) = %d\n", n, fib(n));
 
    printf ("Step 8: shutdown JIT\n");
    shutdownJit();

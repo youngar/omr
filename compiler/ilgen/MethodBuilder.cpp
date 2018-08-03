@@ -59,8 +59,6 @@
 #define TraceEnabled    (comp()->getOption(TR_TraceILGen))
 #define TraceIL(m, ...) {if (TraceEnabled) {traceMsg(comp(), m, ##__VA_ARGS__);}}
 
-extern bool jitBuilderShouldCompile;
-
 // MethodBuilder is an IlBuilder object representing an entire method /
 // function, so it conceptually has an entry point (though multiple entry
 // method builders are entirely possible). Typically there is a single

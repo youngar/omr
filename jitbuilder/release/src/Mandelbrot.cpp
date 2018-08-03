@@ -34,8 +34,6 @@
 #include "ilgen/MethodBuilderReplay.hpp"
 #include "Mandelbrot.hpp"
 
-extern bool jitBuilderShouldCompile;
-
 
 MandelbrotMethod::MandelbrotMethod(TR::TypeDictionary *types, TR::JitBuilderRecorder *recorder)
    : TR::MethodBuilder(types, recorder)
@@ -331,25 +329,18 @@ main(int argc, char *argv[])
    printf("Step 3: compile method builder\n");
    MandelbrotMethod mandelbrotMethod(&types, &recorder);
 
-   jitBuilderShouldCompile = false;
-
    uint8_t *entry=0;
-   int32_t rc = compileMethodBuilder(&mandelbrotMethod, &entry);
+   int32_t rc = recordMethodBuilder(&mandelbrotMethod);
    if (rc != 0)
       {
       fprintf(stderr,"FAIL: compilation error %d\n", rc);
       exit(-2);
       }
 
-//    printf("Step 4: run mandelbrot compiled code\n");
-//    MandelbrotFunctionType *mandelbrot = (MandelbrotFunctionType *)entry;
-
-   jitBuilderShouldCompile = true;
    TR::JitBuilderReplayTextFile replay("mandelbrot.out");
    TR::JitBuilderRecorderTextFile recorder2(NULL, "mandelbrot2.out");
 
    TR::TypeDictionary types2;
-   uint8_t *entry2 = 0;
 
    const int height = N;
    const int max_x = (N + 7) / 8;
@@ -359,7 +350,7 @@ main(int argc, char *argv[])
 
    std::cout << "Step 6: verify output file\n";
    TR::MethodBuilderReplay mb(&types2, &replay, &recorder2); // Process Constructor
-   rc = compileMethodBuilder(&mb, &entry2); // Process buildIL
+   rc = compileMethodBuilder(&mb, &entry); // Process buildIL
 
    if (rc != 0)
       {
@@ -368,7 +359,7 @@ main(int argc, char *argv[])
       }
 
    std::cout << "Step 7: run compiled code from replay\n";
-   MandelbrotFunctionType *mandelbrot = (MandelbrotFunctionType *)entry2;
+   MandelbrotFunctionType *mandelbrot = (MandelbrotFunctionType *)entry;
 
    mandelbrot(N, buffer, cr0);
 

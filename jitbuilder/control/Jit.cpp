@@ -42,7 +42,6 @@
 
 extern TR_RuntimeHelperTable runtimeHelpers;
 extern void setupCodeCacheParameters(int32_t *, OMR::CodeCacheCodeGenCallbacks *callBacks, int32_t *numHelpers, int32_t *CCPreLoadedCodeSize);
-extern bool jitBuilderShouldCompile = true;
 
 static void
 initHelper(void *helper, TR_RuntimeHelper id)
@@ -197,6 +196,19 @@ compileMethodBuilder(TR::MethodBuilder *m, uint8_t **entry)
 
    int32_t rc=0;
    *entry = compileMethodFromDetails(NULL, details, warm, rc);
+   m->typeDictionary()->NotifyCompilationDone();
+   return rc;
+   }
+
+extern "C"
+int32_t
+recordMethodBuilder(TR::MethodBuilder *m)
+   {
+   TR::ResolvedMethod resolvedMethod(m);
+   TR::IlGeneratorMethodDetails details(&resolvedMethod);
+
+   int32_t rc=0;
+   compileMethodFromDetails(NULL, details, warm, rc, false);
    m->typeDictionary()->NotifyCompilationDone();
    return rc;
    }

@@ -302,7 +302,8 @@ public:
          TR::Options &,
          TR::Region &heapMemoryRegion,
          TR_Memory *,
-         TR_OptimizationPlan *optimizationPlan
+         TR_OptimizationPlan *optimizationPlan,
+         bool shouldCompile = true
          );
 
    TR::SymbolReference * getSymbolReferenceByReferenceNumber(int32_t referenceNumber);
@@ -1184,6 +1185,7 @@ private:
     */
    TR::TLSCompilationManager _tlsManager;
 
+   bool _shouldCompile;
    };
 
 

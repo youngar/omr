@@ -37,7 +37,6 @@
 
 using std::cout;
 using std::cerr;
-extern bool jitBuilderShouldCompile;
 
 int
 main(int argc, char *argv[])
@@ -58,79 +57,41 @@ main(int argc, char *argv[])
    cout << "Step 3: compile method builder\n";
    SimpleMethod method(&types, &recorder);
 
-   //TODO Hack to be able to turn compiling off a global level
-   jitBuilderShouldCompile = false;
-
    uint8_t *entry = 0;
-   int32_t rc = compileMethodBuilder(&method, &entry);
+   int32_t rc = recordMethodBuilder(&method);
    if (rc != 0)
       {
       cerr << "FAIL: compilation error " << rc << "\n";
       exit(-2);
       }
 
-   // If compiling test the compiled code
-   if (jitBuilderShouldCompile)
+   cout << "Step 4: Replay\n";
+   TR::JitBuilderReplayTextFile replay("simple.out");
+   TR::JitBuilderRecorderTextFile recorder2(NULL, "simple2.out");
+
+   TR::TypeDictionary types2;
+
+   cout << "Step 5: verify output file\n";
+   TR::MethodBuilderReplay mb(&types2, &replay, &recorder2); // Process Constructor
+   rc = compileMethodBuilder(&mb, &entry); // Process buildIL
+
+   if (rc != 0)
       {
-      cout << "Step 4: invoke compiled code and print results\n";
-      typedef int32_t (SimpleMethodFunction)(int32_t);
-      // typedef int32_t (SimpleMethodFunction)();
-      SimpleMethodFunction *increment = (SimpleMethodFunction *) entry;
-
-      // cout << "Returning: " << increment() << "\n";
-
-      // *****************************************************************
-      // MOST SIMPLE SIMPLE.cpp
-      int32_t v;
-      v=0; cout << "increment(" << v << ") == " << increment(v) << "\n";
-      v=1; cout << "increment(" << v << ") == " << increment(v) << "\n";
-      v=10; cout << "increment(" << v << ") == " << increment(v) << "\n";
-      v=-15; cout << "increment(" << v << ") == " << increment(v) << "\n";
-
-      // *****************************************************************
-      // COMPLICATED SIMPLE.cpp
-      // int32_t v, u;
-      // v=0; u=1;  cout << "increment(" << v << "+" << u << ") == " << increment(v,u) << "\n";
-      // v=1; u=5;  cout << "increment(" << v << "+" << u << ") == " << increment(v,u) << "\n";
-      // v=10; u=7; cout << "increment(" << v << "+" << u << ") == " << increment(v,u) << "\n";
-      // v=-15; u=33; cout << "increment(" << v << "+" << u << ") == " << increment(v,u) << "\n";
-      }
-   //If not compiling verify the output file....
-   else
-      {
-      cout << "Step 5: Replay\n";
-
-      // *********************************************************************************
-
-      jitBuilderShouldCompile = true;
-      TR::JitBuilderReplayTextFile replay("simple.out");
-      TR::JitBuilderRecorderTextFile recorder2(NULL, "simple2.out");
-
-      TR::TypeDictionary types2;
-      uint8_t *entry2 = 0;
-
-      cout << "Step 6: verify output file\n";
-      TR::MethodBuilderReplay mb(&types2, &replay, &recorder2); // Process Constructor
-      rc = compileMethodBuilder(&mb, &entry2); // Process buildIL
-
-      if (rc != 0)
-         {
-         cerr << "FAIL: compilation error " << rc << "\n";
-         exit(-2);
-         }
-
-      cout << "Step 7: run compiled code from replay\n";
-      typedef int32_t (SimpleMethodFunction)(int32_t);
-      // typedef int32_t (SimpleMethodFunction)();
-      SimpleMethodFunction *increment = (SimpleMethodFunction *) entry2;
-      int32_t v;
-      v=0; cout << "increment(" << v << ") == " << increment(v) << "\n";
-      v=1; cout << "increment(" << v << ") == " << increment(v) << "\n";
-      v=10; cout << "increment(" << v << ") == " << increment(v) << "\n";
-      v=-15; cout << "increment(" << v << ") == " << increment(v) << "\n";
+      cerr << "FAIL: compilation error " << rc << "\n";
+      exit(-2);
       }
 
-   cout << "Step 8: shutdown JIT\n";
+   cout << "Step 6: run compiled code from replay\n";
+   typedef int32_t (SimpleMethodFunction)(int32_t);
+   // typedef int32_t (SimpleMethodFunction)();
+   SimpleMethodFunction *increment = (SimpleMethodFunction *) entry;
+   int32_t v;
+   v=0; cout << "increment(" << v << ") == " << increment(v) << "\n";
+   v=1; cout << "increment(" << v << ") == " << increment(v) << "\n";
+   v=10; cout << "increment(" << v << ") == " << increment(v) << "\n";
+   v=-15; cout << "increment(" << v << ") == " << increment(v) << "\n";
+
+   cout << "Step 7: shutdown JIT\n";
    shutdownJit();
    }
 

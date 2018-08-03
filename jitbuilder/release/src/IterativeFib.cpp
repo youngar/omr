@@ -34,8 +34,6 @@
 #include "ilgen/MethodBuilderReplay.hpp"
 #include "IterativeFib.hpp"
 
-extern bool jitBuilderShouldCompile;
-
 IterativeFibonnaciMethod::IterativeFibonnaciMethod(TR::TypeDictionary *types, TR::JitBuilderRecorder *recorder)
    : MethodBuilder(types, recorder)
    {
@@ -101,16 +99,10 @@ main(int argc, char *argv[])
 
    printf("Step 2: define type dictionary\n");
    TR::TypeDictionary types;
-
-   // Create a recorder so we can directly control the file for this particular test
    TR::JitBuilderRecorderTextFile recorder(NULL, "iterFib.out");
-
-   printf("Step 3: compile method builder\n");
    IterativeFibonnaciMethod iterFibMethodBuilder(&types, &recorder);
    
-   //TODO Hack to be able to turn compiling off a global level
-   jitBuilderShouldCompile = false;
-   
+   printf("Step 3: compile method builder (with recording)\n");
    uint8_t *entry=0;
    int32_t rc = compileMethodBuilder(&iterFibMethodBuilder, &entry);
    if (rc != 0)
@@ -119,40 +111,43 @@ main(int argc, char *argv[])
       exit(-2);
       }
 
-   if(jitBuilderShouldCompile)
+   printf("Step 4: invoke compiled code and print results\n");
+   IterativeFibFunctionType *iter_fib=(IterativeFibFunctionType *)entry;
+   for (int32_t n=0;n < 20;n++) {
+      printf("fib(%2d) = %d\n", n, iter_fib(n));
+   }
+
+   printf("Step 5: Record the method builder\n");
+   TR::TypeDictionary types2;
+   TR::JitBuilderRecorderTextFile recorder2(NULL, "iterFib2.out");
+   IterativeFibonnaciMethod iterFibMethodBuilder2(&types2, &recorder2);
+   rc = recordMethodBuilder(&iterFibMethodBuilder2);
+   if (rc != 0)
       {
-      printf("Step 4: invoke compiled code and print results\n");
-      IterativeFibFunctionType *iter_fib=(IterativeFibFunctionType *)entry;
-      for (int32_t n=0;n < 20;n++)
-         printf("fib(%2d) = %d\n", n, iter_fib(n));
+      fprintf(stderr,"FAIL: compilation error %d\n", rc);
+      exit(-2);
       }
-   else
-      { 
-      printf("Step 5: Replay\n");
-      jitBuilderShouldCompile = true;
-      TR::JitBuilderReplayTextFile replay("iterFib.out");
-      TR::JitBuilderRecorderTextFile recorder2(NULL, "iterFib2.out");
 
-      TR::TypeDictionary types2;
-      uint8_t *entry2 = 0;
-
-      printf("Step 6: verify output file\n");
-      TR::MethodBuilderReplay mb(&types2, &replay, &recorder2); // Process Constructor
-      rc = compileMethodBuilder(&mb, &entry2); // Process buildIL
-      if (rc != 0)
-         {
-         fprintf(stderr,"FAIL: compilation error %d\n", rc);
-         exit(-2);
-         }
-      
-      IterativeFibFunctionType *iter_fib2=(IterativeFibFunctionType *)entry2;
+   printf("Step 6: Replay the method builder and record again into a new file\n");
+   TR::TypeDictionary types3;
+   TR::JitBuilderRecorderTextFile recorder3(NULL, "iterFib3.out");
+   TR::JitBuilderReplayTextFile replay("iterFib2.out");
+   TR::MethodBuilderReplay mb(&types3, &replay, &recorder3); // Process Constructor
+   entry = 0;
+   rc = compileMethodBuilder(&mb, &entry); // Process buildIL
+   if (rc != 0)
+      {
+      fprintf(stderr,"FAIL: compilation error %d\n", rc);
+      exit(-2);
+      }
    
-      for (int32_t n=0;n < 20;n++) {
-         printf("fib(%2d) = %d\n", n, iter_fib2(n));
-         }
-      }
+   printf("Step 7: invoke compiled code and print results\n");
+   IterativeFibFunctionType *iter_fib2=(IterativeFibFunctionType *)entry;
+   for (int32_t n=0;n < 20;n++) {
+      printf("fib(%2d) = %d\n", n, iter_fib2(n));
+   }
 
-   printf ("Step 7: shutdown JIT\n");
+   printf ("Step 8: shutdown JIT\n");
    shutdownJit();
 
    printf("PASS\n");
