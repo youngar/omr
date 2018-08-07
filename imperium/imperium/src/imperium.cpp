@@ -401,7 +401,8 @@
      * ServerChannel *
      ****************/
 
-     ServerChannel::ServerChannel()
+     ServerChannel::ServerChannel() :
+        _functions()
         {
           omrthread_t thisThread;
           omrthread_attach_ex(&thisThread,
@@ -496,55 +497,86 @@
         omrthread_monitor_enter(_compileMonitor);
                 std::cout << "####################### generateServerResponse: entered mon ##########################" << '\n';
 
-        TR::JitBuilderReplayTextFile replay(clientMessage->file());
+        uint8_t *entry = 0;
+        uint64_t sizeCode = 0, offset = 0;
+
+        // std::map<const char *, CachedMethodData>::iterator it = _functions.find(strdup(clientMessage->file().c_str()));
+        std::map<std::string, CachedMethodData>::iterator it = _functions.find(clientMessage->file());
+
+        if(it == _functions.end())
+           {
+           TR::JitBuilderReplayTextFile replay(clientMessage->file());
                         std::cout << "####################### generateServerResponse: replay ##########################" << '\n';
 
-        TR::JitBuilderRecorderTextFile recorder(NULL, "simple2.out");
+            TR::JitBuilderRecorderTextFile recorder(NULL, "mandelbrot2.out");
 
-        std::cout << "################################################# Thread ID: " << omrthread_self() << '\n';
+            std::cout << "################################################# Thread ID: " << omrthread_self() << '\n';
 
-        TR::TypeDictionary types;
-        uint8_t *entry = 0;
+            TR::TypeDictionary types;
 
-        std::cout << "Step 1: verify output file\n";
-        TR::MethodBuilderReplay mb(&types, &replay, &recorder); // Process Constructor
+            std::cout << "Step 1: verify output file\n";
+            TR::MethodBuilderReplay mb(&types, &replay, &recorder); // Process Constructor
 
-        //************************************************************
-        std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
+            //************************************************************
+            std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
 
-        // Only one thread can compile at a time.
+            // Only one thread can compile at a time.
 
-        int32_t rc = compileMethodBuilder(&mb, &entry); // Process buildIL
-        omrthread_monitor_exit(_compileMonitor);
+            int32_t rc = compileMethodBuilder(&mb, &entry); // Process buildIL
+            omrthread_monitor_exit(_compileMonitor);
 
-        // TODO
-        // send entry back to client, calculate size and send back to client
-        // copy bytes between entry point and code cache warm alloc
-        // void * or uint8_t * should give size in bytes
+            // TODO
+            // send entry back to client, calculate size and send back to client
+            // copy bytes between entry point and code cache warm alloc
+            // void * or uint8_t * should give size in bytes
 
-        // Java JITaaS commit: Option to allocate code cache at specified address
+            // Java JITaaS commit: Option to allocate code cache at specified address
 
-        // TODO: all the below stuff occurs on the server side
-        auto fe = JitBuilder::FrontEnd::instance();
-        auto codeCacheManager = fe->codeCacheManager();
-        auto codeCache = codeCacheManager.getFirstCodeCache();
-        void * mem = codeCache->getWarmCodeAlloc();
-        void * codeBase = codeCache->getCodeBase();
+            // TODO: all the below stuff occurs on the server side
+            auto fe = JitBuilder::FrontEnd::instance();
+            auto codeCacheManager = fe->codeCacheManager();
+            auto codeCache = codeCacheManager.getFirstCodeCache();
+            void * mem = codeCache->getWarmCodeAlloc();
+            void * codeBase = codeCache->getCodeBase();
 
-        uint64_t offset = (uint64_t) entry - (uint64_t) codeBase;
-        uint64_t sizeCode = (uint64_t) mem - (uint64_t) entry;
+            offset = (uint64_t) entry - (uint64_t) codeBase;
+            sizeCode = (uint64_t) mem - (uint64_t) entry;
 
-        // // uint8_t *entry = 0; // uint8_t ** , address = &entry
+            // // uint8_t *entry = 0; // uint8_t ** , address = &entry
+            
+            std::cout << " *********ENTRY********* " << (void*)(entry) << " *********************** " << '\n';
+            std::cout << " **********MEM********** " << (mem) << " *********************** " << '\n';
+            std::cout << " *******CODESIZE******** " << sizeCode << " *********************** " << '\n';
+            // (uint8_t *) mem = 0x0000000103800040 ""
+
+            std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
+            auto duration = std::chrono::duration_cast<std::chrono::microseconds>( t2 - t1 ).count();
+
+            std::cout << "Duration for compileMethodBuilder in server: " << duration << " microseconds." << '\n';
+
+            CachedMethodData data;
+            data.entry = entry;
+            data.offset = offset;
+            data.sizeCode = sizeCode;
+            _functions.insert(std::make_pair(clientMessage->file(), data));
+           }
+        else
+           {
+           std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
+
+           std::cout << "No need to compile...\n";
+           CachedMethodData data = it->second;
+           entry = data.entry;
+           offset = data.offset;
+           sizeCode = data.sizeCode;
+           std::cout << "Cached data. Entry: " << (void *)entry << ", offset: " << offset << ", sizeCode: " << sizeCode << '\n';
+           
+           std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
+           auto duration = std::chrono::duration_cast<std::chrono::microseconds>( t2 - t1 ).count();
+           std::cout << "Duration for compileMethodBuilder in server: " << duration << " microseconds." << '\n';
+
+           }
         
-        std::cout << " *********ENTRY********* " << (void*)(entry) << " *********************** " << '\n';
-        std::cout << " **********MEM********** " << (mem) << " *********************** " << '\n';
-        std::cout << " *******CODESIZE******** " << sizeCode << " *********************** " << '\n';
-        // (uint8_t *) mem = 0x0000000103800040 ""
-
-        std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::microseconds>( t2 - t1 ).count();
-
-        std::cout << "Duration for compileMethodBuilder in server: " << duration << " microseconds." << '\n';
         //************************************************************
         // TODO: remove function calls and put in the client side
         //       need to send back compiled code, then run that code on client

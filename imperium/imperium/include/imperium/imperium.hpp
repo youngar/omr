@@ -27,6 +27,7 @@
  #include <fstream>
  #include <string>
  #include <vector>
+ #include <map>
 
  #include "omrthread.h"
 
@@ -91,6 +92,15 @@ namespace OMR
 
          private:
          omrthread_monitor_t _compileMonitor;
+
+         typedef struct CachedMethodData
+            {
+             uint8_t * entry;
+             uint64_t offset;
+             uint64_t sizeCode;
+            } CachedMethodData;
+
+         std::map<std::string, CachedMethodData> _functions;
       };
 
       class ClientChannel
