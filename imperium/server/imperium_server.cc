@@ -37,7 +37,7 @@ int main(int argc, char** argv) {
      }
 
   ServerChannel serverChannel;
-  serverChannel.RunServer("localhost:50055");
+  serverChannel.RunServer("0.0.0.0:50055");
 
   omrthread_shutdown_library();
   shutdownJit();
