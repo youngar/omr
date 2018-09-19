@@ -69,3 +69,4 @@ target_sources(omrutil_obj
 		${CMAKE_CURRENT_SOURCE_DIR}/glue/UtilGlue.c
 )
 
+add_subdirectory(test)
