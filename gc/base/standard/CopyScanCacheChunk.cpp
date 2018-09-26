@@ -63,9 +63,11 @@ MM_CopyScanCacheChunk::initialize(MM_EnvironmentBase *env, uintptr_t cacheEntryC
 
 	MM_CopyScanCacheStandard *previousCache = NULL;
 	*sublistTail = _baseCache + cacheEntryCount - 1;
+	
+	const OMRClient::GC::ObjectScanner scanner = env->getExtensions()->objectModel.makeObjectScanner();
 
 	for (MM_CopyScanCacheStandard *currentCache = *sublistTail; currentCache >= _baseCache; currentCache--) {
-		new(currentCache) MM_CopyScanCacheStandard(flags);
+		new(currentCache) MM_CopyScanCacheStandard(flags, scanner);
 		currentCache->next = previousCache;
 		previousCache = currentCache;
 	}
