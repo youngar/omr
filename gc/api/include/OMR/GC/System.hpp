@@ -109,9 +109,6 @@ private:
 	ContextSet _contexts;
 };
 
-static_assert(std::is_standard_layout<System>::value,
-              "OMR::GC::System must be a standard layout type.");
-
 /// A GC context. Base class. GC users should create RunContexts.
 class Context
 {

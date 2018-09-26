@@ -3249,6 +3249,8 @@ MM_Scavenger::backOutFixSlotWithoutCompression(volatile omrobjectptr_t *slotPtr)
 	return false;
 }
 
+#if !defined(OMR_GC_EXPERIMENTAL_OBJECT_SCANNER)
+
 bool
 MM_Scavenger::backOutFixSlot(GC_SlotObject *slotObject)
 {
@@ -3269,6 +3271,7 @@ MM_Scavenger::backOutFixSlot(GC_SlotObject *slotObject)
 	}
 	return false;
 }
+#endif /* !defined(OMR_GC_EXPERIMENTAL_OBJECT_SCANNER) */
 
 void
 MM_Scavenger::backOutObjectScan(MM_EnvironmentStandard *env, omrobjectptr_t objectPtr)

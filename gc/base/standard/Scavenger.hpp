@@ -37,10 +37,15 @@
 #include "CopyScanCacheStandard.hpp"
 #include "CycleState.hpp"
 #include "GCExtensionsBase.hpp"
+
+#if !defined(OMR_GC_EXPERIMENTAL_OBJECT_SCANNER)
 #include "SlotObject.hpp"
+#endif /* !defined(OMR_GC_EXPERIMENTAL_OBJECT_SCANNER) */
+
 #if defined(OMR_GC_CONCURRENT_SCAVENGER)
 #include "MasterGCThread.hpp"
 #endif /* OMR_GC_CONCURRENT_SCAVENGER */
+
 struct J9HookInterface;
 class GC_ObjectScanner;
 class MM_AllocateDescription;
@@ -56,6 +61,26 @@ class MM_RSOverflow;
 class MM_SublistPool;
 
 struct OMR_VM;
+
+#if defined(OMR_GC_EXPERIMENTAL_OBJECT_SCANNER)
+
+class MM_Scavenger;
+
+class ScavengingVisitor {
+public:
+	ScavengingVisitor(MM_EnvironmentBase* env, MM_Scavenger *scavenger) :
+		_env(env),
+		_scavenger(scavenger) {}
+
+	template <class SlotHandleT>
+	bool edge(void* object, SlotHandleT slot);
+
+private:
+	MM_EnvironmentBase* _env;
+	MM_Scavenger *_scavenger;
+};
+
+#endif /* defined(OMR_GC_EXPERIMENTAL_OBJECT_SCANNER) */
 
 /**
  * @todo Provide class documentation
@@ -207,6 +232,8 @@ public:
 
 	MM_CopyScanCacheStandard *getNextScanCache(MM_EnvironmentStandard *env);
 
+#if !defined(OMR_GC_EXPERIMENTAL_OBJECT_SCANNER)
+
 	/**
 	 * Implementation of CopyAndForward for slotObject input format
 	 * @param slotObject input field in slotObject format
@@ -214,6 +241,8 @@ public:
 	MMINLINE bool copyAndForward(MM_EnvironmentStandard *env, GC_SlotObject *slotObject);
 
 	MMINLINE bool copyAndForward(MM_EnvironmentStandard *env, volatile omrobjectptr_t *objectPtrIndirect);
+
+#endif /* !defined(OMR_GC_EXPERIMENTAL_OBJECT_SCANNER) */
 
 	MMINLINE omrobjectptr_t copy(MM_EnvironmentStandard *env, MM_ForwardedHeader* forwardedHeader);
 
@@ -246,11 +275,38 @@ public:
 	 */
 	bool shouldRememberObject(MM_EnvironmentStandard *env, omrobjectptr_t objectPtr);
 
+#if !defined(OMR_GC_EXPERIMENTAL_OBJECT_SCANNER)
+
 	/**
 	 * BackOutFixSlot implementation
 	 * @param slotObject input field in slotObject format
 	 */
 	bool backOutFixSlot(GC_SlotObject *slotObject);
+
+#else /* !defined(OMR_GC_EXPERIMENTAL_OBJECT_SCANNER)*/
+
+	template<typename SlotHandleT>
+	bool backOutFixSlot(SlotHandleT slot) {
+		omrobjectptr_t objectPtr = slot.readReference();
+
+		if(NULL != objectPtr) {
+			MM_ForwardedHeader forwardHeader(objectPtr);
+			Assert_MM_false(forwardHeader.isForwardedPointer());
+			if (forwardHeader.isReverseForwardedPointer()) {
+				slot.writeReference(forwardHeader.getReverseForwardedPointer());
+#if defined(OMR_SCAVENGER_TRACE_BACKOUT)
+				OMRPORT_ACCESS_FROM_OMRVM(_omrVM);
+				omrtty_printf("{SCAV: Back out object slot %p[%p->%p]}\n", objectPtr, slotObject->readAddressFromSlot(), slotObject->readReferenceFromSlot());
+				Assert_MM_true(isObjectInEvacuateMemory(slotObject->readReferenceFromSlot()));
+#endif /* OMR_SCAVENGER_TRACE_BACKOUT */
+				return true;
+			}
+		}
+		return false;
+	}
+
+#endif /* !defined(OMR_GC_EXPERIMENTAL_OBJECT_SCANNER) */
+
 
 	void backoutFixupAndReverseForwardPointersInSurvivor(MM_EnvironmentStandard *env);
 	void processRememberedSetInBackout(MM_EnvironmentStandard *env);
@@ -697,6 +753,25 @@ public:
 	bool copyObjectSlot(MM_EnvironmentStandard *env, GC_SlotObject* slotObject);
 	omrobjectptr_t copyObject(MM_EnvironmentStandard *env, MM_ForwardedHeader* forwardedHeader);
 
+#if defined(OMR_GC_EXPERIMENTAL_OBJECT_SCANNER)
+	template<typename SlotHandleT>
+	MMINLINE bool
+	copyAndForward(MM_EnvironmentStandard *env, SlotHandleT slot)
+	{
+		omrobjectptr_t ref = slot->readReference();
+		bool result = copyAndForward(env, &ref);
+		slot->writeReference(ref);
+
+#if defined(OMR_SCAVENGER_TRACK_COPY_DISTANCE)
+		if (NULL != env->_effectiveCopyScanCache) {
+			env->_scavengerStats.countCopyDistance((uintptr_t)slotObject->readAddressFromSlot(), (uintptr_t)slotObject->readReferenceFromSlot());
+		}
+#endif /* OMR_SCAVENGER_TRACK_COPY_DISTANCE */
+		return result;
+	}
+#endif /* defined(OMR_GC_EXPERIMENTAL_OBJECT_SCANNER) */
+
+
 	/**
 	 * Update the given slot to point at the new location of the object, after copying
 	 * the object if it was not already.
@@ -789,6 +864,19 @@ public:
 		_cycleType = OMR_GC_CYCLE_TYPE_SCAVENGE;
 	}
 };
+
+#if defined(OMR_GC_EXPERIMENTAL_OBJECT_SCANNER)
+
+#include <iostream>
+
+template <class SlotHandleT>
+bool ScavengingVisitor::edge(void* object, SlotHandleT slot) {
+	std::cout << "Scavenging object: " << object << " slot: " << slot << std::endl;
+	_scavenger->copyAndForward(_env, slot);
+	return true;
+}
+
+#endif /* defined(OMR_GC_EXPERIMENTAL_OBJECT_SCANNER) */
 
 #endif /* OMR_GC_MODRON_SCAVENGER */
 #endif /* SCAVENGER_HPP_ */
