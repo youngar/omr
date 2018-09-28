@@ -58,7 +58,8 @@ private:
 protected:
 public:
 #if defined(OMR_GC_EXPERIMENTAL_OBJECT_SCANNER)
-	ObjectScannerStorage _objectScannerStorage;
+	OMRClient::GC::ObjectScanner scanner;
+	// ObjectScannerStorage _objectScannerStorage;
 #else
 	GC_ObjectScannerState _objectScannerState; /**< Space reserved for instantiation of object scanner for current object */
 #endif
@@ -72,7 +73,7 @@ private:
 protected:
 public:
 #if defined(OMR_GC_EXPERIMENTAL_OBJECT_SCANNER)
-	MMINLINE OMRClient::GC::ObjectScanner *getObjectScanner() { return reinterpret_cast<OMRClient::GC::ObjectScanner*>(&_objectScannerStorage); }
+	// MMINLINE OMRClient::GC::ObjectScanner *getObjectScanner() { return reinterpret_cast<OMRClient::GC::ObjectScanner*>(&_objectScannerStorage); }
 #else /* OMR_GC_EXPERIMENTAL_OBJECT_SCANNER */
 	MMINLINE GC_ObjectScanner *
 	getObjectScanner()
