@@ -5,27 +5,37 @@ namespace OMR
 {
 
 struct LinkedInt;
+struct LinkedIntTraits;
 
-using LinkedIntNode = IntrusiveListNode<LinkedInt>;
-using LinkedIntList = IntrusiveList<LinkedInt>;
-using LinkedIntListIterator = IntrusiveListIterator<LinkedInt>;
+using LinkedIntListNode = IntrusiveListNode<LinkedInt>;
+
+static_assert(std::is_standard_layout<LinkedIntListNode>::value,
+              "IntrusiveListNode<T> guarantees that it is a standard layout type.");
 
 /// Forms a linked list of integers.
 struct LinkedInt
 {
 	int value;
-	LinkedIntNode node;
+	LinkedIntListNode node;
 };
 
-/// Specialization for pulling node out of LinkedInt.
-template<>
-struct GetIntrusiveListNode<LinkedInt>
+/// A custom traits class for pulling the node out of a linked int.
+struct LinkedIntTraits
 {
-	constexpr IntrusiveListNode<LinkedInt>& operator()(LinkedInt& i) const noexcept
+	static constexpr LinkedIntListNode& node(LinkedInt& i) noexcept { return i.node; }
+
+	static constexpr const LinkedIntListNode& node(const LinkedInt& i) noexcept
 	{
 		return i.node;
 	}
 };
+
+using LinkedIntList = IntrusiveList<LinkedInt, LinkedIntTraits>;
+
+static_assert(std::is_standard_layout<LinkedIntList>::value,
+              "IntrusiveList<T> guarantees that it is a standard layout type.");
+
+using LinkedIntListIterator = LinkedIntList::Iterator;
 
 namespace Test
 {
@@ -51,7 +61,7 @@ TEST(TestIntrusiveList, iterateOne)
 	LinkedInt a = {1};
 	list.add(&a);
 
-	LinkedIntListIterator iter = list.begin();
+	LinkedIntList::Iterator iter = list.begin();
 	EXPECT_NE(iter, list.end());
 	EXPECT_EQ(iter->value, 1);
 
@@ -69,11 +79,11 @@ TEST(TestIntrusiveList, iterateTwo)
 	LinkedInt b = {2};
 	list.add(&b);
 
-	LinkedIntListIterator iter = list.begin();
-	EXPECT_EQ(iter->value, 1);
+	LinkedIntList::Iterator iter = list.begin();
+	EXPECT_EQ(iter->value, 2);
 
 	++iter;
-	EXPECT_EQ(iter->value, 2);
+	EXPECT_EQ(iter->value, 1);
 
 	++iter;
 	EXPECT_EQ(iter, list.end());
@@ -91,7 +101,7 @@ TEST(TestIntrusiveList, AddThenRemoveOne)
 	list.remove(&a);
 	EXPECT_TRUE(list.empty());
 
-	LinkedIntListIterator iter = list.begin();
+	LinkedIntList::Iterator iter = list.begin();
 	EXPECT_EQ(iter, list.end());
 }
 
@@ -99,12 +109,13 @@ TEST(TestIntrusiveList, AddTwoThenRemoveOne)
 {
 	LinkedIntList list;
 	LinkedInt a = {1};
-	list.add(&a);
 	LinkedInt b = {2};
+
+	list.add(&a);
 	list.add(&b);
 	list.remove(&a);
 
-	LinkedIntListIterator iter = list.begin();
+	LinkedIntList::Iterator iter = list.begin();
 	EXPECT_NE(iter, list.end());
 	EXPECT_EQ(iter->value, 2);
 	++iter;

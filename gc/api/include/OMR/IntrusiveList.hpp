@@ -4,40 +4,16 @@
 
 #include <type_traits>
 #include <utility>
+#include <cassert>
 
 namespace OMR
 {
 
-template<typename T>
+template<typename T, typename Traits>
 class IntrusiveList;
 
-template<typename T>
-class IntrusiveListNode;
-
-template<typename T>
+template<typename T, typename Traits>
 class IntrusiveListIterator;
-
-/// Functor for obtaining the IntrusiveListNode from an element in the list.
-/// The default implementation will call element.getIntrusiveListNode().
-/// Can be specialized if custom accessor is needed.
-template<typename T>
-struct GetIntrusiveListNode
-{
-	constexpr IntrusiveListNode<T>& operator()(T&& element) const noexcept
-	{
-		return element.node();
-	}
-};
-
-/// Specialization for T* that defers to GetIntrusiveListNode<T>::operator()
-template<typename T>
-struct GetIntrusiveListNode<T*>
-{
-	constexpr IntrusiveListNode<T>& operator()(T* element) const noexcept
-	{
-		return GetIntrusiveListNode<T>()(*element);
-	}
-};
 
 /// Stores the next and previous pointers for elements in an IntrusiveList.
 /// Each element in an intrusive list must contain an IntrusiveListNode.
@@ -46,167 +22,137 @@ template<typename T>
 class IntrusiveListNode
 {
 public:
-	constexpr IntrusiveListNode() : nextElement(nullptr), prevElement(nullptr) {}
+	constexpr IntrusiveListNode() : prev(nullptr), next(nullptr) {}
 
-private:
-	friend class IntrusiveList<T>;
-	friend class IntrusiveListIterator<T>;
-
-	constexpr IntrusiveListNode<T>& nextNode() const noexcept
+	/// assign previous, next to node.
+	void assign(T* p, T* n) noexcept
 	{
-		return GetIntrusiveListNode<T*>()(nextElement);
-	}
-
-	constexpr IntrusiveListNode<T>& prevNode() const noexcept
-	{
-		return GetIntrusiveListNode<T*>()(prevElement);
-	}
-
-	void assign(T* next, T* prev) noexcept
-	{
-		nextElement = next;
-		prevElement = prev;
+		prev = p;
+		next = n;
 	}
 
 	// deactivate the node, and clear the next/prev pointers.
-	void deactivate() noexcept
+	void clear() noexcept
 	{
-		nextElement = nullptr;
-		prevElement = nullptr;
+		prev = nullptr;
+		next = nullptr;
 	}
 
-	/// true if this node is attached to a list.
-	constexpr bool active() const noexcept { return nextElement != nullptr; }
-
-	T* nextElement;
-	T* prevElement;
+	T* prev;
+	T* next;
 };
 
 template<typename T>
+struct IntrusiveListTraits
+{
+	using Node = IntrusiveListNode<T>;
+
+	static constexpr Node& node(T& element) noexcept { return element.node(); }
+
+	static constexpr const Node& node(const T& element) noexcept { return element.node(); }
+};
+
+/// Simple forward iterator for the elements in an intrusive list.
+template<typename T, typename Traits>
 class IntrusiveListIterator
 {
 public:
-	IntrusiveListIterator(const IntrusiveListIterator<T>&) = default;
+	IntrusiveListIterator(const IntrusiveListIterator<T, Traits>&) = default;
 
-	constexpr T& operator*() const noexcept { return *_currentElement; }
+	constexpr T& operator*() const noexcept { return *_current; }
 
-	constexpr T* operator->() const noexcept { return _currentElement; }
+	constexpr T* operator->() const noexcept { return _current; }
 
-	IntrusiveListIterator<T>& operator++() noexcept
+	IntrusiveListIterator<T, Traits>& operator++() noexcept
 	{
-		_currentElement = currentNode().nextElement;
-		if (_currentElement == _rootElement) {
-			// we are back at the root, clear _current.
-			_currentElement = nullptr;
-		}
+		_current = Traits::node(*_current).next;
 		return *this;
 	}
 
-	constexpr bool operator==(T* element) const noexcept { return _currentElement == element; }
-
-	constexpr bool operator==(const IntrusiveListIterator<T>& rhs) const noexcept
+	constexpr bool operator==(const IntrusiveListIterator<T, Traits>& rhs) const noexcept
 	{
-		return _currentElement == rhs._currentElement;
+		return _current == rhs._current;
 	}
 
-	constexpr bool operator!=(T* element) const noexcept { return _currentElement != element; }
-
-	constexpr bool operator!=(const IntrusiveListIterator<T>& rhs) const noexcept
+	constexpr bool operator!=(const IntrusiveListIterator<T, Traits>& rhs) const noexcept
 	{
-		return _currentElement != rhs._currentElement;
+		return _current != rhs._current;
 	}
 
-	IntrusiveListIterator<T>& operator=(const IntrusiveListIterator<T>& rhs) noexcept
+	IntrusiveListIterator<T, Traits>&
+	operator=(const IntrusiveListIterator<T, Traits>& rhs) noexcept
 	{
-		_rootElement = rhs._rootElement;
-		_currentElement = rhs._currentElement;
+		_current = rhs._current;
 		return *this;
 	}
 
 private:
-	friend class IntrusiveList<T>;
+	friend class IntrusiveList<T, Traits>;
 
-	constexpr IntrusiveListIterator(T* root) : _rootElement(root), _currentElement(root) {}
+	constexpr IntrusiveListIterator(T* root) : _current(root) {}
 
-	constexpr IntrusiveListNode<T>& currentNode() const noexcept
-	{
-		return GetIntrusiveListNode<T*>()(_currentElement);
-	}
-
-	T* _rootElement;
-	T* _currentElement;
+	T* _current;
 };
 
 /// A linked list, where the next and previous pointers are stored in a node, which is embedded in the element type T.
 ///
 /// To use an intrusive list, the element type T must store an IntrusiveListNode<T>.
+/// The default policy will use T::node() to access the list node.
+/// To override this behaviour, users can provide a custom list trait, or specialize the IntrusiveListTraits<T> for th
 ///
-template<typename T>
+template<typename T, typename Traits = IntrusiveListTraits<T>>
 class IntrusiveList
 {
 public:
+	using Node = IntrusiveListNode<T>;
+
+	using Iterator = IntrusiveListIterator<T, Traits>;
+
 	constexpr IntrusiveList() noexcept : _root(nullptr) {}
 
-	/// Add element to the list.
+	/// Add element to the head of the list. Constant time.
 	void add(T* element) noexcept
 	{
-		if (empty()) {
-			_root = element;
-			getNode(element).assign(element, element);
-		} else {
-			auto& rootnode = getNode(_root);
-			T* lastElement = rootnode.prevElement;
-			auto& lastnode = getNode(lastElement);
-			lastnode.nextElement = element;
-			rootnode.prevElement = element;
-			auto& newNode = getNode(element);
-			newNode.prevElement = lastElement;
-			newNode.nextElement = _root;
+		assert(Traits::node(*element).next == nullptr);
+		assert(Traits::node(*element).prev == nullptr);
+	
+		Traits::node(*element).assign(nullptr, _root);
+		if (_root) {
+			Traits::node(*_root).prev = element;
 		}
+		_root = element;
 	}
 
-	/// Remove element from the list. Removing an element invalidates any iterators.
+	/// Remove element from the list. Removing an element invalidates any iterators. Constant time.
 	void remove(T* element) noexcept
 	{
-		IntrusiveListNode<T>& node = getNode(element);
-		if (isRoot(element)) {
-			if (isLast(element)) {
-				// we are removing the only element, and have to clear the root.
+		Node& node = Traits::node(*element);
+		if (element == _root) {
+			assert(node.prev == nullptr);
+			if (node.next != nullptr) {
+				Traits::node(*node.next).prev = nullptr;
+				_root = node.next;
+			}
+			else {
 				_root = nullptr;
-			} else {
-				_root = node.nextElement;
-				node.prevNode().nextElement = node.nextElement;
-				node.nextNode().prevElement = node.prevElement;
 			}
 		} else {
-			node.prevNode().nextElement = node.nextElement;
-			node.nextNode().prevElement = node.prevElement;
+			assert(node.prev != nullptr);
+			Traits::node(*node.prev).next = node.next;
+			if (node.next != nullptr) {
+				Traits::node(*node.next).prev = node.prev;
+			}
 		}
-		node.deactivate();
+		node.clear();
 	}
 
-	constexpr IntrusiveListIterator<T> begin() const noexcept
-	{
-		return IntrusiveListIterator<T>(_root);
-	}
+	constexpr Iterator begin() const noexcept { return Iterator(_root); }
 
-	constexpr IntrusiveListIterator<T> end() const noexcept
-	{
-		return IntrusiveListIterator<T>(nullptr);
-	}
+	constexpr Iterator end() const noexcept { return Iterator(nullptr); }
 
 	constexpr bool empty() const noexcept { return _root == nullptr; }
 
 private:
-	IntrusiveListNode<T>& getNode(T* element) { return GetIntrusiveListNode<T*>()(element); }
-
-	// true if element is in the final position of the list.
-	bool isLast(T* element) { return element == getNode(_root).prevElement; }
-
-	bool isRoot(T* element) { return element == _root; }
-
-	IntrusiveListNode<T>& rootNode() const noexcept { return getNode(_root); }
-
 	T* _root;
 };
 
