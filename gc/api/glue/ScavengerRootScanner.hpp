@@ -86,9 +86,9 @@ public:
 
 		/// System-wide roots
 
-		// for (auto &fn : cx.system().scavengingFns()) {
-		// 	fn(visitor);
-		// }
+		for (auto &fn : cx.system().scavengingFns()) {
+			fn(visitor);
+		}
 
 		/// Per-context roots
 
@@ -97,9 +97,9 @@ public:
 			visitor.edge(NULL, RefSlotHandle((fomrobject_t *)&node.ref));
 		}
 
-		// for (auto &fn : cx.scavengingFns()) {
-		// 	fn(visitor);
-		// }
+		for (auto &fn : cx.scavengingFns()) {
+			fn(visitor);
+		}
 	}
 
 	void rescanThreadSlots(MM_EnvironmentStandard *env) { }
