@@ -40,6 +40,8 @@ class RefSlotHandle
 public:
 	RefSlotHandle(fomrobject_t *slot) : _slot(slot) {}
 
+	void *toAddress() const noexcept { return _slot; }
+
 	omrobjectptr_t readReference() const noexcept { return omrobjectptr_t(*_slot); }
 
 	void writeReference(omrobjectptr_t value) const noexcept { *_slot = fomrobject_t(value); }

@@ -58,7 +58,7 @@ private:
 protected:
 public:
 #if defined(OMR_GC_EXPERIMENTAL_OBJECT_SCANNER)
-	OMRClient::GC::ObjectScanner scanner;
+	OMRClient::GC::ObjectScanner _scanner;
 	// ObjectScannerStorage _objectScannerStorage;
 #else
 	GC_ObjectScannerState _objectScannerState; /**< Space reserved for instantiation of object scanner for current object */
@@ -96,13 +96,15 @@ public:
 	/**
 	 * Create a CopyScanCacheStandard object.
 	 */	
-	MM_CopyScanCacheStandard(uintptr_t givenFlags)
+	MM_CopyScanCacheStandard(uintptr_t givenFlags, const OMRClient::GC::ObjectScanner &scanner)
 		: MM_CopyScanCache(givenFlags)
+		, _scanner(scanner)
 		, _shouldBeRemembered(false)
 		, _arraySplitIndex(0)
 		, _arraySplitAmountToScan(0)
 		, _arraySplitRememberedSlot(NULL)
-	{}
+	{
+	}
 };
 
 #endif /* COPYSCANCACHESTANDARD_HPP_ */

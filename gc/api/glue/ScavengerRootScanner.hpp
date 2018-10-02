@@ -19,8 +19,8 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
-#ifndef SCAVENGERROOTSCANNER_HPP_
-#define SCAVENGERROOTSCANNER_HPP_
+#ifndef OMR_GC_SCAVENGERROOTSCANNER_HPP_
+#define OMR_GC_SCAVENGERROOTSCANNER_HPP_
 
 #include "omr.h"
 #include "omrcfg.h"
@@ -32,10 +32,17 @@
 #include "ForwardedHeader.hpp"
 #include "Scavenger.hpp"
 #include "SublistFragment.hpp"
+#include "OMR/GC/StackRoot.hpp"
+#include "OMR/GC/System.hpp"
+#include "OMR/GC/RefSlotHandle.hpp"
 
 #if defined(OMR_GC_MODRON_SCAVENGER)
 
-class MM_ScavengerRootScanner : public MM_Base
+namespace OMR {
+namespace GC {
+
+
+class ScavengerRootScanner : public MM_Base
 {
 	/*
 	 * Member data and types
@@ -52,7 +59,7 @@ public:
 private:
 protected:
 public:
-	MM_ScavengerRootScanner(MM_EnvironmentBase *env, MM_Scavenger *scavenger)
+	ScavengerRootScanner(MM_EnvironmentBase *env, MM_Scavenger *scavenger)
 		: MM_Base()
 		, _scavenger(scavenger)
 	{
@@ -72,28 +79,27 @@ public:
 	}
 
 	void
-	scanRoots(MM_EnvironmentBase *env)
+	scanRoots(MM_EnvironmentStandard *env)
 	{
 		auto &cx = getContext(env);
-		ScavengingVisitor visitor(env, _scavenger);
+		ScavengingRootVisitor visitor(env, _scavenger);
 
 		/// System-wide roots
 
-		for (auto &fn : cx.system().markingFns()) {
-			fn(marker);
-		}
+		// for (auto &fn : cx.system().scavengingFns()) {
+		// 	fn(visitor);
+		// }
 
 		/// Per-context roots
 
 		// Note: only scanning the stack roots for *one* context.
-		for (const StackRootListNode &node : cx.stackRoots()) {
-			_markingScheme->markObject(env, omrobjectptr_t(node.ref));
+		for (StackRootListNode &node : cx.stackRoots()) {
+			visitor.edge(NULL, RefSlotHandle((fomrobject_t *)&node.ref));
 		}
 
-		for (auto &fn : cx.markingFns()) {
-			fn(marker);
-		}
-		// TODO
+		// for (auto &fn : cx.scavengingFns()) {
+		// 	fn(visitor);
+		// }
 	}
 
 	void rescanThreadSlots(MM_EnvironmentStandard *env) { }
@@ -106,5 +112,10 @@ public:
 	void flush(MM_EnvironmentStandard *env) { }
 };
 
+} // namespace GC
+} // namespace OMR
+
+using MM_ScavengerRootScanner = OMR::GC::ScavengerRootScanner;
+
 #endif /* defined(OMR_GC_MODRON_SCAVENGER) */
-#endif /* SCAVENGERROOTSCANNER_HPP_ */
+#endif /* OMR_GC_SCAVENGERROOTSCANNER_HPP_ */
