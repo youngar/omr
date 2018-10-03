@@ -77,12 +77,14 @@ struct CopyForwardResult {
 struct ScavengingScanResult {
 	void clear() noexcept {
 		slotsScanned = 0;
+		slotsCopied = 0;
 		nextScanCache = nullptr;
 		hasReferentsInNewSpace = false;
 		wantToAlias = false;
 	}
 
 	std::size_t slotsScanned = 0;
+	std::size_t slotsCopied = 0;
 	MM_CopyScanCacheStandard* nextScanCache = nullptr;
 	bool hasReferentsInNewSpace = false;
 	bool wantToAlias = false;
@@ -303,6 +305,13 @@ public:
 	 * Scavenge the contents of an object. This is a non-incremental, non-aliasing scan.
 	 */
 	bool scavengeObjectSlots(MM_EnvironmentStandard* env, omrobjectptr_t object);
+
+	void startScan(MM_CopyScanCacheStandard* cache);
+
+	void interruptScan(MM_EnvironmentStandard* env, MM_CopyScanCacheStandard* cache, omrobjectptr_t lastScanned, bool hasPartiallyScannedObject);
+
+	void endScan(MM_EnvironmentStandard* env, MM_CopyScanCacheStandard* cache);
+
 #endif /* OMR_GC_EXPERIMENTAL_OBJECT_SCANNER */
 
 #if !defined(OMR_GC_EXPERIMENTAL_OBJECT_SCANNER)
@@ -953,6 +962,7 @@ bool ScavengingObjectVisitor::edge(void* object, SlotHandleT slot) noexcept {
 	_scanCache->_shouldBeRemembered |= cf.isDestinationInNewSpace;
 
 	if (cf.didCopyForward) {
+		_result.slotsCopied += 1;
 		_result.nextScanCache = _scavenger->aliasToCopyCache(_env, slot.toAddress(), _scanCache, cf.destinationCache);
 		if (_result.nextScanCache != nullptr) {
 			// we are aliasing, interrupt scan

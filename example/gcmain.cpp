@@ -62,8 +62,15 @@ omr_main_entry(int argc, char ** argv, char **envp)
 
 	const std::uintptr_t allocSize = 24;
 	MM_ObjectAllocationModel allocationModel(cx.env(), allocSize, 0);
-	OMR::GC::StackRoot<void> root(cx, OMR_GC_AllocateObject(cx.vm(), &allocationModel));
 
+	OMR::GC::StackRoot<void> tenuredRoot(cx, OMR_GC_AllocateObject(cx.vm(), &allocationModel));
+	OMR::GC::StackRoot<void> root(cx, NULL);
+	while (true) {
+		for (int i = 0; i < 40; i++) {
+			root = OMR_GC_AllocateObject(cx.vm(), &allocationModel);
+		}
+	}
+	
 	OMR_GC_SystemCollect(cx.vm(), 0);
 
 	return 0;

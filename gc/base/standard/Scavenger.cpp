@@ -2202,53 +2202,109 @@ MM_Scavenger::aliasToCopyCache(MM_EnvironmentStandard *env, void *referent, MM_C
 	return NULL;
 }
 
-void
-MM_Scavenger::incrementalScanCacheBySlot(MM_EnvironmentStandard *env, MM_CopyScanCacheStandard* scanCache)
-{
-	bool done = false;
-	while (!done) {
+void MM_Scavenger::startScan(MM_CopyScanCacheStandard* cache) {
+	/* Ensure the cache is not in use, and then mark the cache as in use as a scan cache */
+	Assert_MM_true(0 == (cache->flags & OMR_SCAVENGER_CACHE_TYPE_SCAN));
+	cache->flags |= OMR_SCAVENGER_CACHE_TYPE_SCAN;
+}
 
-		/* mark that cache is in use as a scan cache */
-		Assert_MM_true(0 == (scanCache->flags & OMR_SCAVENGER_CACHE_TYPE_SCAN));
-		scanCache->flags |= OMR_SCAVENGER_CACHE_TYPE_SCAN;
+/// pause scanning in the cache.
+void MM_Scavenger::interruptScan(MM_EnvironmentStandard* env, MM_CopyScanCacheStandard* cache, omrobjectptr_t lastScanned, bool hasPartiallyScannedObject) {
+	Assert_MM_true(cache->flags & OMR_SCAVENGER_CACHE_TYPE_SCAN);
+	cache->flags &= ~OMR_SCAVENGER_CACHE_TYPE_SCAN;
+	cache->scanCurrent = lastScanned;
+	cache->_hasPartiallyScannedObject = hasPartiallyScannedObject;
+
+	/* Only save scan cache if it is not a copy cache, and then don't add to scanlist - this
+	 * can cause contention, just defer to later time on same thread
+	 * if deferred cache is occupied, then queue current scan cache on scan list
+	 */
+
+	if (!(cache->flags & OMR_SCAVENGER_CACHE_TYPE_COPY)) {
+		if (NULL == env->_deferredScanCache) {
+			env->_deferredScanCache = cache;
+		} else {
+#if defined(J9MODRON_TGC_PARALLEL_STATISTICS)
+			env->_scavengerStats._releaseScanListCount += 1;
+#endif /* J9MODRON_TGC_PARALLEL_STATISTICS */
+			addCacheEntryToScanListAndNotify(env, cache);
+		}
+	}
+}
+
+void MM_Scavenger::endScan(MM_EnvironmentStandard* env, MM_CopyScanCacheStandard* cache) {
+#if defined(OMR_GC_MODRON_SCAVENGER_STRICT)
+	Assert_MM_true(0 != (cache->flags & OMR_SCAVENGER_CACHE_TYPE_SCAN));
+#endif /* defined(OMR_GC_MODRON_SCAVENGER_STRICT) */
+
+	/* mark cache as no longer in use for scanning */
+	cache->flags &= ~OMR_SCAVENGER_CACHE_TYPE_SCAN;
+
+	/* Done with the cache - build a free list entry in the hole, release the cache to the free list (if not used), and continue */
+	flushCache(env, cache);
+}
+
+void
+MM_Scavenger::incrementalScanCacheBySlot(MM_EnvironmentStandard *env, MM_CopyScanCacheStandard* firstScanCache)
+{
+	for (MM_CopyScanCacheStandard* nextScanCache = firstScanCache; nextScanCache != nullptr;) {
+		MM_CopyScanCacheStandard* const scanCache = nextScanCache;
+		nextScanCache = nullptr;
+
+		startScan(scanCache);
+
+		/* Finish scanning a partially scanned object */
+		if (scanCache->_hasPartiallyScannedObject) {
+			ScavengingObjectVisitor visitor(env, this, scanCache);
+			OMR::GC::ScanResult result = scanCache->_scanner.resume(visitor);
+			updateCopyScanCounts(env, visitor._result.slotsScanned, visitor._result.slotsCopied);
+
+			if (visitor._result.nextScanCache) {
+				/* we are aliasing! */
+				interruptScan(env, scanCache, (omrobjectptr_t) scanCache->scanCurrent, !result.complete);
+				nextScanCache = visitor._result.nextScanCache;
+				continue;
+			} else {
+				assert(result.complete);
+				scanCache->_hasPartiallyScannedObject = false;
+			}
+		}
 
 		while (isWorkAvailableInCache(scanCache)) {
 
-			/* Finish scanning a partially scanned object */
-			if (scanCache->_hasPartiallyScannedObject) {
-
-				ScavengingObjectVisitor visitor(env, this, scanCache);
-				OMR::GC::ScanResult result = scanCache->_scanner.resume(visitor);
-
-				if (result.complete != true) {
-					/* If the object scanner is not complete, then we must be aliasing on of the copy caches. */
-					scanCache = visitor._result.nextScanCache;
-					updateCopyScanCounts(env, visitor._result.slotsScanned, 0); // TODO: Fix stats for copied slots.
-				}
-			}
-
+			scanCache->_hasPartiallyScannedObject = false;
+			omrobjectptr_t scanEnd = (omrobjectptr_t)scanCache->cacheAlloc;
+		
 			/* Complete scanning of the cache. */
 			GC_ObjectHeapIteratorAddressOrderedList heapChunkIterator(
 				_extensions,
 				(omrobjectptr_t)scanCache->scanCurrent,
-				(omrobjectptr_t)scanCache->cacheAlloc,
+				(omrobjectptr_t)scanEnd,
 				false);
 
 			omrobjectptr_t object;
-	
+
 			while ((object = heapChunkIterator.nextObjectNoAdvance()) != NULL) {
 
 				ScavengingObjectVisitor visitor(env, this, scanCache);
 				OMR::GC::ScanResult result = scanCache->_scanner.start(visitor, object);
+				updateCopyScanCounts(env, visitor._result.slotsScanned, visitor._result.slotsCopied);
 
-				/* If the object scanner is not complete, then we must be aliasing on of the copy caches. */
-				if (result.complete != true) {
-					scanCache = visitor._result.nextScanCache;
-					updateCopyScanCounts(env, visitor._result.slotsScanned, 0); // TODO: Fix stats for copied slots.
-					break; // Start the next scanCache
+				if (visitor._result.nextScanCache) {
+					interruptScan(env, scanCache, object, !result.complete);
+					nextScanCache = visitor._result.nextScanCache;
+					break;
+				} else {
+					assert(result.complete);
 				}
+
+				// TODO temporary assert to see if/when these differ
+				Assert_MM_true(scanEnd == scanCache->cacheAlloc);
+
+				scanCache->scanCurrent = scanEnd;
 			}
 		}
+		endScan(env, scanCache);
 	}
 }
 
