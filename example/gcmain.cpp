@@ -49,10 +49,13 @@
 #include "omrExampleVM.hpp"
 #endif /* OMR_GC_EXPERIMENTAL_CONTEXT */
 
-extern "C" {
+
+
+namespace OMR {
+namespace GC {
 
 void
-store(OMR::GC::RunContext &cx, Object *object, std::size_t index, Slot value) {
+preWriteBarrier(OMR::GC::RunContext &cx, omrobjectptr_t object, omrobjectptr_t value) {
 
 #if defined(OMR_GC_MODRON_SCAVENGER) || defined(OMR_GC_MODRON_CONCURRENT_MARK)
 	MM_EnvironmentBase *env = cx.env();
@@ -60,8 +63,7 @@ store(OMR::GC::RunContext &cx, Object *object, std::size_t index, Slot value) {
 
 #if defined(OMR_GC_MODRON_SCAVENGER)
 	if (extensions->scavengerEnabled) {
-		if (extensions->isOld(object) && !extensions->isOld((omrobjectptr_t)value)) {
-			// fprintf(stderr, ">>>> remember: parent: %p, child: %p\n", object, (omrobjectptr_t) value);
+		if (extensions->isOld(object) && !extensions->isOld(value)) {
 			if (extensions->objectModel.atomicSetRememberedState(object, STATE_REMEMBERED)) {
 				/* The object has been successfully marked as REMEMBERED - allocate an entry in the remembered set */
 				extensions->scavenger->addToRememberedSetFragment((MM_EnvironmentStandard *)env, object);
@@ -72,13 +74,28 @@ store(OMR::GC::RunContext &cx, Object *object, std::size_t index, Slot value) {
 
 #if defined(OMR_GC_MODRON_CONCURRENT_MARK)
 	if (extensions->concurrentMark) {
-		extensions->cardTable->dirtyCard(env, parentObject);
+		extensions->cardTable->dirtyCard(env, object);
 	}
 #endif /* defined(OMR_GC_MODRON_CONCURRENT_MARK) */
 #endif /* defined(OMR_GC_MODRON_SCAVENGER) || defined(OMR_GC_MODRON_CONCURRENT_MARK) */
-
-	object->slots()[index] = value;
 }
+
+template <typename SlotHandleT, typename ValueT>
+void
+store(OMR::GC::RunContext &cx, omrobjectptr_t object, SlotHandleT slot, ValueT *value) {
+	preWriteBarrier(cx, object, value);
+	slot.writeReference(value);
+}
+
+} // namespace GC
+} // namespace OMR
+
+void
+store(OMR::GC::RunContext &cx, Object *object, std::size_t index, Object *value) {
+	OMR::GC::store(cx, object, OMR::GC::RefSlotHandle(&object->slots()[index]), value);
+}
+
+extern "C" {
 
 int
 omr_main_entry(int argc, char ** argv, char **envp)
@@ -94,8 +111,6 @@ omr_main_entry(int argc, char ** argv, char **envp)
 	MM_ObjectAllocationModel allocationModel(cx.env(), allocSize, 0);
 
 	OMR::GC::StackRoot<Object> rootA(cx, (Object*)OMR_GC_AllocateObject(cx.vm(), &allocationModel));
-	rootA->slots()[0] = 0xA;
-	rootA->slots()[1] = 0x00;
 
 	OMR::GC::StackRoot<Object> rootB(cx, nullptr);
 
@@ -106,9 +121,8 @@ omr_main_entry(int argc, char ** argv, char **envp)
 		for (int i = 0xB; i < 0xA0; i++) {
 			rootB = OMR_GC_AllocateObject(cx.vm(), &allocationModel);
 			rootB->slots()[0] = i;
-			store(cx, rootB, 1, (Slot) rootA.get());
-
-			store(cx, rootA, 1, (Slot) rootB.get());
+			store(cx, rootB, 1, rootA);
+			store(cx, rootA, 1, rootB);
 		}
 	}
 	

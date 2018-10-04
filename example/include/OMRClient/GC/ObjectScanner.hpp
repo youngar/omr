@@ -43,7 +43,7 @@ public:
 
 	template <typename VisitorT>
 	OMR::GC::ScanResult
-	start(VisitorT visitor, Object *target, std::size_t bytesToScan = SIZE_MAX)
+	start(VisitorT &&visitor, Object *target, std::size_t bytesToScan = SIZE_MAX)
 	{
 		_target = target;
 		_current = _target->begin();
@@ -51,13 +51,13 @@ public:
 	}
 
 	template <typename VisitorT>
-	OMR::GC::ScanResult resume(VisitorT visitor, std::size_t bytesToScan = SIZE_MAX)
+	OMR::GC::ScanResult resume(VisitorT &&visitor, std::size_t bytesToScan = SIZE_MAX)
 	{
 		OMR::GC::ScanResult result = {0, false};
 
 		assert(_target != nullptr);
 		assert(_current != nullptr);
-		assert(_current >= _target->begin())
+		assert(_current >= _target->begin());
 		assert(_current <= _target->end());
 
 		Slot *const end = _target->end();
