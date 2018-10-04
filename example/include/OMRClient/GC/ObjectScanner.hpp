@@ -57,23 +57,27 @@ public:
 
 		assert(_target != nullptr);
 		assert(_current != nullptr);
+		assert(_current >= _target->begin())
+		assert(_current <= _target->end());
 
-		Slot *end = _target->end();
+		Slot *const end = _target->end();
+		bool cont = true;
 
 		while (true) {
-			bool cont = true;
-			if (*_current != 0) {
-				cont = visitor.edge(_target, OMR::GC::RefSlotHandle(_current));
-			}
-			++_current;
-			result.bytesScanned += sizeof(Slot);
 			if (_current == end) {
 				result.complete = true;
 				break;
-			} else if (!cont || result.bytesScanned >= bytesToScan) {
+			} else if (!cont || (result.bytesScanned >= bytesToScan)) {
 				result.complete = false;
 				break;
 			}
+
+			if (*_current > 0xFF) {
+				cont = visitor.edge(_target, OMR::GC::RefSlotHandle(_current));
+			}
+
+			++_current;
+			result.bytesScanned += sizeof(Slot);
 		}
 
 		_target = nullptr;

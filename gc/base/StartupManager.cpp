@@ -212,20 +212,25 @@ MM_StartupManager::loadGcOptions(MM_GCExtensionsBase *extensions)
 
 	extensions->heapAlignment = HEAP_ALIGNMENT;
 
+	defaultMinHeapSize = defaultMinHeapSize = pageSizes[0];
+
 	assert(0 != defaultMinHeapSize);
 	assert(0 != defaultMaxHeapSize);
 	assert(defaultMinHeapSize <= defaultMaxHeapSize);
 
 	/* Set defaults to support Standard GC in OMR */
 	extensions->initialMemorySize = defaultMinHeapSize;
-	extensions->minNewSpaceSize = defaultMinHeapSize / 4;
-	extensions->newSpaceSize = defaultMinHeapSize / 2;
+	extensions->minNewSpaceSize = defaultMinHeapSize / 8;
+	extensions->newSpaceSize = defaultMinHeapSize / 4;
 	extensions->maxNewSpaceSize = defaultMaxHeapSize / 2;
 	extensions->minOldSpaceSize = defaultMinHeapSize;
 	extensions->oldSpaceSize = defaultMinHeapSize;
 	extensions->maxOldSpaceSize = defaultMaxHeapSize;
 	extensions->memoryMax = defaultMaxHeapSize;
 	extensions->maxSizeDefaultMemorySpace = defaultMaxHeapSize;
+
+	extensions->fvtest_forceScavengerBackout = false;
+	extensions->fvtest_forcePoisonEvacuate = false;
 
 	/* Now override defaults with specified settings, if any */
 	bool result = parseGcOptions(extensions);

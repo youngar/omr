@@ -51,6 +51,35 @@
 
 extern "C" {
 
+void
+store(OMR::GC::RunContext &cx, Object *object, std::size_t index, Slot value) {
+
+#if defined(OMR_GC_MODRON_SCAVENGER) || defined(OMR_GC_MODRON_CONCURRENT_MARK)
+	MM_EnvironmentBase *env = cx.env();
+	MM_GCExtensionsBase *extensions = env->getExtensions();
+
+#if defined(OMR_GC_MODRON_SCAVENGER)
+	if (extensions->scavengerEnabled) {
+		if (extensions->isOld(object) && !extensions->isOld((omrobjectptr_t)value)) {
+			// fprintf(stderr, ">>>> remember: parent: %p, child: %p\n", object, (omrobjectptr_t) value);
+			if (extensions->objectModel.atomicSetRememberedState(object, STATE_REMEMBERED)) {
+				/* The object has been successfully marked as REMEMBERED - allocate an entry in the remembered set */
+				extensions->scavenger->addToRememberedSetFragment((MM_EnvironmentStandard *)env, object);
+			}
+		}
+	}
+#endif /* defined(OMR_GC_MODRON_SCAVENGER) */
+
+#if defined(OMR_GC_MODRON_CONCURRENT_MARK)
+	if (extensions->concurrentMark) {
+		extensions->cardTable->dirtyCard(env, parentObject);
+	}
+#endif /* defined(OMR_GC_MODRON_CONCURRENT_MARK) */
+#endif /* defined(OMR_GC_MODRON_SCAVENGER) || defined(OMR_GC_MODRON_CONCURRENT_MARK) */
+
+	object->slots()[index] = value;
+}
+
 int
 omr_main_entry(int argc, char ** argv, char **envp)
 {
@@ -60,14 +89,26 @@ omr_main_entry(int argc, char ** argv, char **envp)
 	OMR::GC::System system(runtime);
 	OMR::GC::RunContext cx(system);
 
-	const std::uintptr_t allocSize = 24;
+	const std::size_t nslots = 2;
+	const std::uintptr_t allocSize = Object::allocSize(nslots);
 	MM_ObjectAllocationModel allocationModel(cx.env(), allocSize, 0);
 
-	OMR::GC::StackRoot<void> tenuredRoot(cx, OMR_GC_AllocateObject(cx.vm(), &allocationModel));
-	OMR::GC::StackRoot<void> root(cx, NULL);
+	OMR::GC::StackRoot<Object> rootA(cx, (Object*)OMR_GC_AllocateObject(cx.vm(), &allocationModel));
+	rootA->slots()[0] = 0xA;
+	rootA->slots()[1] = 0x00;
+
+	OMR::GC::StackRoot<Object> rootB(cx, nullptr);
+
+	MM_EnvironmentBase *env = cx.env();
+	MM_GCExtensionsBase *extensions = env->getExtensions();
+
 	while (true) {
-		for (int i = 0; i < 40; i++) {
-			root = OMR_GC_AllocateObject(cx.vm(), &allocationModel);
+		for (int i = 0xB; i < 0xA0; i++) {
+			rootB = OMR_GC_AllocateObject(cx.vm(), &allocationModel);
+			rootB->slots()[0] = i;
+			store(cx, rootB, 1, (Slot) rootA.get());
+
+			store(cx, rootA, 1, (Slot) rootB.get());
 		}
 	}
 	

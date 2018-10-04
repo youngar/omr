@@ -68,10 +68,10 @@ class MM_Scavenger;
 class MM_CopyScanCache;
 
 struct CopyForwardResult {
-	omrobjectptr_t destination;
-	MM_CopyScanCacheStandard* destinationCache;
-	bool didCopyForward;
-	bool isDestinationInNewSpace;
+	omrobjectptr_t destination = (omrobjectptr_t)0x01;
+	MM_CopyScanCacheStandard* destinationCache = (MM_CopyScanCacheStandard*)0x02;
+	bool didCopyForward = false;
+	bool isDestinationInNewSpace = false;
 };
 
 struct ScavengingScanResult {
@@ -95,14 +95,16 @@ public:
 	ScavengingRootVisitor(MM_EnvironmentStandard* env, MM_Scavenger *scavenger) :
 		_env(env),
 		_scavenger(scavenger),
-		_hasReferentsInNewSpace(false) {}
+		_hasReferentsInNewSpace(0) {}
+
+	ScavengingRootVisitor(const ScavengingRootVisitor&) = delete;
 
 	template <class SlotHandleT>
 	bool edge(void* object, SlotHandleT slot) noexcept;
 
 	MM_EnvironmentStandard *_env;
 	MM_Scavenger *_scavenger;
-	bool _hasReferentsInNewSpace;
+	int _hasReferentsInNewSpace;
 };
 
 class ScavengingObjectVisitor {
@@ -111,6 +113,8 @@ public:
 		_env(env),
 		_scavenger(scavenger),
 		_scanCache(scanCache) {}
+
+	ScavengingObjectVisitor(const ScavengingObjectVisitor&) = delete;
 
 	template <class SlotHandleT>
 	bool edge(void* object, SlotHandleT slot) noexcept;
@@ -976,7 +980,7 @@ bool ScavengingObjectVisitor::edge(void* object, SlotHandleT slot) noexcept {
 template <class SlotHandleT>
 bool ScavengingRootVisitor::edge(void* object, SlotHandleT slot) noexcept {
 	CopyForwardResult cf = _scavenger->scavengeSlot(_env, slot);
-	_hasReferentsInNewSpace = cf.isDestinationInNewSpace;
+	_hasReferentsInNewSpace |= cf.isDestinationInNewSpace;
 	return true;
 }
 

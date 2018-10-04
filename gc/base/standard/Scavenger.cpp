@@ -1200,11 +1200,14 @@ MM_Scavenger::copyAndForward(MM_EnvironmentStandard* env, omrobjectptr_t object)
 			result.isDestinationInNewSpace = true;
 			result.didCopyForward = false;
 			result.destinationCache = NULL;
-
-#if defined(OMR_GC_MODRON_SCAVENGER_STRICT)
 		} else {
-			Assert_MM_true(_extensions->isOld(objectPtr));
+#if defined(OMR_GC_MODRON_SCAVENGER_STRICT)
+			Assert_MM_true(_extensions->isOld(object));
 #endif /* defined(OMR_GC_MODRON_SCAVENGER_STRICT) */
+			result.destination = object;
+			result.isDestinationInNewSpace = false;
+			result.didCopyForward = false;
+			result.destinationCache = NULL;
 		}
 	}
 
@@ -1429,6 +1432,7 @@ MM_Scavenger::copy(MM_EnvironmentStandard *env, MM_ForwardedHeader* forwardedHea
 		}
 #endif /* J9VM_INTERP_NATIVE_SUPPORT */
 		copyCache = reserveMemoryForAllocateInTenureSpace(env, forwardedHeader->getObject(), objectReserveSizeInBytes);
+
 		if (NULL != copyCache) {
 			/* Clear age and set the old bit */
 			objectAge = STATE_NOT_REMEMBERED;
@@ -1467,6 +1471,7 @@ MM_Scavenger::copy(MM_EnvironmentStandard *env, MM_ForwardedHeader* forwardedHea
 
 	/* Memory has been reserved */
 	destinationObjectPtr = (omrobjectptr_t)copyCache->cacheAlloc;
+	
 	/* now correct for the hot field alignment */
 #if defined(J9VM_INTERP_NATIVE_SUPPORT)
 	if (0 != hotFieldsAlignment) {
@@ -2265,8 +2270,15 @@ MM_Scavenger::incrementalScanCacheBySlot(MM_EnvironmentStandard *env, MM_CopySca
 				nextScanCache = visitor._result.nextScanCache;
 				continue;
 			} else {
-				assert(result.complete);
-				scanCache->_hasPartiallyScannedObject = false;
+				if (!result.complete) {
+					/* we are in backout?? */
+					assert(isBackOutFlagRaised());
+					scanCache->_hasPartiallyScannedObject = false; // we're going to start this object from the beginning.
+				} else {
+					assert(result.complete);
+					scanCache->_hasPartiallyScannedObject = false;
+					
+				}
 			}
 		}
 
@@ -2295,11 +2307,14 @@ MM_Scavenger::incrementalScanCacheBySlot(MM_EnvironmentStandard *env, MM_CopySca
 					nextScanCache = visitor._result.nextScanCache;
 					break;
 				} else {
-					assert(result.complete);
+					if (!result.complete) {
+						/* we are in backout?? */
+						assert(isBackOutFlagRaised());
+					} else {
+						assert(result.complete);
+						scanCache->_hasPartiallyScannedObject = false;
+					}
 				}
-
-				// TODO temporary assert to see if/when these differ
-				Assert_MM_true(scanEnd == scanCache->cacheAlloc);
 
 				scanCache->scanCurrent = scanEnd;
 			}
@@ -2999,12 +3014,13 @@ MM_Scavenger::scavengeRememberedSetList(MM_EnvironmentStandard *env)
 				 */
 				*slotPtr = (omrobjectptr_t)((uintptr_t)*slotPtr | DEFERRED_RS_REMOVE_FLAG);
 				bool shouldBeRemembered = scavengeObjectSlots(env, objectPtr);
+
 				if (_extensions->objectModel.hasIndirectObjectReferents((CLI_THREAD_TYPE*)env->getLanguageVMThread(), objectPtr)) {
 					shouldBeRemembered |= _cli->scavenger_scavengeIndirectObjectSlots(env, objectPtr);
 				}
 
 				shouldBeRemembered |= isRememberedThreadReference(env, objectPtr);
-
+ 
 				if (shouldBeRemembered) {
 					/* We want to remember this object after all; clear the flag for removal. */
 					*slotPtr = (omrobjectptr_t)((uintptr_t)*slotPtr & ~(uintptr_t)DEFERRED_RS_REMOVE_FLAG);
