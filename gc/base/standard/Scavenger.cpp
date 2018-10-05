@@ -2208,6 +2208,7 @@ MM_Scavenger::aliasToCopyCache(MM_EnvironmentStandard *env, void *referent, MM_C
 }
 
 void MM_Scavenger::startScan(MM_CopyScanCacheStandard* cache) {
+	fprintf(stderr, "(startScan %p)\n", cache);
 	/* Ensure the cache is not in use, and then mark the cache as in use as a scan cache */
 	Assert_MM_true(0 == (cache->flags & OMR_SCAVENGER_CACHE_TYPE_SCAN));
 	cache->flags |= OMR_SCAVENGER_CACHE_TYPE_SCAN;
@@ -2252,7 +2253,12 @@ void MM_Scavenger::endScan(MM_EnvironmentStandard* env, MM_CopyScanCacheStandard
 void
 MM_Scavenger::incrementalScanCacheBySlot(MM_EnvironmentStandard *env, MM_CopyScanCacheStandard* firstScanCache)
 {
-	for (MM_CopyScanCacheStandard* nextScanCache = firstScanCache; nextScanCache != nullptr;) {
+	MM_CopyScanCacheStandard* nextScanCache = firstScanCache;
+
+	while(nextScanCache != nullptr) {
+
+		fprintf(stderr, "(start scan cache: %p)\n", nextScanCache);
+	
 		MM_CopyScanCacheStandard* const scanCache = nextScanCache;
 		nextScanCache = nullptr;
 
@@ -2260,6 +2266,7 @@ MM_Scavenger::incrementalScanCacheBySlot(MM_EnvironmentStandard *env, MM_CopySca
 
 		/* Finish scanning a partially scanned object */
 		if (scanCache->_hasPartiallyScannedObject) {
+			fprintf(stderr, "(resuming partially scanned dude)\n");
 			ScavengingObjectVisitor visitor(env, this, scanCache);
 			OMR::GC::ScanResult result = scanCache->_scanner.resume(visitor);
 			updateCopyScanCounts(env, visitor._result.slotsScanned, visitor._result.slotsCopied);
@@ -2277,7 +2284,6 @@ MM_Scavenger::incrementalScanCacheBySlot(MM_EnvironmentStandard *env, MM_CopySca
 				} else {
 					assert(result.complete);
 					scanCache->_hasPartiallyScannedObject = false;
-					
 				}
 			}
 		}
