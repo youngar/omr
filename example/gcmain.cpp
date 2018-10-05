@@ -25,9 +25,10 @@
 #include "omrgc.h"
 
 #if defined(OMR_GC_EXPERIMENTAL_CONTEXT)
-#include <OMR/Runtime.hpp>
-#include <OMR/GC/System.hpp>
+#include <OMR/GC/AccessBarrier.hpp>
 #include <OMR/GC/StackRoot.hpp>
+#include <OMR/GC/System.hpp>
+#include <OMR/Runtime.hpp>
 #else /* OMR_GC_EXPERIMENTAL_CONTEXT */
 #include <string.h>
 #include "omrport.h"
@@ -48,47 +49,6 @@
 #include "StartupManagerImpl.hpp"
 #include "omrExampleVM.hpp"
 #endif /* OMR_GC_EXPERIMENTAL_CONTEXT */
-
-
-
-namespace OMR {
-namespace GC {
-
-void
-preWriteBarrier(OMR::GC::RunContext &cx, omrobjectptr_t object, omrobjectptr_t value) {
-
-#if defined(OMR_GC_MODRON_SCAVENGER) || defined(OMR_GC_MODRON_CONCURRENT_MARK)
-	MM_EnvironmentBase *env = cx.env();
-	MM_GCExtensionsBase *extensions = env->getExtensions();
-
-#if defined(OMR_GC_MODRON_SCAVENGER)
-	if (extensions->scavengerEnabled) {
-		if (extensions->isOld(object) && !extensions->isOld(value)) {
-			if (extensions->objectModel.atomicSetRememberedState(object, STATE_REMEMBERED)) {
-				/* The object has been successfully marked as REMEMBERED - allocate an entry in the remembered set */
-				extensions->scavenger->addToRememberedSetFragment((MM_EnvironmentStandard *)env, object);
-			}
-		}
-	}
-#endif /* defined(OMR_GC_MODRON_SCAVENGER) */
-
-#if defined(OMR_GC_MODRON_CONCURRENT_MARK)
-	if (extensions->concurrentMark) {
-		extensions->cardTable->dirtyCard(env, object);
-	}
-#endif /* defined(OMR_GC_MODRON_CONCURRENT_MARK) */
-#endif /* defined(OMR_GC_MODRON_SCAVENGER) || defined(OMR_GC_MODRON_CONCURRENT_MARK) */
-}
-
-template <typename SlotHandleT, typename ValueT>
-void
-store(OMR::GC::RunContext &cx, omrobjectptr_t object, SlotHandleT slot, ValueT *value) {
-	preWriteBarrier(cx, object, value);
-	slot.writeReference(value);
-}
-
-} // namespace GC
-} // namespace OMR
 
 void
 store(OMR::GC::RunContext &cx, Object *object, std::size_t index, Object *value) {
