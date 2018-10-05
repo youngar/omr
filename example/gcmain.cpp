@@ -59,9 +59,11 @@ store(OMR::GC::RunContext &cx, Object *object, std::size_t index, Object *value)
 
 Object*
 allocate(OMR::GC::Context& cx, std::size_t nslots) {
+	static std::size_t id = 0;
 	const std::size_t size = Object::allocSize(nslots);
+
 	return OMR::GC::allocate<Object>(cx, size, [=](Object* obj) -> void {
-			new(obj) Object(size);
+			new(obj) Object(size, id++);
 	});
 }
 

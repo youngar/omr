@@ -225,7 +225,8 @@ public:
 	MMINLINE uintptr_t
 	getForwardedObjectSizeInBytes(MM_ForwardedHeader *forwardedHeader)
 	{
-		ObjectHeader header(forwardedHeader->getPreservedSlot());
+		ObjectHeader header;
+		header.raw(forwardedHeader->getPreservedSlot());
 		return header.sizeInBytes();
 	}
 

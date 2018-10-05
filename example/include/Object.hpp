@@ -45,12 +45,11 @@ typedef uintptr_t ObjectSize;
 class ObjectHeader
 {
 public:
-
 	ObjectHeader() {}
 
-	explicit ObjectHeader(RawObjectHeader value) : _value(value) {}
-
-	explicit ObjectHeader(ObjectSize sizeInBytes, ObjectFlags flags) { assign(sizeInBytes, flags); }
+	explicit ObjectHeader(ObjectSize size, std::size_t id = 0) : _value(0), _magic(0xcafebabe), _id(id) {
+		assign(size, 0);
+	}
 
 	ObjectSize sizeInBytes() const { return _value >> SIZE_SHIFT; }
 
@@ -66,10 +65,16 @@ public:
 
 	void raw(RawObjectHeader raw) { _value = raw; }
 
+	std::size_t id() const { return _id; }
+
+	std::size_t magic() const { return _magic; }
+
 private:
 	static const size_t SIZE_SHIFT = sizeof(ObjectFlags)*8;
 
 	RawObjectHeader _value;
+	std::size_t _magic;
+	std::size_t _id;
 };
 
 class Object
