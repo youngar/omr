@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2017, 2017 IBM Corp. and others
+ * Copyright (c) 2017, 2018 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -23,6 +23,8 @@
 #define COMPACTDELEGATE_HPP_
 
 #include "omrcfg.h"
+#include "EnvironmentStandard.hpp"
+#include "OMR/GC/System.hpp"
 #include "omrgcconsts.h"
 
 class MM_CompactScheme;
@@ -31,10 +33,13 @@ class MM_MarkMap;
 
 #if defined(OMR_GC_MODRON_COMPACTION)
 
+namespace OMR {
+namespace GC {
+
 /**
  * Delegate class provides implementations for methods required for Collector Language Interface
  */
-class MM_CompactDelegate
+class CompactDelegate
 {
 	/*
 	 * Data members
@@ -78,7 +83,7 @@ public:
 	verifyHeap(MM_EnvironmentBase *env, MM_MarkMap *markMap) { }
 
 	void
-	fixupRoots(MM_EnvironmentBase *env, MM_CompactScheme *compactScheme) { }
+	fixupRoots(MM_EnvironmentBase *env, MM_CompactScheme *compactScheme);
 
 	void
 	workerCleanupAfterGC(MM_EnvironmentBase *env) { }
@@ -86,12 +91,17 @@ public:
 	void
 	masterSetupForGC(MM_EnvironmentBase *env) { }
 
-	MM_CompactDelegate()
+	CompactDelegate()
 		: _compactScheme(NULL)
 		, _markMap(NULL)
 		, _omrVM(NULL)
 	{}
 };
+
+} // namespace GC
+} // namespace OMR
+
+using MM_CompactDelegate = OMR::GC::CompactDelegate;
 
 #endif /* OMR_GC_MODRON_COMPACTION */
 #endif /* COMPACTDELEGATE_HPP_ */

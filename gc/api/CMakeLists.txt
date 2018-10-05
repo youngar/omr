@@ -30,6 +30,7 @@ target_sources(omrgc
 	PRIVATE
 		${CMAKE_CURRENT_SOURCE_DIR}/src/OMR_GC_System.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/glue/MarkingDelegate.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/glue/CompactDelegate.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/glue/EnvironmentDelegate.cpp
 )
 

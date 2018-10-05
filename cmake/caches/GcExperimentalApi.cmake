@@ -41,6 +41,7 @@ set(OMR_THR_FORK_SUPPORT OFF CACHE BOOL "")
 # Enable supported GC policies
 
 set(OMR_GC_MODRON_SCAVENGER ON CACHE BOOL "")
+set(OMR_GC_MODRON_COMPACTION ON CACHE BOOL "")
 
 # Disable (temporarily) unsupported GC policies
 
