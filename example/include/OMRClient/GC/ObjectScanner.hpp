@@ -72,9 +72,7 @@ public:
 				break;
 			}
 
-			if (*_current > 0xFF) {
-				cont = visitor.edge(_target, OMR::GC::RefSlotHandle(_current));
-			}
+			cont = visitor.edge(_target, OMR::GC::RefSlotHandle(_current));
 
 			++_current;
 			result.bytesScanned += sizeof(Slot);

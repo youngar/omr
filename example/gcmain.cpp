@@ -79,19 +79,19 @@ omr_main_entry(int argc, char ** argv, char **envp)
 	const std::size_t nslots = 2;
 
 	OMR::GC::StackRoot<Object> rootA(cx, allocate(cx, nslots));
+	store(cx, rootA, 0, rootA); // a[0] == a
+
 	OMR::GC::StackRoot<Object> rootB(cx, nullptr);
 
 	while (true) {
 		for (int i = 0xB; i < 0xA0; i++) {
 			rootB = allocate(cx, nslots);
-			rootB->slots()[0] = i;
-			store(cx, rootB, 1, rootA);
-			store(cx, rootA, 1, rootB);
+			store(cx, rootB, 0, rootB); // b[0] == b
+			store(cx, rootB, 1, rootA); // b[1] == a
+			store(cx, rootA, 1, rootB); // a[1] == b
 		}
-		OMR_GC_SystemCollect(cx.vm(), 0);
-		OMR_GC_SystemCollect(cx.vm(), 0);
 	}
-	
+
 	OMR_GC_SystemCollect(cx.vm(), 0);
 
 	return 0;
