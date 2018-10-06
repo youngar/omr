@@ -29,7 +29,10 @@
 #include "EnvironmentBase.hpp"
 #include "omr.h"
 #include "omrcfg.h"
-#include "omrhashtable.h"
+#include "SublistSlotIterator.hpp"
+#include "SublistPuddle.hpp"
+#include "SublistPool.hpp"
+#include "SublistIterator.hpp"
 #include <iostream>
 
 namespace OMR
@@ -40,6 +43,7 @@ namespace GC
 void
 CompactDelegate::fixupRoots(MM_EnvironmentBase *env, MM_CompactScheme *compactScheme) {
     auto &cx = getContext(env);
+    MM_GCExtensionsBase *extensions = env->getExtensions();
     CompactingVisitor visitor((MM_EnvironmentStandard *) env, _compactScheme);
 
     /// System-wide roots
@@ -47,6 +51,11 @@ CompactDelegate::fixupRoots(MM_EnvironmentBase *env, MM_CompactScheme *compactSc
     for (auto &fn : cx.system().compactingFns()) {
         fn(visitor);
     }
+
+
+#if defined(OMR_GC_MODRON_SCAVENGER)
+    fixupRememberedSet(env, compactScheme);
+#endif // OMR_GC_MODRON_SCAVENGER
 
     /// Per-context roots
 
@@ -60,6 +69,43 @@ CompactDelegate::fixupRoots(MM_EnvironmentBase *env, MM_CompactScheme *compactSc
     }
 }
 
+#if defined(OMR_GC_MODRON_SCAVENGER)
+void
+CompactDelegate::fixupRememberedSet(MM_EnvironmentBase* env, MM_CompactScheme* c)
+    // Remembered set
+    MM_SublistPuddle *puddle;
+
+    // typedef GC_SublistIterator GC_RememberedSetIterator;
+    // typedef GC_SublistSlotIterator GC_RememberedSetSlotIterator;
+
+    // J9Object **slotPtr;
+    omrobjectptr_t *slot;
+    GC_SublistIterator rememberedSetIterator(&extensions->rememberedSet);
+    fprintf(stderr, "!!! Compacting Remembered Set\n");
+
+    while((puddle = rememberedSetIterator.nextList()) != NULL) {
+        GC_SublistSlotIterator rememberedSetSlotIterator(puddle);
+        while((slot = (omrobjectptr_t *)rememberedSetSlotIterator.nextSlot()) != NULL) {
+            // doRememberedSetSlot(slot, &rememberedSetSlotIterator);
+            fprintf(stderr, "!!! Compact Rem Set: %p %p old-value\n", slot, *slot);
+            visitor.edge(NULL, RefSlotHandle((fomrobject_t *)slot));
+        }
+    }
+}
+#endif // defined(OMR_GC_MODRON_SCAVENGER)
+
 } // namespace GC
 } // namespace OMR
 
+
+class RememberedSetIterator {
+public:
+    RememberedSetIterator()
+
+    operator++() noexcept {
+
+    };
+
+private:
+
+};

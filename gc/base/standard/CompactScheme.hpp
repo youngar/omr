@@ -387,7 +387,9 @@ public:
 
 template <class SlotHandleT>
 bool CompactingVisitor::edge(void* object, SlotHandleT slot) noexcept {
+    fprintf(stderr, "!!! -- CompactVisitor %p %p %p", object, slot.toAddress(), slot.readReference());
     _compactScheme->fixupObjectSlot(slot);
+    fprintf(stderr, " to: %p\n", slot.readReference());
     return true;
 }
 
