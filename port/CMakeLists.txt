@@ -369,6 +369,10 @@ target_link_libraries(omrport
 		${OMR_THREAD_LIB}
 )
 
+if(OMRPORT_OMRSIG_SUPPORT)
+	target_link_libraries(omrport PRIVATE omrsig)
+endif()
+
 target_include_directories(omrport_obj PRIVATE
 	../nls
 )

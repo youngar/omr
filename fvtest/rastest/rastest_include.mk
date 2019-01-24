@@ -64,3 +64,8 @@ ifeq (win,$(OMR_HOST_OS))
   MODULE_SHARED_LIBS += ws2_32 # socket library
   MODULE_SHARED_LIBS += shell32 Iphlpapi psapi pdh
 endif
+
+ifeq (1,$(OMRPORT_OMRSIG_SUPPORT))
+  MODULE_SHARED_LIBS += omrsig
+endif
+
