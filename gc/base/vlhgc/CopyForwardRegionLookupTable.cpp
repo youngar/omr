@@ -21,7 +21,7 @@
 
 #include "omrcfg.h"
 
-#include "HeapRegionStateTable.hpp"
+#include "CopyForwardRegionLookupTable.hpp"
 
 #include "omrcomp.h"
 #include "Forge.hpp"
@@ -31,9 +31,9 @@
 namespace OMR {
 namespace GC {
 
-HeapRegionStateTable *HeapRegionStateTable::newInstance(Forge *forge, uintptr_t heapBase, uintptr_t regionShift, uintptr_t regionCount)
+CopyForwardRegionLookupTable *CopyForwardRegionLookupTable::newInstance(Forge *forge, uintptr_t heapBase, uintptr_t regionShift, uintptr_t regionCount)
 {
-	HeapRegionStateTable* table = ::new(forge, AllocationCategory::FIXED, OMR_GET_CALLSITE(), std::nothrow) HeapRegionStateTable();
+	CopyForwardRegionLookupTable* table = ::new(forge, AllocationCategory::FIXED, OMR_GET_CALLSITE(), std::nothrow) CopyForwardRegionLookupTable();
 	if(NULL != table) {
 		bool success = table->initialize(forge, heapBase, regionShift, regionCount);
 		if (! success) {
@@ -45,7 +45,7 @@ HeapRegionStateTable *HeapRegionStateTable::newInstance(Forge *forge, uintptr_t 
 }
 
 bool
-HeapRegionStateTable::initialize(Forge *forge, uintptr_t heapBase, uintptr_t regionShift, uintptr_t regionCount)
+CopyForwardRegionLookupTable::initialize(Forge *forge, uintptr_t heapBase, uintptr_t regionShift, uintptr_t regionCount)
 {
 	_heapBase = heapBase;
 	_regionShift= regionShift;
@@ -62,14 +62,14 @@ HeapRegionStateTable::initialize(Forge *forge, uintptr_t heapBase, uintptr_t reg
 }
 
 void
-HeapRegionStateTable::kill(Forge *forge)
+CopyForwardRegionLookupTable::kill(Forge *forge)
 {
 	tearDown(forge);
 	forge->free(this);
 }
 
 void
-HeapRegionStateTable::tearDown(Forge *forge)
+CopyForwardRegionLookupTable::tearDown(Forge *forge)
 {
 	if (_table != NULL) {
 		forge->free(_table);

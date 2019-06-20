@@ -37,7 +37,7 @@ SRCS := \
 ifeq (1, $(OMR_GC_VLHGC))
 ifeq (1, $(OMR_GC_VLHGC_CONCURRENT_COPY_FORWARD))
 SRCS += \
-  TestHeapRegionStateTable.cpp
+  TestCopyForwardRegionLookupTable.cpp
 endif
 endif
 

@@ -36,7 +36,7 @@ if (OMR_GC_VLHGC)
 if (OMR_GC_VLHGC_CONCURRENT_COPY_FORWARD)
 	target_sources(omrgctest
 		PRIVATE
-		TestHeapRegionStateTable.cpp
+		TestCopyForwardRegionLookupTable.cpp
 	)
 endif()
 endif()

@@ -88,7 +88,7 @@ struct J9Pool;
 namespace OMR {
 namespace GC {
 #if defined(OMR_GC_VLHGC_CONCURRENT_COPY_FORWARD)
-class HeapRegionStateTable;
+class CopyForwardRegionLookupTable;
 #endif /* defined(OMR_GC_VLHGC_CONCURRENT_COPY_FORWARD) */
 } // namespace OMR
 } // namespace GC
@@ -618,7 +618,8 @@ public:
 #endif /* defined(OMR_GC_SEGREGATED_HEAP) */
 
 #if defined(OMR_GC_VLHGC_CONCURRENT_COPY_FORWARD)
-	OMR::GC::HeapRegionStateTable *heapRegionStateTable;
+	/* TODO: Fix the name of this lookup table */
+	OMR::GC::CopyForwardRegionLookupTable *heapRegionStateTable;
 #endif /* defined(OMR_GC_VLHGC_CONCURRENT_COPY_FORWARD) */
 
 /* OMR_GC_REALTIME (in for all -- see 82589) */
@@ -1281,6 +1282,18 @@ public:
 #endif /* defined(OMR_GC_CONCURRENT_SCAVENGER) */
 	}
 
+	MMINLINE OMR::GC::CopyForwardRegionLookupTable*
+	getCopyForwardRegionLookupTable()
+	{
+		/* TODO update name to CopyForwardRegionLookupTable when OpenJ9 uses this function */
+		return heapRegionStateTable;
+	}
+	MMINLINE void
+	setCopyForwardRegionLookupTable(OMR::GC::CopyForwardRegionLookupTable *table)
+	{
+		/* TODO update name to CopyForwardRegionLookupTable when OpenJ9 uses this function */
+		heapRegionStateTable = table;
+	}
 
 	MM_GCExtensionsBase()
 		: MM_BaseVirtual()

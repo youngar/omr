@@ -334,7 +334,7 @@ endif()
 if(OMR_GC_VLHGC)
 	target_sources(omrgc
 		PRIVATE
-			base/vlhgc/HeapRegionStateTable.cpp
+			base/vlhgc/CopyForwardRegionLookupTable.cpp
 	)
 
 	target_include_directories(omrgc
