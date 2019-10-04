@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2014, 2017 IBM Corp. and others
+ * Copyright (c) 2014, 2019 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -250,9 +250,9 @@ waitingMain(void *arg)
 	EXPECT_TRUE(J9THREAD_FLAG_ABORTED == (self->flags & J9THREAD_FLAG_ABORTED));
 	EXPECT_TRUE(NULL == self->monitor);
 	EXPECT_TRUE(NULL == mon->waiting);
-	/*assert((J9AbstractThread *)mon->owner == self);*/
+	/*ASSERT_TRUE((J9AbstractThread *)mon->owner == self);*/
 	EXPECT_TRUE(NULL == mon->blocking);
-	/*assert(mon->count == 1);*/
+	/*ASSERT_TRUE(mon->count == 1);*/
 
 	EXPECT_EQ(0, omrthread_monitor_enter(testdata->exitSync));
 	testdata->aborted = 1;

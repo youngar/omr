@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2014, 2017 IBM Corp. and others
+ * Copyright (c) 2014, 2019 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -591,7 +591,7 @@ TEST_F(ThreadCreateTest, SetAttrBadDestroy)
 	omrthread_attr_t attr = NULL;
 
 	ptr = (uintptr_t *)malloc(sizeof(uintptr_t));
-	ASSERT(ptr);
+	ASSERT_TRUE(ptr != NULL);
 	*ptr = 3; /* invalid size */
 	attr = (omrthread_attr_t)ptr;
 
