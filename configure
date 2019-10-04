@@ -718,7 +718,6 @@ OMR_GC_MODRON_STANDARD
 OMR_GC_MINIMUM_OBJECT_SIZE
 OMR_GC_LARGE_OBJECT_AREA
 OMR_GC_HEAP_CARD_TABLE
-OMR_GC_DEBUG_ASSERTS
 OMR_GC_COMBINATION_SPEC
 OMR_GC_BATCH_CLEAR_TLH
 OMR_GC_ALLOCATION_TAX
@@ -836,7 +835,6 @@ enable_OMR_RTTI
 enable_OMR_GC_ALLOCATION_TAX
 enable_OMR_GC_BATCH_CLEAR_TLH
 enable_OMR_GC_COMBINATION_SPEC
-enable_OMR_GC_DEBUG_ASSERTS
 enable_OMR_GC_HEAP_CARD_TABLE
 enable_OMR_GC_LARGE_OBJECT_AREA
 enable_OMR_GC_MINIMUM_OBJECT_SIZE
@@ -1582,8 +1580,6 @@ Optional Features:
   --disable-OMR_GC_BATCH_CLEAR_TLH
 
   --disable-OMR_GC_COMBINATION_SPEC
-
-  --disable-OMR_GC_DEBUG_ASSERTS
 
   --disable-OMR_GC_HEAP_CARD_TABLE
 
@@ -5550,27 +5546,6 @@ else
   OMR_GC_COMBINATION_SPEC=1
 
    $as_echo "#define OMR_GC_COMBINATION_SPEC 1" >>confdefs.h
-
-
-fi
-
-
-# Check whether --enable-OMR_GC_DEBUG_ASSERTS was given.
-if test "${enable_OMR_GC_DEBUG_ASSERTS+set}" = set; then :
-  enableval=$enable_OMR_GC_DEBUG_ASSERTS; if test "x${enableval}" = xyes; then :
-  OMR_GC_DEBUG_ASSERTS=1
-
-   $as_echo "#define OMR_GC_DEBUG_ASSERTS 1" >>confdefs.h
-
-else
-  OMR_GC_DEBUG_ASSERTS=0
-
-
-fi
-else
-  OMR_GC_DEBUG_ASSERTS=1
-
-   $as_echo "#define OMR_GC_DEBUG_ASSERTS 1" >>confdefs.h
 
 
 fi

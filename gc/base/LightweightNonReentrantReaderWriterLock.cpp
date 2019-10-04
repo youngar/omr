@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 1991, 2015 IBM Corp. and others
+ * Copyright (c) 1991, 2019 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -20,10 +20,10 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
-#include <assert.h>
+#include "LightweightNonReentrantReaderWriterLock.hpp"
 
 #include "AtomicOperations.hpp"
-#include "LightweightNonReentrantReaderWriterLock.hpp"
+#include "ModronAssertions.h"
 
 intptr_t
 MM_LightweightNonReentrantReaderWriterLock::initialize(uintptr_t spinCount)
@@ -69,7 +69,7 @@ MM_LightweightNonReentrantReaderWriterLock::enterRead()
 		newValue = oldValue + LWRW_INCREMENTAL_BASE_READERS;
 		if (LWRW_MASK_WAITINGWRITERS <= (newValue&LWRW_MASK_WAITINGWRITERS)) {
 			// reach max reader count
-			assert(false);
+			Assert_MM_unreachable();
 		}
 
 		uint32_t retValue = MM_AtomicOperations::lockCompareExchangeU32((volatile uint32_t*)&_status, oldValue, newValue);
