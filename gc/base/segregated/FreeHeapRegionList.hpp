@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 1991, 2015 IBM Corp. and others
+ * Copyright (c) 1991, 2019 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -23,11 +23,13 @@
 #if !defined(FREEHEAPREGIONLIST_HPP_)
 #define FREEHEAPREGIONLIST_HPP_
 
+#include "omrcfg.h"
+
 #if defined(OMR_GC_SEGREGATED_HEAP)
 
-#include "omrcfg.h"
-#include "omrcomp.h"
+#include "ModronAssertions.h"
 #include "modronopt.h"
+#include "omrcomp.h"
 #include "sizeclasses.h"
 
 #include "Debug.hpp"
@@ -78,7 +80,7 @@ public:
 
 	MM_HeapRegionDescriptorSegregated *allocate(MM_EnvironmentBase *env, uintptr_t szClass)
 	{
-		assert(_singleRegionsOnly);
+		Assert_MM_true(_singleRegionsOnly);
 		MM_HeapRegionDescriptorSegregated *region = pop();
 		if (NULL != region) {
 			region->setRangeHead(region);
