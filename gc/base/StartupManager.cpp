@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2014, 2017 IBM Corp. and others
+ * Copyright (c) 2014, 2019 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -20,13 +20,15 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
 
+#include "StartupManager.hpp"
 
 #include <string.h>
 
-#include "StartupManager.hpp"
+#include "ModronAssertions.h"
+
 #if defined(OMR_GC)
-#include "GCExtensionsBase.hpp"
 #include "ConfigurationFlat.hpp"
+#include "GCExtensionsBase.hpp"
 #endif /* OMR_GC */
 
 #define OMR_GC_BUFFER_SIZE 256
@@ -212,9 +214,9 @@ MM_StartupManager::loadGcOptions(MM_GCExtensionsBase *extensions)
 
 	extensions->heapAlignment = HEAP_ALIGNMENT;
 
-	assert(0 != defaultMinHeapSize);
-	assert(0 != defaultMaxHeapSize);
-	assert(defaultMinHeapSize <= defaultMaxHeapSize);
+	Assert_MM_true(0 != defaultMinHeapSize);
+	Assert_MM_true(0 != defaultMaxHeapSize);
+	Assert_MM_true(defaultMinHeapSize <= defaultMaxHeapSize);
 
 	/* Set defaults to support Standard GC in OMR */
 	extensions->initialMemorySize = defaultMinHeapSize;
