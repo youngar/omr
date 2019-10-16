@@ -33,8 +33,6 @@
 #include "omrport.h"
 #include "ut_j9mm.h"
 
-#include <cassert>
-
 #ifdef __cplusplus
 extern "C" {
 #endif /* __cplusplus */
