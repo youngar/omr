@@ -699,7 +699,6 @@ parseStabstringDeclarationIntoDwarfDie(const string & line, Dwarf_Error *error)
 	/* Parse the line further based on the type of the declaration. */
 	if (DW_TAG_unknown == tag) {
 		ERRMSG("Unknown stabs tag: '%s'", line.c_str());
-		ret = DW_DLV_ERROR;
 	} else {
 		Dwarf_Die newDie = NULL;
 
