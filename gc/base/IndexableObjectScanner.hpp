@@ -32,9 +32,9 @@ private:
 
 protected:
 	omrobjectptr_t _arrayPtr; /**< pointer to array */
-	fomrobject_t *_endPtr; /**< pointer to end of last array element in scan segment */
 	fomrobject_t *_basePtr; /**< pointer to base array element */
 	fomrobject_t *_limitPtr; /**< pointer to end of last array element */
+	fomrobject_t *_endPtr; /**< pointer to end of last array element in scan segment */
 	const uintptr_t _elementSize; /**> an array element size in bytes */
 
 public:
@@ -43,6 +43,34 @@ public:
 private:
 
 protected:
+	/**
+	 * Set up the scanner.
+	 * @param[in] env current environment (per thread)
+	 */
+	MMINLINE void
+	initialize(MM_EnvironmentBase *env)
+	{
+		Assert_MM_true(_basePtr <= _scanPtr);
+		Assert_MM_true(_scanPtr <= _endPtr);
+		Assert_MM_true(_endPtr <= _limitPtr);
+		GC_ObjectScanner::initialize(env);
+	}
+
+	MMINLINE virtual fomrobject_t *
+	getNextSlotMap(uintptr_t *scanMap, bool *hasNextSlotMap)
+	{
+		Assert_MM_unreachable();
+	}
+
+#if defined(OMR_GC_LEAF_BITS)
+	MMINLINE virtual fomrobject_t *
+	getNextSlotMap(uintptr_t *scanMap, uintptr_t *leafMap, bool *hasNextSlotMap)
+	{
+		Assert_MM_unreachable();
+	}
+#endif /* OMR_GC_LEAF_BITS */
+
+public:
 	/**
 	 * @param env The scanning thread environment
 	 * @param[in] arrayPtr pointer to the array to be processed
@@ -67,9 +95,9 @@ protected:
 	)
 		: GC_ObjectScanner(env, scanPtr, scanMap, flags | GC_ObjectScanner::indexableObject)
 		, _arrayPtr(arrayPtr)
-		, _endPtr(endPtr)
 		, _basePtr(basePtr)
 		, _limitPtr(limitPtr)
+		, _endPtr(endPtr)
 		, _elementSize(elementSize)
 	{
 		_typeId = __FUNCTION__;
@@ -79,19 +107,24 @@ protected:
 	}
 
 	/**
-	 * Set up the scanner.
-	 * @param[in] env current environment (per thread)
+	 * Get the current element of the array
 	 */
-	MMINLINE void
-	initialize(MM_EnvironmentBase *env)
+	MMINLINE fomrobject_t *getScanPtr() { return _scanPtr; }
+
+	/**
+	 * Get the address of the next element in the array.
+	 * @return NULL if there are no more elements
+	 */
+	MMINLINE fomrobject_t *
+	next()
 	{
-		Assert_MM_true(_basePtr <= _scanPtr);
-		Assert_MM_true(_scanPtr <= _endPtr);
-		Assert_MM_true(_endPtr <= _limitPtr);
-		GC_ObjectScanner::initialize(env);
+		_scanPtr = (fomrobject_t*)((uintptr_t)_scanPtr + _elementSize);
+		if (_scanPtr < _endPtr) {
+			return _scanPtr;
+		}
+		return NULL;
 	}
 
-public:
 	/**
 	 * Get the maximal index for the array. Array indices are assumed to be zero-based.
 	 */
@@ -116,7 +149,10 @@ public:
 	 * @param splitAmount The maximum number of array elements to include
 	 * @return Pointer to split scanner in allocSpace
 	 */
-	virtual GC_IndexableObjectScanner *splitTo(MM_EnvironmentBase *env, void *allocSpace, uintptr_t splitAmount) = 0;
+	virtual GC_IndexableObjectScanner *splitTo(MM_EnvironmentBase *env, void *allocSpace, uintptr_t splitAmount)
+	{
+		Assert_MM_unreachable();
+	}
 };
 
 #endif /* INDEXABLEOBJECTSCANNER_HPP_ */
