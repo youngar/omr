@@ -183,6 +183,9 @@ x64/
 .ccls-cache/
 .ccls
 
+# clangd
+.clangd/
+
 # config cmake file for vim autocompletion
 compile_commands.json
 

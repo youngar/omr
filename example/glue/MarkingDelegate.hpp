@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2017, 2017 IBM Corp. and others
+ * Copyright (c) 2017, 2020 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -173,7 +173,7 @@ public:
 	getObjectScanner(MM_EnvironmentBase *env, omrobjectptr_t objectPtr, void *scannerSpace, MM_MarkingSchemeScanReason reason, uintptr_t *sizeToDo)
 	{
 		GC_MixedObjectScanner *objectScanner = GC_MixedObjectScanner::newInstance(env, objectPtr, scannerSpace, 0);
-		*sizeToDo = sizeof(ObjectHeader) + objectScanner->getBytesRemaining();
+		*sizeToDo = objectPtr->sizeInBytes();
 		return objectScanner;
 	}
 

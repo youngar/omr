@@ -475,8 +475,8 @@ public:
 			*flagsPtr = (*flagsPtr & ~clear) | set;
 		} else {
 #if defined(OBJECT_MODEL_MODRON_ASSERTIONS)
-			Assert_MM_true(0 == (~(uintptr_t)OMR_OBJECT_METADATA_FLAGS_MASK & (uintptr_t)bitsToClear));
-			Assert_MM_true(0 == (~(uintptr_t)OMR_OBJECT_METADATA_FLAGS_MASK & (uintptr_t)bitsToSet));
+			Assert_MM_true(0 == (~(uintptr_t)OMR_OBJECT_METADATA_FLAGS_MASK & bitsToClear));
+			Assert_MM_true(0 == (~(uintptr_t)OMR_OBJECT_METADATA_FLAGS_MASK & bitsToSet));
 #endif /* defined(OBJECT_MODEL_MODRON_ASSERTIONS) */
 
 			uintptr_t* flagsPtr = (uintptr_t*)headerSlotPtr;
@@ -619,8 +619,8 @@ public:
 		bool result = true;
 
 #if defined(OBJECT_MODEL_MODRON_ASSERTIONS)
-		Assert_MM_true(0 == (~OMR_OBJECT_METADATA_FLAGS_MASK & fromState));
-		Assert_MM_true(0 == (~OMR_OBJECT_METADATA_FLAGS_MASK & toState));
+		Assert_MM_true(0 == (~(uintptr_t)OMR_OBJECT_METADATA_FLAGS_MASK & fromState));
+		Assert_MM_true(0 == (~(uintptr_t)OMR_OBJECT_METADATA_FLAGS_MASK & toState));
 #endif /* defined(OBJECT_MODEL_MODRON_ASSERTIONS) */
 
 		void *headerSlotPtr = getObjectHeaderSlotAddress(objectPtr);
@@ -679,8 +679,8 @@ public:
 		bool result = true;
 
 #if defined(OBJECT_MODEL_MODRON_ASSERTIONS)
-		Assert_MM_true(0 != (OMR_OBJECT_METADATA_FLAGS_MASK & toState));
-		Assert_MM_true(0 == (~OMR_OBJECT_METADATA_FLAGS_MASK & toState));
+		Assert_MM_true(0 != ((uintptr_t)OMR_OBJECT_METADATA_FLAGS_MASK & toState));
+		Assert_MM_true(0 == (~(uintptr_t)OMR_OBJECT_METADATA_FLAGS_MASK & toState));
 #endif /* defined(OBJECT_MODEL_MODRON_ASSERTIONS) */
 
 		void *headerSlotPtr = getObjectHeaderSlotAddress(objectPtr);
@@ -742,7 +742,7 @@ public:
 		bool result = true;
 
 #if defined(OBJECT_MODEL_MODRON_ASSERTIONS)
-		Assert_MM_true(0 == (~OMR_OBJECT_METADATA_FLAGS_MASK & toState));
+		Assert_MM_true(0 == (~(uintptr_t)OMR_OBJECT_METADATA_FLAGS_MASK & toState));
 #endif /* defined(OBJECT_MODEL_MODRON_ASSERTIONS) */
 
 		void *headerSlotPtr = getObjectHeaderSlotAddress(objectPtr);

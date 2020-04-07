@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2014, 2018 IBM Corp. and others
+ * Copyright (c) 2014, 2020 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -40,10 +40,12 @@ typedef uintptr_t* omrarrayptr_t;
 struct fomrobject_t;
 struct fomrarray_t;
 
-#if defined(OMR_GC_COMPRESSED_POINTERS)
-typedef uint32_t Slot;
-#else /* defined(OMR_GC_COMPRESSED_POINTERS) */
-typedef uintptr_t Slot;
+#if defined(OMR_GC_FULL_POINTERS)
+typedef uintptr_t MM_PtrToken;
+#else /* defined(OMR_GC_FULL_POINTERS) */
+typedef uint32_t MM_PtrToken;
 #endif
+
+typedef MM_PtrToken Slot;
 
 #endif /* OBJECTDESCRIPTION_H_ */

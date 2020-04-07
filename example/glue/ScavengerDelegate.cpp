@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2019, 2019 IBM Corp. and others
+ * Copyright (c) 2019, 2020 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -209,7 +209,7 @@ MM_ScavengerDelegate::fixupDestroyedSlot(MM_EnvironmentBase *env, MM_ForwardedHe
 				MM_ForwardedHeader reverseForwardedHeader(survivingCopyAddress, compressed);
 				if (reverseForwardedHeader.isReverseForwardedPointer()) {
 					/* overlapped slot must be fixed up */
-					uintptr_t fixupSlot = GC_SlotObject::convertTokenFromPointer(omrVM, reverseForwardedHeader.getReverseForwardedPointer());
+					MM_PtrToken fixupSlot = GC_SlotObject::convertTokenFromPointer(omrVM, reverseForwardedHeader.getReverseForwardedPointer());
 					forwardedHeader->restoreDestroyedOverlap((uint32_t)fixupSlot);
 				}
 			}

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015, 2018 IBM Corp. and others
+ * Copyright (c) 2015, 2020 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -472,7 +472,7 @@ GCConfigTest::processObjNode(pugi::xml_node node, const char *namePrefixStr, OMR
 	/* Create objects and store them in the root table or the slot object based on objType. */
 	if ((ROOT == objType) || (GARBAGE_ROOT == objType)) {
 		for (int32_t i = 0; i < breadthElem->value; i++) {
-			uintptr_t sizeCalculated = numOfFieldsElem->value * sizeof(Slot) + sizeof(ObjectHeader);
+			uintptr_t sizeCalculated = Object::allocSize(numOfFieldsElem->value);
 			ObjectEntry *objectEntry = createObject(namePrefixStr, objType, 0, i, sizeCalculated);
 			if (NULL == objectEntry) {
 				goto done;
@@ -499,7 +499,7 @@ GCConfigTest::processObjNode(pugi::xml_node node, const char *namePrefixStr, OMR
 		char parentName[MAX_NAME_LENGTH];
 		omrstr_printf(parentName, MAX_NAME_LENGTH, "%s_%d_%d", node.parent().attribute(xs.namePrefix).value(), 0, 0);
 		for (int32_t i = 0; i < breadthElem->value; i++) {
-			uintptr_t sizeCalculated = numOfFieldsElem->value * sizeof(Slot) + sizeof(ObjectHeader);
+			uintptr_t sizeCalculated = Object::allocSize(numOfFieldsElem->value);
 			ObjectEntry *childEntry = createObject(namePrefixStr, objType, 0, i, sizeCalculated);
 			if (NULL == childEntry) {
 				goto done;
@@ -538,7 +538,7 @@ GCConfigTest::processObjNode(pugi::xml_node node, const char *namePrefixStr, OMR
 			char parentName[MAX_NAME_LENGTH];
 			omrstr_printf(parentName, sizeof(parentName), "%s_%d_%d", namePrefixStr, (i - 1), j);
 			for (int32_t k = 0; k < breadthElem->value; k++) {
-				uintptr_t sizeCalculated = numOfFieldsElem->value * sizeof(Slot) + sizeof(ObjectHeader);
+				uintptr_t sizeCalculated = Object::allocSize(numOfFieldsElem->value);
 				ObjectEntry *childEntry = createObject(namePrefixStr, objType, i, nthInRow, sizeCalculated);
 				if (NULL == childEntry) {
 					goto done;
@@ -612,9 +612,9 @@ GCConfigTest::attachChildEntry(ObjectEntry *parentEntry, ObjectEntry *childEntry
 	MM_GCExtensionsBase *extensions = (MM_GCExtensionsBase *)exampleVM->_omrVM->_gcOmrVMExtensions;
 	bool compressed = extensions->compressObjectReferences();
 	uintptr_t size = extensions->objectModel.getConsumedSizeInBytesWithHeader(parentEntry->objPtr);
-	fomrobject_t *firstSlot = (fomrobject_t *)((uintptr_t)parentEntry->objPtr + sizeof(ObjectHeader));
-	fomrobject_t *endSlot = (fomrobject_t *)((uint8_t *)parentEntry->objPtr + size);
-	uintptr_t slotCount = GC_SlotObject::subtractSlotAddresses(endSlot, firstSlot, compressed);
+	omrobjectptr_t objectPtr = parentEntry->objPtr;
+	fomrobject_t *firstSlot = objectPtr->begin();
+	uintptr_t slotCount =  objectPtr->slotCount();
 
 	if ((uint32_t)parentEntry->numOfRef < slotCount) {
 		fomrobject_t *childSlot = GC_SlotObject::addToSlotAddress(firstSlot, parentEntry->numOfRef, compressed);
@@ -677,9 +677,9 @@ GCConfigTest::removeObjectFromParentSlot(const char *name, ObjectEntry *parentEn
 {
 	MM_GCExtensionsBase *extensions = (MM_GCExtensionsBase *)exampleVM->_omrVM->_gcOmrVMExtensions;
 	bool compressed = extensions->compressObjectReferences();
-	uintptr_t size = extensions->objectModel.getConsumedSizeInBytesWithHeader(parentEntry->objPtr);
-	fomrobject_t *currentSlot = (fomrobject_t *)((uintptr_t)parentEntry->objPtr + sizeof(ObjectHeader));
-	fomrobject_t *endSlot = (fomrobject_t *)((uint8_t *)parentEntry->objPtr + size);
+	omrobjectptr_t objectPtr = parentEntry->objPtr;
+	fomrobject_t *currentSlot = objectPtr->begin();
+	fomrobject_t *endSlot = objectPtr->end();
 
 	int32_t rt = 1;
 	ObjectEntry *objEntry = find(name);

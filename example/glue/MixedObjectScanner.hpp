@@ -49,7 +49,7 @@ protected:
 	 * @param[in] flags Scanning context flags
 	 */
 	MMINLINE GC_MixedObjectScanner(MM_EnvironmentBase *env, omrobjectptr_t objectPtr, uintptr_t flags)
-		: GC_ObjectScanner(env, (fomrobject_t *)((uintptr_t)objectPtr + sizeof(ObjectHeader)), 0, flags)
+		: GC_ObjectScanner(env, objectPtr->begin(), 0, flags)
 		, _endPtr((fomrobject_t *)((uint8_t*)objectPtr + MM_GCExtensionsBase::getExtensions(env->getOmrVM())->objectModel.getConsumedSizeInBytesWithHeader(objectPtr)))
 		, _mapPtr(_scanPtr)
 	{

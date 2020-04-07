@@ -56,7 +56,7 @@ public:
 	 * @param[in] compressed true if object to object references are compressed, false if not
 	 * @return the raw contents of the slot (NOT rebased/shifted for compressed references)
 	 */
-	MMINLINE static uintptr_t readSlot(fomrobject_t *slotPtr, bool compressed)
+	MMINLINE static MM_PtrToken readSlot(fomrobject_t *slotPtr, bool compressed)
 	{
 		if (compressed) {
 			return *(uint32_t*)slotPtr;
@@ -116,10 +116,10 @@ public:
 		}
 	}
 
-	MMINLINE static uintptr_t
+	MMINLINE static MM_PtrToken
 	convertTokenFromPointer(OMR_VM *omrVM, omrobjectptr_t pointer)
 	{
-		uintptr_t token = (uintptr_t)pointer;
+		MM_PtrToken token = (MM_PtrToken)pointer;
 #if defined (OMR_GC_COMPRESSED_POINTERS)
 #if defined(OMR_GC_FULL_POINTERS)
 		if (OMRVM_COMPRESS_OBJECT_REFERENCES(omrVM)) {
@@ -133,7 +133,7 @@ public:
 	}
 
 	MMINLINE static omrobjectptr_t
-	convertPointerFromToken(OMR_VM *omrVM, uintptr_t token)
+	convertPointerFromToken(OMR_VM *omrVM, MM_PtrToken token)
 	{
 		omrobjectptr_t pointer = (omrobjectptr_t)token;
 #if defined(OMR_GC_COMPRESSED_POINTERS)
