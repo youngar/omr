@@ -37,14 +37,13 @@ typedef Object* languageobjectptr_t;
 typedef Object* omrobjectptr_t;
 typedef uintptr_t* omrarrayptr_t;
 
-#if defined (OMR_GC_COMPRESSED_POINTERS)
-typedef uint32_t fomrobject_t;
-typedef uint32_t fomrarray_t;
-#else
-typedef uintptr_t fomrobject_t;
-typedef uintptr_t fomrarray_t;
-#endif
+struct fomrobject_t;
+struct fomrarray_t;
 
-typedef fomrobject_t Slot;
+#if defined(OMR_GC_COMPRESSED_POINTERS)
+typedef uint32_t Slot;
+#else /* defined(OMR_GC_COMPRESSED_POINTERS) */
+typedef uintptr_t Slot;
+#endif
 
 #endif /* OBJECTDESCRIPTION_H_ */

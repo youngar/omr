@@ -247,6 +247,6 @@ public:
 	/**
 	 * Constructor receives a copy of OMR's object flags mask, normalized to low order byte.
 	 */
-	GC_ObjectModelDelegate(fomrobject_t omrHeaderSlotFlagsMask) {}
+	GC_ObjectModelDelegate(uintptr_t omrHeaderSlotFlagsMask) {}
 };
 #endif /* OBJECTMODELDELEGATE_HPP_ */

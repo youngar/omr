@@ -219,7 +219,7 @@ MM_ForwardedHeader::winObjectSectionToCopy(volatile omrobjectptr_t copyProgressS
 	*remainingSizeToCopy -= sizeToCopy;
 
 	/* atomically try to win this section */
-	fomrobject_t newValue = (fomrobject_t)(*remainingSizeToCopy | (outstandingCopies << OUTSTANDING_COPIES_SHIFT)) | _beingCopiedTag;
+	uintptr_t newValue = *remainingSizeToCopy | (outstandingCopies << OUTSTANDING_COPIES_SHIFT) | _beingCopiedTag;
 	if (oldValue == lockCompareExchangeObjectHeader(copyProgressSlot, oldValue, newValue)) {
 		return sizeToCopy;
 	}

@@ -472,7 +472,7 @@ GCConfigTest::processObjNode(pugi::xml_node node, const char *namePrefixStr, OMR
 	/* Create objects and store them in the root table or the slot object based on objType. */
 	if ((ROOT == objType) || (GARBAGE_ROOT == objType)) {
 		for (int32_t i = 0; i < breadthElem->value; i++) {
-			uintptr_t sizeCalculated = numOfFieldsElem->value * sizeof(fomrobject_t) + sizeof(uintptr_t);
+			uintptr_t sizeCalculated = numOfFieldsElem->value * sizeof(Slot) + sizeof(ObjectHeader);
 			ObjectEntry *objectEntry = createObject(namePrefixStr, objType, 0, i, sizeCalculated);
 			if (NULL == objectEntry) {
 				goto done;
@@ -499,7 +499,7 @@ GCConfigTest::processObjNode(pugi::xml_node node, const char *namePrefixStr, OMR
 		char parentName[MAX_NAME_LENGTH];
 		omrstr_printf(parentName, MAX_NAME_LENGTH, "%s_%d_%d", node.parent().attribute(xs.namePrefix).value(), 0, 0);
 		for (int32_t i = 0; i < breadthElem->value; i++) {
-			uintptr_t sizeCalculated = numOfFieldsElem->value * sizeof(fomrobject_t) + sizeof(uintptr_t);
+			uintptr_t sizeCalculated = numOfFieldsElem->value * sizeof(Slot) + sizeof(ObjectHeader);
 			ObjectEntry *childEntry = createObject(namePrefixStr, objType, 0, i, sizeCalculated);
 			if (NULL == childEntry) {
 				goto done;
@@ -538,7 +538,7 @@ GCConfigTest::processObjNode(pugi::xml_node node, const char *namePrefixStr, OMR
 			char parentName[MAX_NAME_LENGTH];
 			omrstr_printf(parentName, sizeof(parentName), "%s_%d_%d", namePrefixStr, (i - 1), j);
 			for (int32_t k = 0; k < breadthElem->value; k++) {
-				uintptr_t sizeCalculated = sizeof(omrobjectptr_t) + numOfFieldsElem->value * sizeof(fomrobject_t);
+				uintptr_t sizeCalculated = numOfFieldsElem->value * sizeof(Slot) + sizeof(ObjectHeader);
 				ObjectEntry *childEntry = createObject(namePrefixStr, objType, i, nthInRow, sizeCalculated);
 				if (NULL == childEntry) {
 					goto done;
@@ -610,16 +610,17 @@ GCConfigTest::attachChildEntry(ObjectEntry *parentEntry, ObjectEntry *childEntry
 {
 	int32_t rc = 0;
 	MM_GCExtensionsBase *extensions = (MM_GCExtensionsBase *)exampleVM->_omrVM->_gcOmrVMExtensions;
+	bool compressed = extensions->compressObjectReferences();
 	uintptr_t size = extensions->objectModel.getConsumedSizeInBytesWithHeader(parentEntry->objPtr);
-	fomrobject_t *firstSlot = (fomrobject_t *)parentEntry->objPtr + 1;
+	fomrobject_t *firstSlot = (fomrobject_t *)((uintptr_t)parentEntry->objPtr + sizeof(ObjectHeader));
 	fomrobject_t *endSlot = (fomrobject_t *)((uint8_t *)parentEntry->objPtr + size);
-	uintptr_t slotCount = endSlot - firstSlot;
+	uintptr_t slotCount = GC_SlotObject::subtractSlotAddresses(endSlot, firstSlot, compressed);
 
 	if ((uint32_t)parentEntry->numOfRef < slotCount) {
-		fomrobject_t *childSlot = firstSlot + parentEntry->numOfRef;
+		fomrobject_t *childSlot = GC_SlotObject::addToSlotAddress(firstSlot, parentEntry->numOfRef, compressed);
 		standardWriteBarrierStore(exampleVM->_omrVMThread, parentEntry->objPtr, childSlot, childEntry->objPtr);
 		gcTestEnv->log(LEVEL_VERBOSE, "\tadd child %s(%p[0x%llx]) to parent %s(%p[0x%llx]) slot %p[%llx].\n", 
-		               childEntry->name, childEntry->objPtr, childEntry->objPtr->header.raw(), parentEntry->name, parentEntry->objPtr, parentEntry->objPtr->header.raw(), childSlot, (uintptr_t)*childSlot);
+		               childEntry->name, childEntry->objPtr, childEntry->objPtr->header.raw(), parentEntry->name, parentEntry->objPtr, parentEntry->objPtr->header.raw(), childSlot, *(Slot *)childSlot);
 		parentEntry->numOfRef += 1;
 	} else {
 		gcTestEnv->log(LEVEL_ERROR, "%s:%d Invalid XML input: numOfFields %d defined for %s(%p[0x%llx]) is not enough to hold child reference for %s(%p[0x%llx]).\n",
@@ -675,8 +676,9 @@ int32_t
 GCConfigTest::removeObjectFromParentSlot(const char *name, ObjectEntry *parentEntry)
 {
 	MM_GCExtensionsBase *extensions = (MM_GCExtensionsBase *)exampleVM->_omrVM->_gcOmrVMExtensions;
+	bool compressed = extensions->compressObjectReferences();
 	uintptr_t size = extensions->objectModel.getConsumedSizeInBytesWithHeader(parentEntry->objPtr);
-	fomrobject_t *currentSlot = (fomrobject_t *)parentEntry->objPtr + 1;
+	fomrobject_t *currentSlot = (fomrobject_t *)((uintptr_t)parentEntry->objPtr + sizeof(ObjectHeader));
 	fomrobject_t *endSlot = (fomrobject_t *)((uint8_t *)parentEntry->objPtr + size);
 
 	int32_t rt = 1;
@@ -694,7 +696,7 @@ GCConfigTest::removeObjectFromParentSlot(const char *name, ObjectEntry *parentEn
 			rt = 0;
 			break;
 		}
-		currentSlot += 1;
+		currentSlot = GC_SlotObject::addToSlotAddress(currentSlot, 1, compressed);
 	}
 	if (0 != rt) {
 		gcTestEnv->log(LEVEL_ERROR, "%s:%d Failed to remove object %s from its parent's slot.\n", __FILE__, __LINE__, name);

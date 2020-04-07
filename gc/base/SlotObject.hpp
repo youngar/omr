@@ -47,19 +47,7 @@ protected:
 public:
 
 private:
-	/* Inlined version of converting a pointer to a compressed token */
-	MMINLINE fomrobject_t
-	convertTokenFromPointer(omrobjectptr_t pointer)
-	{
-		uintptr_t value = (uintptr_t)pointer;
-#if defined (OMR_GC_COMPRESSED_POINTERS)
-		if (compressObjectReferences()) {
-			value >>= _compressedPointersShift;
-		}
-#endif /* OMR_GC_COMPRESSED_POINTERS */
-		return (fomrobject_t)value;
-	}
-
+protected:
 public:
 	/**
 	 * Read the value of a slot.
@@ -68,12 +56,12 @@ public:
 	 * @param[in] compressed true if object to object references are compressed, false if not
 	 * @return the raw contents of the slot (NOT rebased/shifted for compressed references)
 	 */
-	MMINLINE static fomrobject_t readSlot(fomrobject_t *slotPtr, bool compressed)
+	MMINLINE static uintptr_t readSlot(fomrobject_t *slotPtr, bool compressed)
 	{
 		if (compressed) {
-			return (fomrobject_t)*(uint32_t*)slotPtr;
+			return *(uint32_t*)slotPtr;
 		} else {
-			return (fomrobject_t)*(uintptr_t*)slotPtr;
+			return *(uintptr_t*)slotPtr;
 		}
 	}
 
@@ -126,6 +114,38 @@ public:
 		} else {
 			return (fomrobject_t*)((uintptr_t*)base - index);
 		}
+	}
+
+	MMINLINE static uintptr_t
+	convertTokenFromPointer(OMR_VM *omrVM, omrobjectptr_t pointer)
+	{
+		uintptr_t token = (uintptr_t)pointer;
+#if defined (OMR_GC_COMPRESSED_POINTERS)
+#if defined(OMR_GC_FULL_POINTERS)
+		if (OMRVM_COMPRESS_OBJECT_REFERENCES(omrVM)) {
+			token >>= omrVM->_compressedPointersShift;
+		}
+#else /* defined(OMR_GC_FULL_POINTERS) */
+		token >>= _compressedPointersShift;
+#endif /* defined(OMR_GC_FULL_POINTERS) */
+#endif /* OMR_GC_COMPRESSED_POINTERS */
+		return token;
+	}
+
+	MMINLINE static omrobjectptr_t
+	convertPointerFromToken(OMR_VM *omrVM, uintptr_t token)
+	{
+		omrobjectptr_t pointer = (omrobjectptr_t)token;
+#if defined(OMR_GC_COMPRESSED_POINTERS)
+#if defined(OMR_GC_FULL_POINTERS)
+		if (OMRVM_COMPRESS_OBJECT_REFERENCES(omrVM)) {
+			pointer = (omrobjectptr_t)(token << omrVM->_compressedPointersShift);
+		}
+#else /* defined(OMR_GC_FULL_POINTERS) */
+		pointer = (omrobjectptr_t)(token << omrVM->_compressedPointersShift);
+#endif /* defined(OMR_GC_FULL_POINTERS) */
+#endif /* defined(OMR_GC_COMPRESSED_POINTERS) */
+		return pointer;
 	}
 
 	/**

@@ -504,8 +504,8 @@ public:
 		bool result = true;
 
 #if defined(OBJECT_MODEL_MODRON_ASSERTIONS)
-		Assert_MM_true(0 == (~(fomrobject_t)OMR_OBJECT_METADATA_FLAGS_MASK & bitsToClear));
-		Assert_MM_true(0 == (~(fomrobject_t)OMR_OBJECT_METADATA_FLAGS_MASK & bitsToSet));
+		Assert_MM_true(0 == (~(uintptr_t)OMR_OBJECT_METADATA_FLAGS_MASK & bitsToClear));
+		Assert_MM_true(0 == (~(uintptr_t)OMR_OBJECT_METADATA_FLAGS_MASK & bitsToSet));
 #endif /* defined(OBJECT_MODEL_MODRON_ASSERTIONS) */
 
 		void *headerSlotPtr = getObjectHeaderSlotAddress(objectPtr);
@@ -619,8 +619,8 @@ public:
 		bool result = true;
 
 #if defined(OBJECT_MODEL_MODRON_ASSERTIONS)
-		Assert_MM_true(0 == (~(fomrobject_t)OMR_OBJECT_METADATA_FLAGS_MASK & fromState));
-		Assert_MM_true(0 == (~(fomrobject_t)OMR_OBJECT_METADATA_FLAGS_MASK & toState));
+		Assert_MM_true(0 == (~OMR_OBJECT_METADATA_FLAGS_MASK & fromState));
+		Assert_MM_true(0 == (~OMR_OBJECT_METADATA_FLAGS_MASK & toState));
 #endif /* defined(OBJECT_MODEL_MODRON_ASSERTIONS) */
 
 		void *headerSlotPtr = getObjectHeaderSlotAddress(objectPtr);
@@ -679,8 +679,8 @@ public:
 		bool result = true;
 
 #if defined(OBJECT_MODEL_MODRON_ASSERTIONS)
-		Assert_MM_true(0 != ((fomrobject_t)OMR_OBJECT_METADATA_FLAGS_MASK & toState));
-		Assert_MM_true(0 == (~(fomrobject_t)OMR_OBJECT_METADATA_FLAGS_MASK & toState));
+		Assert_MM_true(0 != (OMR_OBJECT_METADATA_FLAGS_MASK & toState));
+		Assert_MM_true(0 == (~OMR_OBJECT_METADATA_FLAGS_MASK & toState));
 #endif /* defined(OBJECT_MODEL_MODRON_ASSERTIONS) */
 
 		void *headerSlotPtr = getObjectHeaderSlotAddress(objectPtr);
@@ -742,7 +742,7 @@ public:
 		bool result = true;
 
 #if defined(OBJECT_MODEL_MODRON_ASSERTIONS)
-		Assert_MM_true(0 == (~(fomrobject_t)OMR_OBJECT_METADATA_FLAGS_MASK & toState));
+		Assert_MM_true(0 == (~OMR_OBJECT_METADATA_FLAGS_MASK & toState));
 #endif /* defined(OBJECT_MODEL_MODRON_ASSERTIONS) */
 
 		void *headerSlotPtr = getObjectHeaderSlotAddress(objectPtr);
@@ -834,7 +834,7 @@ public:
 	MMINLINE uintptr_t
 	getPreservedFlags(MM_ForwardedHeader *forwardedHeader)
 	{
-		return ((uintptr_t)(forwardedHeader->getPreservedSlot()) >> getObjectHeaderSlotFlagsShift()) & (fomrobject_t)OMR_OBJECT_METADATA_FLAGS_MASK;
+		return (forwardedHeader->getPreservedSlot() >> getObjectHeaderSlotFlagsShift()) & OMR_OBJECT_METADATA_FLAGS_MASK;
 	}
 
 	/**
@@ -873,7 +873,7 @@ public:
 	 * Constructor.
 	 */
 	GC_ObjectModelBase()
-		: _delegate((fomrobject_t)OMR_OBJECT_METADATA_FLAGS_MASK)
+		: _delegate(OMR_OBJECT_METADATA_FLAGS_MASK)
 	{
 		_typeId = __FUNCTION__;
 	}

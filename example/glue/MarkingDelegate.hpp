@@ -173,7 +173,7 @@ public:
 	getObjectScanner(MM_EnvironmentBase *env, omrobjectptr_t objectPtr, void *scannerSpace, MM_MarkingSchemeScanReason reason, uintptr_t *sizeToDo)
 	{
 		GC_MixedObjectScanner *objectScanner = GC_MixedObjectScanner::newInstance(env, objectPtr, scannerSpace, 0);
-		*sizeToDo = sizeof(fomrobject_t) + objectScanner->getBytesRemaining();
+		*sizeToDo = sizeof(ObjectHeader) + objectScanner->getBytesRemaining();
 		return objectScanner;
 	}
 

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016, 2019 IBM Corp. and others
+ * Copyright (c) 2016, 2020 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -22,9 +22,11 @@
 #ifndef MIXEDOBJECTSCANNER_HPP_
 #define MIXEDOBJECTSCANNER_HPP_
 
-#include "ObjectScanner.hpp"
 #include "GCExtensionsBase.hpp"
+#include "Object.hpp"
 #include "ObjectModel.hpp"
+#include "ObjectScanner.hpp"
+#include "SlotObject.hpp"
 
 class GC_MixedObjectScanner : public GC_ObjectScanner
 {
@@ -47,7 +49,7 @@ protected:
 	 * @param[in] flags Scanning context flags
 	 */
 	MMINLINE GC_MixedObjectScanner(MM_EnvironmentBase *env, omrobjectptr_t objectPtr, uintptr_t flags)
-		: GC_ObjectScanner(env, (fomrobject_t *)objectPtr + 1, 0, flags)
+		: GC_ObjectScanner(env, (fomrobject_t *)((uintptr_t)objectPtr + sizeof(ObjectHeader)), 0, flags)
 		, _endPtr((fomrobject_t *)((uint8_t*)objectPtr + MM_GCExtensionsBase::getExtensions(env->getOmrVM())->objectModel.getConsumedSizeInBytesWithHeader(objectPtr)))
 		, _mapPtr(_scanPtr)
 	{
@@ -63,7 +65,7 @@ protected:
 	{
 		GC_ObjectScanner::initialize(env);
 
-		intptr_t slotCount = _endPtr - _scanPtr;
+		intptr_t slotCount = GC_SlotObject::subtractSlotAddresses(_endPtr, _scanPtr, compressObjectReferences());
 
 		/* Initialize the slot map assuming all slots are reference slots or NULL */
 		if (slotCount < _bitsPerScanMap) {
@@ -98,7 +100,7 @@ public:
 		return objectScanner;
 	}
 
-	MMINLINE uintptr_t getBytesRemaining() { return sizeof(fomrobject_t) * (_endPtr - _scanPtr); }
+	MMINLINE uintptr_t getBytesRemaining() { return (uintptr_t)_endPtr - (uintptr_t)_scanPtr; }
 
 	/**
 	 * @see GC_ObjectScanner::getNextSlotMap()
@@ -106,7 +108,7 @@ public:
 	virtual fomrobject_t *
 	getNextSlotMap(uintptr_t *slotMap, bool *hasNextSlotMap)
 	{
-		intptr_t slotCount = _endPtr - _scanPtr;
+		intptr_t slotCount = GC_SlotObject::subtractSlotAddresses(_endPtr, _scanPtr, compressObjectReferences());
 
 		/* Initialize the slot map assuming all slots are reference slots or NULL */
 		if (slotCount < _bitsPerScanMap) {
@@ -116,8 +118,7 @@ public:
 			*slotMap = ~((uintptr_t)0);
 			*hasNextSlotMap = slotCount > _bitsPerScanMap;
 		}
-
-		_mapPtr += _bitsPerScanMap;
+		_mapPtr = GC_SlotObject::addToSlotAddress(_mapPtr, _bitsPerScanMap, compressObjectReferences());
 		return _mapPtr;
 	}
 

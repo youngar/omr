@@ -32,15 +32,15 @@
 #include "ObjectModel.hpp"
 #include "SlotObject.hpp"
 
-
 class GC_ObjectIterator
 {
 /* Data Members */
 private:
 protected:
-	GC_SlotObject _slotObject;	/**< Create own SlotObject class to provide output */
-	fomrobject_t *_scanPtr;			/**< current scan pointer */
-	fomrobject_t *_endPtr;			/**< end scan pointer */
+	GC_SlotObject _slotObject; /**< Create own SlotObject class to provide output */
+	fomrobject_t *_scanPtr;	 /**< current scan pointer */
+	fomrobject_t *_endPtr; /**< end scan pointer */
+	bool compressed; /**< If compressed pointers is enabled */
 public:
 
 /* Member Functions */
@@ -48,12 +48,15 @@ private:
 	MMINLINE void
 	initialize(OMR_VM *omrVM, omrobjectptr_t objectPtr)
 	{
-		/* Start _scanPtr after header */
-		_scanPtr = (fomrobject_t *)objectPtr + 1;
-
 		MM_GCExtensionsBase *extensions = (MM_GCExtensionsBase *)omrVM->_gcOmrVMExtensions;
+
+		compressed = extensions->compressObjectReferences();
+		
+		/* Start _scanPtr after header */
+		_scanPtr = (fomrobject_t *)((uintptr_t)objectPtr + extensions->objectModel.getHeaderSize(objectPtr));
+
 		uintptr_t size = extensions->objectModel.getConsumedSizeInBytesWithHeader(objectPtr);
-		_endPtr = (fomrobject_t *)((U_8*)objectPtr + size);
+		_endPtr = (fomrobject_t *)((uintptr_t)objectPtr + size);
 	}
 
 protected:
@@ -67,7 +70,7 @@ public:
 	{
 		if (_scanPtr < _endPtr) {
 			_slotObject.writeAddressToSlot(_scanPtr);
-			_scanPtr += 1;
+			GC_SlotObject::addToSlotAddress(_scanPtr, 1, compressed);
 			return &_slotObject;
 		}
 		return NULL;
@@ -79,7 +82,7 @@ public:
 	 */
 	MMINLINE void restore(int32_t index)
 	{
-		_scanPtr += index;
+		_scanPtr = GC_SlotObject::addToSlotAddress(_scanPtr, index, compressed);
 	}
 
 	/**
