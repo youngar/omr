@@ -472,7 +472,7 @@ GCConfigTest::processObjNode(pugi::xml_node node, const char *namePrefixStr, OMR
 	/* Create objects and store them in the root table or the slot object based on objType. */
 	if ((ROOT == objType) || (GARBAGE_ROOT == objType)) {
 		for (int32_t i = 0; i < breadthElem->value; i++) {
-			uintptr_t sizeCalculated = Object::allocSize(numOfFieldsElem->value);
+			uintptr_t sizeCalculated = ObjectHandle::allocSize(model.mode(), numOfFieldsElem->value);
 			ObjectEntry *objectEntry = createObject(namePrefixStr, objType, 0, i, sizeCalculated);
 			if (NULL == objectEntry) {
 				goto done;
@@ -499,7 +499,7 @@ GCConfigTest::processObjNode(pugi::xml_node node, const char *namePrefixStr, OMR
 		char parentName[MAX_NAME_LENGTH];
 		omrstr_printf(parentName, MAX_NAME_LENGTH, "%s_%d_%d", node.parent().attribute(xs.namePrefix).value(), 0, 0);
 		for (int32_t i = 0; i < breadthElem->value; i++) {
-			uintptr_t sizeCalculated = Object::allocSize(numOfFieldsElem->value);
+			uintptr_t sizeCalculated = ObjectHandle::allocSize(model.mode(), numOfFieldsElem->value);
 			ObjectEntry *childEntry = createObject(namePrefixStr, objType, 0, i, sizeCalculated);
 			if (NULL == childEntry) {
 				goto done;
@@ -538,7 +538,7 @@ GCConfigTest::processObjNode(pugi::xml_node node, const char *namePrefixStr, OMR
 			char parentName[MAX_NAME_LENGTH];
 			omrstr_printf(parentName, sizeof(parentName), "%s_%d_%d", namePrefixStr, (i - 1), j);
 			for (int32_t k = 0; k < breadthElem->value; k++) {
-				uintptr_t sizeCalculated = Object::allocSize(numOfFieldsElem->value);
+				uintptr_t sizeCalculated = ObjectHandle::allocSize(model.mode(), numOfFieldsElem->value);
 				ObjectEntry *childEntry = createObject(namePrefixStr, objType, i, nthInRow, sizeCalculated);
 				if (NULL == childEntry) {
 					goto done;
@@ -613,18 +613,19 @@ GCConfigTest::attachChildEntry(ObjectEntry *parentEntry, ObjectEntry *childEntry
 	bool compressed = extensions->compressObjectReferences();
 	uintptr_t size = extensions->objectModel.getConsumedSizeInBytesWithHeader(parentEntry->objPtr);
 	omrobjectptr_t objectPtr = parentEntry->objPtr;
-	fomrobject_t *firstSlot = objectPtr->begin();
-	uintptr_t slotCount =  objectPtr->slotCount();
+	ObjectHandle objectHandle (parentEntry->objPtr, model.mode());
+	fomrobject_t *firstSlot = objectHandle.begin();
+	uintptr_t slotCount =  objectHandle.slotCount();
 
 	if ((uint32_t)parentEntry->numOfRef < slotCount) {
 		fomrobject_t *childSlot = GC_SlotObject::addToSlotAddress(firstSlot, parentEntry->numOfRef, compressed);
 		standardWriteBarrierStore(exampleVM->_omrVMThread, parentEntry->objPtr, childSlot, childEntry->objPtr);
-		gcTestEnv->log(LEVEL_VERBOSE, "\tadd child %s(%p[0x%llx]) to parent %s(%p[0x%llx]) slot %p[%llx].\n", 
-		               childEntry->name, childEntry->objPtr, childEntry->objPtr->header.raw(), parentEntry->name, parentEntry->objPtr, parentEntry->objPtr->header.raw(), childSlot, *(Slot *)childSlot);
+		gcTestEnv->log(LEVEL_VERBOSE, "\tadd child %s(%p) to parent %s(%p) slot %p.\n", 
+		               childEntry->name, childEntry->objPtr, parentEntry->name, parentEntry->objPtr, childSlot);
 		parentEntry->numOfRef += 1;
 	} else {
-		gcTestEnv->log(LEVEL_ERROR, "%s:%d Invalid XML input: numOfFields %d defined for %s(%p[0x%llx]) is not enough to hold child reference for %s(%p[0x%llx]).\n",
-				__FILE__, __LINE__, parentEntry->numOfRef, parentEntry->name, parentEntry->objPtr, parentEntry->objPtr->header.raw(), childEntry->name, childEntry->objPtr, childEntry->objPtr->header.raw());
+		gcTestEnv->log(LEVEL_ERROR, "%s:%d Invalid XML input: numOfFields %d defined for %s(%p) is not enough to hold child reference for %s(%p).\n",
+				__FILE__, __LINE__, parentEntry->numOfRef, parentEntry->name, parentEntry->objPtr, childEntry->name, childEntry->objPtr);
 		rc = 1;
 	}
 	return rc;
@@ -645,7 +646,7 @@ GCConfigTest::removeObjectFromRootTable(const char *name)
 		gcTestEnv->log(LEVEL_ERROR, "%s:%d Failed to remove root object %s from root table!\n", __FILE__, __LINE__, name);
 		goto done;
 	}
-	gcTestEnv->log(LEVEL_VERBOSE, "Remove object %s(%p[0x%llx]) from root table.\n", name, rootEntry->rootPtr, rootEntry->rootPtr->header.raw());
+	gcTestEnv->log(LEVEL_VERBOSE, "Remove object %s(%p) from root table.\n", name, rootEntry->rootPtr);
 
 	rt = 0;
 done:
@@ -665,7 +666,7 @@ GCConfigTest::removeObjectFromObjectTable(const char *name)
 		gcTestEnv->log(LEVEL_ERROR, "%s:%d Failed to remove object %s from object table!\n", __FILE__, __LINE__, name);
 		goto done;
 	}
-	gcTestEnv->log(LEVEL_VERBOSE, "Remove object %s(%p[0x%llx]) from object table.\n", name, foundEntry->objPtr, foundEntry->objPtr->header.raw());
+	gcTestEnv->log(LEVEL_VERBOSE, "Remove object %s(%p) from object table.\n", name, foundEntry->objPtr);
 
 	rt = 0;
 done:
@@ -677,9 +678,10 @@ GCConfigTest::removeObjectFromParentSlot(const char *name, ObjectEntry *parentEn
 {
 	MM_GCExtensionsBase *extensions = (MM_GCExtensionsBase *)exampleVM->_omrVM->_gcOmrVMExtensions;
 	bool compressed = extensions->compressObjectReferences();
-	omrobjectptr_t objectPtr = parentEntry->objPtr;
-	fomrobject_t *currentSlot = objectPtr->begin();
-	fomrobject_t *endSlot = objectPtr->end();
+
+	ObjectHandle objectHandle (parentEntry->objPtr, model.mode());
+	fomrobject_t *currentSlot = objectHandle.begin();
+	fomrobject_t *endSlot = objectHandle.end();
 
 	int32_t rt = 1;
 	ObjectEntry *objEntry = find(name);
@@ -691,7 +693,7 @@ GCConfigTest::removeObjectFromParentSlot(const char *name, ObjectEntry *parentEn
 	while (currentSlot < endSlot) {
 		GC_SlotObject slotObject(exampleVM->_omrVM, currentSlot);
 		if (objEntry->objPtr == slotObject.readReferenceFromSlot()) {
-			gcTestEnv->log(LEVEL_VERBOSE, "Remove object %s(%p[0x%llx]) from parent %s(%p[0x%llx]) slot %p.\n", name, objEntry->objPtr, objEntry->objPtr->header.raw(), parentEntry->name, parentEntry->objPtr, parentEntry->objPtr->header.raw(), slotObject.readAddressFromSlot());
+			gcTestEnv->log(LEVEL_VERBOSE, "Remove object %s(%p) from parent %s(%p) slot %p.\n", name, objEntry->objPtr, parentEntry->name, parentEntry->objPtr, slotObject.readAddressFromSlot());
 			slotObject.writeReferenceToSlot(NULL);
 			rt = 0;
 			break;

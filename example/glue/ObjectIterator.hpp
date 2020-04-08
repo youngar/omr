@@ -53,8 +53,8 @@ private:
 		compressed = extensions->compressObjectReferences();
 		
 		/* Start _scanPtr after header */
-		_scanPtr = objectPtr->begin();
-		_endPtr = objectPtr->end();
+		_scanPtr = extensions->objectModel.getHeadlessObject(objectPtr);
+		_endPtr = extensions->objectModel.getEnd(objectPtr);
 	}
 
 protected:

@@ -35,6 +35,7 @@ target_sources(omr_example_gc_glue INTERFACE
 	${CMAKE_CURRENT_SOURCE_DIR}/GlobalCollectorDelegate.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/MarkingDelegate.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/ObjectIterator.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/ObjectModel.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/ObjectModelDelegate.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/StartupManagerImpl.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/VerboseManagerImpl.cpp

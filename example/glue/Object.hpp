@@ -28,80 +28,364 @@
 #include <cstdlib>
 #include <stdint.h>
 
+/**
+ * Represents if references are in compressed or full pointer mode
+ */
+enum RefMode
+{
+  FULL,
+  COMP
+};
+
+class Model
+{
+public:
+	Model() {}
+
+	Model(bool compressed)
+	{
+#if defined(OMR_GC_FULL_POINTERS)
+#if defined(OMR_GC_COMPRESSED_POINTERS)
+		_mode = FULL;
+		if (compressed) {
+			_mode = COMP;
+		}
+#endif /* defined(OMR_GC_COMPRESSED_POINTERS) */
+#endif /* defined(OMR_GC_FULL_POINTERS) */
+	}
+
+	RefMode
+	mode()
+	{
+#if defined(OMR_GC_FULL_POINTERS)
+#if defined(OMR_GC_COMPRESSED_POINTERS)
+	return _mode;
+#else /* defined(OMR_GC_COMPRESSED_POINTERS) */
+	return FULL;
+#endif /* defined(OMR_GC_COMPRESSED_POINTERS) */
+#else /* defined(OMR_GC_FULL_POINTERS) */
+	return COMP;
+#endif /* defined(OMR_GC_FULL_POINTERS) */
+	}
+
+private:
+#if defined(OMR_GC_FULL_POINTERS)
+#if defined(OMR_GC_COMPRESSED_POINTERS)
+	RefMode _mode = FULL;
+#endif /* defined(OMR_GC_COMPRESSED_POINTERS) */
+#endif /* defined(OMR_GC_FULL_POINTERS) */
+};
+
+/**
+ * The GC flags in the ObjectHeader
+ */
 typedef uint8_t ObjectFlags;
 
-#if defined(OMR_GC_COMPRESSED_POINTERS)
-typedef uint32_t RawObjectHeader;
-typedef uint32_t ObjectSize;
-#else
-typedef uintptr_t RawObjectHeader;
+
+/**
+ * The size of an object in bytes.
+ */
+#if defined(OMR_GC_FULL_POINTERS)
 typedef uintptr_t ObjectSize;
+#else /* defined(OMR_GC_FULL_POINTERS) */
+typedef uint32_t ObjectSize;
 #endif
+
+
+/**
+ * The header of an object. Stores the GC flags and object size
+ */
+template <RefMode M>
+struct ObjectHeader;
+
+#if defined(OMR_GC_FULL_POINTERS)
+
+template <>
+struct ObjectHeader<FULL>
+{
+	uintptr_t _value;
+};
+
+#endif /* defined(OMR_GC_FULL_POINTERS) */
+
+#if defined(OMR_GC_COMPRESSED_POINTERS)
+
+template <>
+struct ObjectHeader<COMP>
+{
+	uint32_t _value;
+};
+
+#endif /* defined(OMR_GC_COMPRESSED_POINTERS) */
+
+/**
+ * A slot in the object.
+ */
+template <RefMode M>
+struct Slot;
+
+#if defined(OMR_GC_FULL_POINTERS)
+
+template<>
+struct Slot<FULL>
+{
+	uintptr_t _value;
+};
+
+#endif /* defined(OMR_GC_FULL_POINTERS) */
+
+#if defined(OMR_GC_COMPRESSED_POINTERS)
+
+template<>
+struct Slot<COMP>
+{
+	uint32_t _value;
+};
+
+#endif /* defined(OMR_GC_COMPRESSED_POINTERS) */
+
+class ObjectBase
+{
+public:
+	static uintptr_t getObjectHeaderSlotOffset() { return _objectHeaderSlotOffset; }
+
+	static uintptr_t getObjectHeaderSlotFlagsShift() { return _objectHeaderSlotFlagsShift; }
+
+private:
+	static const uintptr_t _objectHeaderSlotOffset = 0;
+	static const uintptr_t _objectHeaderSlotFlagsShift = 0;
+	static const uintptr_t _objectHeaderSlotSizeShift = 8;
+};
 
 /**
  * A header containing basic information about an object. Contains the object's size and an 8 bit object flag.
  * The size and flags are masked together into a single fomrobjectptr_t.
  */
-class ObjectHeader
+template <RefMode M>
+class Object : public ObjectBase
 {
 public:
+	static ObjectSize 
+	allocSize(ObjectSize nslots)
+	{
+		return ObjectSize(sizeof(ObjectHeader<M>) + sizeof(Slot<M>) * nslots);
+	}
 
-	ObjectHeader() {}
+	explicit Object(ObjectSize sizeInBytes, ObjectFlags flags = 0) 
+	{
+		assign(sizeInBytes, flags);
+	}
 
-	explicit ObjectHeader(RawObjectHeader value) : _value(value) {}
-
-	explicit ObjectHeader(ObjectSize sizeInBytes, ObjectFlags flags) { assign(sizeInBytes, flags); }
-
-	ObjectSize sizeInBytes() const { return _value >> SIZE_SHIFT; }
-
-	void sizeInBytes(ObjectSize value) { assign(value, flags()); }
-
-	ObjectFlags flags() const { return (ObjectFlags)_value; }
+	ObjectFlags flags() const { return _header._value; }
 
 	void flags(ObjectFlags value) { assign(sizeInBytes(), value); }
 
-	void assign(ObjectSize sizeInBytes, ObjectFlags flags) { _value = (sizeInBytes << SIZE_SHIFT) | flags; }
+	ObjectSize sizeInBytes() const { return _header._value >> SIZE_SHIFT; }
 
-	RawObjectHeader raw() const { return _value; }
+	void sizeInBytes(ObjectSize value) { assign(value, flags()); }
 
-	void raw(RawObjectHeader raw) { _value = raw; }
+	static size_t sizeOfHeaderInBytes() { return sizeof(ObjectHeader<M>); }
+
+	size_t sizeOfSlotsInBytes() const { return sizeInBytes() - sizeOfHeaderInBytes(); }
+
+	size_t slotCount() const { return sizeOfSlotsInBytes() / sizeof(Slot<M>); }
+
+	Slot<M>* slots() { return ((Slot<M>*)(ObjectHeader<M> *)this + 1); }
+
+	fomrobject_t* begin() { return (fomrobject_t *)slots(); }
+
+	fomrobject_t* end() { return (fomrobject_t *)(slots() + slotCount()); }
 
 private:
-	static const size_t SIZE_SHIFT = sizeof(ObjectFlags)*8;
+	void assign(ObjectSize sizeInBytes, ObjectFlags flags) { _header._value = (sizeInBytes << SIZE_SHIFT) | flags; }
 
-	RawObjectHeader _value;
+	static const size_t SIZE_SHIFT = sizeof(ObjectFlags) * 8;
+	
+	ObjectHeader<M> _header;
 };
 
-class Object
+#if defined(OMR_GC_COMPRESSED_POINTERS)
+inline Object<COMP> *
+toComp(ObjectBase *object)
+{
+	return static_cast<Object<COMP>*>(object);
+}
+#endif
+
+#if defined(OMR_GC_FULL_POINTERS)
+inline Object<FULL> *
+toFull(ObjectBase *object)
+{
+	return static_cast<Object<FULL>*>(object);
+}
+#endif
+
+class ObjectHandle
 {
 public:
-	static ObjectSize allocSize(ObjectSize nslots) {
-		return ObjectSize(sizeof(ObjectHeader) + sizeof(Slot) * nslots);
+	ObjectHandle(ObjectBase *object, RefMode mode)
+		: _object(object), _mode(mode) {}
+
+	static ObjectSize 
+	allocSize(RefMode mode, ObjectSize nslots)
+	{
+		switch(mode) {
+#if defined(OMR_GC_FULL_POINTERS)
+		case FULL:
+			return Object<FULL>::allocSize(nslots);
+#endif /* defined(OMR_GC_FULL_POINTERS) */
+#if defined(OMR_GC_COMPRESSED_POINTERS)
+		case COMP:
+			return Object<COMP>::allocSize(nslots);
+#endif /* defined(OMR_GC_COMPRESSED_POINTERS) */
+		default:
+			return 0;
+		}
 	}
 
-	explicit Object(ObjectSize sizeInBytes, ObjectFlags flags = 0) : header(sizeInBytes, flags) {}
+	static uintptr_t
+	sizeOfHeaderInBytes(RefMode mode)
+	{
+		switch(mode) {
+#if defined(OMR_GC_FULL_POINTERS)
+		case FULL:
+			return Object<FULL>::sizeOfHeaderInBytes();
+#endif /* defined(OMR_GC_FULL_POINTERS) */
+#if defined(OMR_GC_COMPRESSED_POINTERS)
+		case COMP:
+			return Object<COMP>::sizeOfHeaderInBytes();
+#endif /* defined(OMR_GC_COMPRESSED_POINTERS) */
+		default:
+			return 0;
+		}
+	}
 
-	size_t sizeOfSlotsInBytes() const { return header.sizeInBytes() - sizeof(ObjectHeader); }
+	fomrobject_t *
+	begin() const {
+		switch(_mode) {
+#if defined(OMR_GC_FULL_POINTERS)
+		case FULL:
+			return (fomrobject_t *)toFull(_object)->begin();
+#endif /* defined(OMR_GC_FULL_POINTERS) */
+#if defined(OMR_GC_COMPRESSED_POINTERS)
+		case COMP:
+			return (fomrobject_t *)toComp(_object)->begin();
+#endif /* defined(OMR_GC_COMPRESSED_POINTERS) */
+		default:
+			return NULL;
+		}
+	}
 
-	size_t slotCount() const { return sizeOfSlotsInBytes() / sizeof(Slot); }
+	fomrobject_t *
+	end() const {
+		switch(_mode) {
+#if defined(OMR_GC_FULL_POINTERS)
+		case FULL:
+			return (fomrobject_t *)toFull(_object)->end();
+#endif /* defined(OMR_GC_FULL_POINTERS) */
+#if defined(OMR_GC_COMPRESSED_POINTERS)
+		case COMP:
+			return (fomrobject_t *)toComp(_object)->end();
+#endif /* defined(OMR_GC_COMPRESSED_POINTERS) */
+		default:
+			return NULL;
+		}
+	}
 
-	Slot* slots() { return (Slot*)(this + 1); }
+	ObjectSize
+	sizeInBytes() const
+	{
+		switch(_mode) {
+#if defined(OMR_GC_FULL_POINTERS)
+		case FULL:
+			return toFull(_object)->sizeInBytes();
+#endif /* defined(OMR_GC_FULL_POINTERS) */
+#if defined(OMR_GC_COMPRESSED_POINTERS)
+		case COMP:
+			return toComp(_object)->sizeInBytes();
+#endif /* defined(OMR_GC_COMPRESSED_POINTERS) */
+		default:
+			return 0;
+		}
+	}
 
-	const Slot* slots() const { return (Slot*)(this + 1); }
+	void
+	sizeInBytes(ObjectSize objectSize)
+	{
+		switch(_mode) {
+#if defined(OMR_GC_FULL_POINTERS)
+		case FULL:
+			return toFull(_object)->sizeInBytes(objectSize);
+#endif /* defined(OMR_GC_FULL_POINTERS) */
+#if defined(OMR_GC_COMPRESSED_POINTERS)
+		case COMP:
+			return toComp(_object)->sizeInBytes(objectSize);
+#endif /* defined(OMR_GC_COMPRESSED_POINTERS) */
+		default:
+			return;
+		}
+	}
 
-	Slot* begin() { return slots(); }
+	ObjectFlags
+	flags() const
+	{
+		switch(_mode) {
+#if defined(OMR_GC_FULL_POINTERS)
+		case FULL:
+			return toFull(_object)->flags();
+#endif /* defined(OMR_GC_FULL_POINTERS) */
+#if defined(OMR_GC_COMPRESSED_POINTERS)
+		case COMP:
+			return toComp(_object)->flags();
+#endif /* defined(OMR_GC_COMPRESSED_POINTERS) */
+		default:
+			return 0;
+		}
+	}
 
-	const Slot* begin() const { return slots(); }
+	void
+	flags(ObjectFlags objectFlags)
+	{
+		switch(_mode) {
+#if defined(OMR_GC_FULL_POINTERS)
+		case FULL:
+			return toFull(_object)->flags(objectFlags);
+#endif /* defined(OMR_GC_FULL_POINTERS) */
+#if defined(OMR_GC_COMPRESSED_POINTERS)
+		case COMP:
+			return toComp(_object)->flags(objectFlags);
+#endif /* defined(OMR_GC_COMPRESSED_POINTERS) */
+		default:
+			return;
+		}
+	}
 
-	Slot* end() { return begin() + slotCount(); }
+	size_t 
+	slotCount() const
+	{
+		switch(_mode) {
+#if defined(OMR_GC_FULL_POINTERS)
+		case FULL:
+			return toFull(_object)->slotCount();
+#endif /* defined(OMR_GC_FULL_POINTERS) */
+#if defined(OMR_GC_COMPRESSED_POINTERS)
+		case COMP:
+			return toComp(_object)->slotCount();
+#endif /* defined(OMR_GC_COMPRESSED_POINTERS) */
+		default:
+			return 0;
+		}
+	}
 
-	const Slot* end() const { return begin() + slotCount(); }
+	size_t
+	sizeOfSlotsInBytes() const
+	{
+		return sizeInBytes() - sizeOfHeaderInBytes(_mode);
+	}
 
-	const Slot* cbegin() const { return begin(); }
-
-	const Slot* cend() const { return end(); }
-
-	ObjectHeader header;
+private:
+	ObjectBase *_object;
+	RefMode _mode;
 };
 
 #endif /* OBJECT_HPP_ */

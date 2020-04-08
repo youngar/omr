@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 1991, 2018 IBM Corp. and others
+ * Copyright (c) 1991, 2020 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -26,8 +26,8 @@
  * @ddr_namespace: default
  */
 
-#include "Object.hpp"
 #include "Bits.hpp"
+#include "Object.hpp"
 #include "ObjectModelBase.hpp"
 #include "ObjectModelDelegate.hpp"
 
@@ -59,13 +59,37 @@ public:
 	 *
 	 * @return TRUE on success, FALSE on failure
 	 */
-	virtual bool initialize(MM_GCExtensionsBase *extensions) { return true; }
+	virtual bool initialize(MM_GCExtensionsBase *extensions);
 
 	/**
 	 * Tear down the receiver. A (possibly empty) implementation of this method is required. Any resources
 	 * acquired for the object model in the initialize() implementation should be disposed of here.
 	 */
 	virtual void tearDown(MM_GCExtensionsBase *extensions) {}
+
+	MMINLINE fomrobject_t *
+	getHeadlessObject(omrobjectptr_t objectPtr)
+	{
+		return getObjectModelDelegate()->getHeadlessObject(objectPtr);
+	}
+
+	MMINLINE fomrobject_t*
+	getEnd(omrobjectptr_t objectPtr)
+	{
+		return getObjectModelDelegate()->getEnd(objectPtr);
+	}
+
+	MMINLINE void
+	setSizeInBytes(omrobjectptr_t objectPtr, ObjectSize objectSize)
+	{
+		return getObjectModelDelegate()->setSizeInBytes(objectPtr, objectSize);
+	}
+
+	MMINLINE void
+	setFlags(omrobjectptr_t objectPtr, ObjectFlags objectFlags)
+	{
+		return getObjectModelDelegate()->setFlags(objectPtr, objectFlags);
+	}
 
 	/**
 	 * Constructor.

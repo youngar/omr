@@ -26,6 +26,7 @@
 #include "gcTestHelpers.hpp"
 #include "GlobalCollector.hpp"
 #include "omrlinkedlist.h"
+#include "Object.hpp"
 #include "ObjectAllocationInterface.hpp"
 #include "ObjectModel.hpp"
 #include "pugixml.hpp"
@@ -81,6 +82,7 @@ protected:
 	pugi::xml_document doc;
 	GarbagePolicy gp;
 	XmlStr xs;
+	Model model;
 
 	/* verbose log options */
 	MM_VerboseManager *verboseManager;

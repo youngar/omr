@@ -22,9 +22,9 @@
 #ifndef OBJECTMODELDELEGATE_HPP_
 #define OBJECTMODELDELEGATE_HPP_
 
-#include "objectdescription.h"
-
 #include "ForwardedHeader.hpp"
+#include "Object.hpp"
+#include "objectdescription.h"
 
 class MM_AllocateInitialization;
 class MM_EnvironmentBase;
@@ -40,24 +40,10 @@ class GC_ObjectModelDelegate
  */
 private:
 	/**
-	 * OMR requires that the language reserve the least significant byte in the first fomrobject_t
-	 * slot of an object to record object flag bits used in generational and compacting garbage
-	 * collectors.
-	 *
-	 * This constraint may be removed in future revisions. For now, _objectHeaderSlotOffset
-	 * must be zero as it represents the fomrobject_t offset to the object header slot
-	 * containing the OMR flag bits.
-	 *
-	 * The _objectHeaderSlotFlagsShift is the right shift required to bring the flags byte
-	 * in the object header slot into the least significant byte. For the time being this shift
-	 * must be zero.
-	 *
-	 * The _objectHeaderSlotSizeShift is unique to this example (transparent to OMR). It is used to
-	 * extract example object size from the object header slot.
+	 * The model is specific to the GC Example.  It keeps track of whether we 
+	 * are using full or compressed references.
 	 */
-	static const uintptr_t _objectHeaderSlotOffset = 0;
-	static const uintptr_t _objectHeaderSlotFlagsShift = 0;
-	static const uintptr_t _objectHeaderSlotSizeShift = 8;
+	Model _model;
 
 protected:
 public:
@@ -84,13 +70,44 @@ public:
 		return NULL;
 	}
 
+	MMINLINE fomrobject_t *
+	getHeadlessObject(omrobjectptr_t objectPtr)
+	{
+		ObjectHandle objectHandle(objectPtr, _model.mode());
+		return objectHandle.begin();
+	}
+
+	MMINLINE fomrobject_t*
+	getEnd(omrobjectptr_t objectPtr)
+	{
+		ObjectHandle objectHandle(objectPtr, _model.mode());
+		return objectHandle.end();
+	}
+
+	/**
+	 * OMR requires that the language reserve the least significant byte in the first fomrobject_t
+	 * slot of an object to record object flag bits used in generational and compacting garbage
+	 * collectors.
+	 *
+	 * This constraint may be removed in future revisions. For now, _objectHeaderSlotOffset
+	 * must be zero as it represents the fomrobject_t offset to the object header slot
+	 * containing the OMR flag bits.
+	 *
+	 * The _objectHeaderSlotFlagsShift is the right shift required to bring the flags byte
+	 * in the object header slot into the least significant byte. For the time being this shift
+	 * must be zero.
+	 *
+	 * The _objectHeaderSlotSizeShift is unique to this example (transparent to OMR). It is used to
+	 * extract example object size from the object header slot.
+	 */
+
 	/**
 	 * Get the fomrobjectptr_t offset of the slot containing the object header.
 	 */
 	MMINLINE uintptr_t
 	getObjectHeaderSlotOffset()
 	{
-		return _objectHeaderSlotOffset;
+		return ObjectBase::getObjectHeaderSlotOffset();
 	}
 
 	/**
@@ -99,7 +116,7 @@ public:
 	MMINLINE uintptr_t
 	getObjectHeaderSlotFlagsShift()
 	{
-		return _objectHeaderSlotFlagsShift;
+		return ObjectBase::getObjectHeaderSlotFlagsShift();
 	}
 
 	/**
@@ -108,7 +125,7 @@ public:
 	MMINLINE uintptr_t
 	getObjectHeaderSizeInBytes(omrobjectptr_t objectPtr)
 	{
-		return sizeof(ObjectHeader);
+		return ObjectHandle::sizeOfHeaderInBytes(_model.mode());
 	}
 
 	/**
@@ -122,7 +139,8 @@ public:
 	MMINLINE uintptr_t
 	getObjectSizeInBytesWithoutHeader(omrobjectptr_t objectPtr)
 	{
-		return getObjectSizeInBytesWithHeader(objectPtr) - getObjectHeaderSizeInBytes(objectPtr);
+		ObjectHandle objectHandle(objectPtr, _model.mode());
+		return objectHandle.sizeOfSlotsInBytes();
 	}
 
 	/**
@@ -136,7 +154,29 @@ public:
 	MMINLINE uintptr_t
 	getObjectSizeInBytesWithHeader(omrobjectptr_t objectPtr)
 	{
-		return objectPtr->header.sizeInBytes();
+		ObjectHandle objectHandle(objectPtr, _model.mode());
+		return objectHandle.sizeInBytes();
+	}
+
+	MMINLINE void
+	setSizeInBytes(omrobjectptr_t objectPtr, ObjectSize objectSize)
+	{
+		ObjectHandle objectHandle(objectPtr, _model.mode());
+		return objectHandle.sizeInBytes(objectSize);
+	}
+
+	MMINLINE ObjectFlags
+	getFlags(omrobjectptr_t objectPtr)
+	{
+		ObjectHandle objectHandle(objectPtr, _model.mode());
+		return objectHandle.flags();
+	}
+
+	MMINLINE void
+	setFlags(omrobjectptr_t objectPtr, ObjectFlags objectFlags)
+	{
+		ObjectHandle objectHandle(objectPtr, _model.mode());
+		return objectHandle.flags(objectFlags);
 	}
 
 	/**
@@ -211,8 +251,8 @@ public:
 	MMINLINE uintptr_t
 	getForwardedObjectSizeInBytes(MM_ForwardedHeader *forwardedHeader)
 	{
-		ObjectHeader header(forwardedHeader->getPreservedSlot());
-		return header.sizeInBytes();
+		ObjectHandle objectHandle((ObjectBase *)forwardedHeader->getPreservedSlot(), _model.mode());
+		return objectHandle.sizeInBytes();
 	}
 
 	/**
@@ -242,6 +282,12 @@ public:
 	 * @param[out] hotFieldAlignmentDescriptor pointer to hot field alignment descriptor for class (or NULL)
 	 */
 	void calculateObjectDetailsForCopy(MM_EnvironmentBase *env, MM_ForwardedHeader *forwardedHeader, uintptr_t *objectCopySizeInBytes, uintptr_t *objectReserveSizeInBytes, uintptr_t *hotFieldAlignmentDescriptor);
+
+	/**
+	 * The model is set during startup
+	 */
+	void setModel(Model model) { _model = model; }
+
 #endif /* defined(OMR_GC_MODRON_SCAVENGER) */
 
 	/**

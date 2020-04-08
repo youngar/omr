@@ -50,6 +50,7 @@
 #include "ObjectModel.hpp"
 #include "omr.h"
 #include "omrExampleVM.hpp"
+#include "omrgctypes.h"
 #include "omrvm.h"
 #include "OMRVMInterface.hpp"
 #include "ParallelGlobalGC.hpp"
@@ -169,11 +170,9 @@ MM_ScavengerDelegate::reverseForwardedObject(MM_EnvironmentBase *env, MM_Forward
 		omrobjectptr_t forwardedObject = forwardedHeader->getForwardedObject();
 
 		/* Restore the original object header from the forwarded object */
-		GC_ObjectModel *objectModel = &(env->getExtensions()->objectModel);
-
-		originalObject->header.assign(
-			(ObjectSize)objectModel->getConsumedSizeInBytesWithHeader(forwardedObject),
-			(uint8_t)objectModel->getObjectFlags(forwardedObject));
+		GC_ObjectModel *objectModel = &(_extensions->objectModel);
+		objectModel->setSizeInBytes(originalObject, objectModel->getConsumedSizeInBytesWithHeader(forwardedObject));
+		objectModel->setFlags(originalObject, objectModel->getObjectFlags(forwardedObject));
 
 #if defined (OMR_GC_COMPRESSED_POINTERS)
 		if (env->compressObjectReferences()) {
@@ -209,7 +208,7 @@ MM_ScavengerDelegate::fixupDestroyedSlot(MM_EnvironmentBase *env, MM_ForwardedHe
 				MM_ForwardedHeader reverseForwardedHeader(survivingCopyAddress, compressed);
 				if (reverseForwardedHeader.isReverseForwardedPointer()) {
 					/* overlapped slot must be fixed up */
-					MM_PtrToken fixupSlot = GC_SlotObject::convertTokenFromPointer(omrVM, reverseForwardedHeader.getReverseForwardedPointer());
+					omrobjecttoken_t fixupSlot = GC_SlotObject::convertTokenFromPointer(omrVM, reverseForwardedHeader.getReverseForwardedPointer());
 					forwardedHeader->restoreDestroyedOverlap((uint32_t)fixupSlot);
 				}
 			}
