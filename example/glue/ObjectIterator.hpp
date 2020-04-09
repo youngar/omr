@@ -40,7 +40,7 @@ protected:
 	GC_SlotObject _slotObject; /**< Create own SlotObject class to provide output */
 	fomrobject_t *_scanPtr;	 /**< current scan pointer */
 	fomrobject_t *_endPtr; /**< end scan pointer */
-	bool compressed; /**< If compressed pointers is enabled */
+	bool _compressed; /**< If compressed pointers is enabled */
 public:
 
 /* Member Functions */
@@ -50,7 +50,7 @@ private:
 	{
 		MM_GCExtensionsBase *extensions = (MM_GCExtensionsBase *)omrVM->_gcOmrVMExtensions;
 
-		compressed = extensions->compressObjectReferences();
+		_compressed = extensions->compressObjectReferences();
 		
 		/* Start _scanPtr after header */
 		_scanPtr = extensions->objectModel.getHeadlessObject(objectPtr);
@@ -68,7 +68,7 @@ public:
 	{
 		if (_scanPtr < _endPtr) {
 			_slotObject.writeAddressToSlot(_scanPtr);
-			GC_SlotObject::addToSlotAddress(_scanPtr, 1, compressed);
+			GC_SlotObject::addToSlotAddress(_scanPtr, 1, _compressed);
 			return &_slotObject;
 		}
 		return NULL;
@@ -80,7 +80,7 @@ public:
 	 */
 	MMINLINE void restore(int32_t index)
 	{
-		_scanPtr = GC_SlotObject::addToSlotAddress(_scanPtr, index, compressed);
+		_scanPtr = GC_SlotObject::addToSlotAddress(_scanPtr, index, _compressed);
 	}
 
 	/**

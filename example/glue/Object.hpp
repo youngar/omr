@@ -33,8 +33,12 @@
  */
 enum RefMode
 {
-  FULL,
-  COMP
+#if defined(OMR_GC_FULL_POINTERS)
+	FULL,
+#endif /* defined(OMR_GC_FULL_POINTERS) */
+#if defined(OMR_GC_COMPRESSED_POINTERS)
+	COMP,
+#endif /* defined(OMR_GC_COMPRESSED_POINTERS) */
 };
 
 class Model
@@ -55,7 +59,7 @@ public:
 	}
 
 	RefMode
-	mode()
+	mode() const
 	{
 #if defined(OMR_GC_FULL_POINTERS)
 #if defined(OMR_GC_COMPRESSED_POINTERS)
@@ -71,7 +75,7 @@ public:
 private:
 #if defined(OMR_GC_FULL_POINTERS)
 #if defined(OMR_GC_COMPRESSED_POINTERS)
-	RefMode _mode = FULL;
+	RefMode _mode;
 #endif /* defined(OMR_GC_COMPRESSED_POINTERS) */
 #endif /* defined(OMR_GC_FULL_POINTERS) */
 };
@@ -147,14 +151,17 @@ struct Slot<COMP>
 class ObjectBase
 {
 public:
-	static uintptr_t getObjectHeaderSlotOffset() { return _objectHeaderSlotOffset; }
+	static uintptr_t getObjectHeaderSlotOffset() { return HEADER_OFFSET; }
 
-	static uintptr_t getObjectHeaderSlotFlagsShift() { return _objectHeaderSlotFlagsShift; }
+	static uintptr_t getObjectHeaderSlotFlagsShift() { return HEADER_FLAGS_SHIFT; }
+
+	static uintptr_t getObjectHeaderSlotSizeShift() { return HEADER_SIZE_SHIFT; }
 
 private:
-	static const uintptr_t _objectHeaderSlotOffset = 0;
-	static const uintptr_t _objectHeaderSlotFlagsShift = 0;
-	static const uintptr_t _objectHeaderSlotSizeShift = 8;
+
+	static const uintptr_t HEADER_OFFSET = 0;
+	static const uintptr_t HEADER_FLAGS_SHIFT = 0;
+	static const uintptr_t HEADER_SIZE_SHIFT = 8;
 };
 
 /**
@@ -171,7 +178,7 @@ public:
 		return ObjectSize(sizeof(ObjectHeader<M>) + sizeof(Slot<M>) * nslots);
 	}
 
-	explicit Object(ObjectSize sizeInBytes, ObjectFlags flags = 0) 
+	Object(ObjectSize sizeInBytes, ObjectFlags flags = 0) 
 	{
 		assign(sizeInBytes, flags);
 	}
