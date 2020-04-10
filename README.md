@@ -1,5 +1,5 @@
 <!--
-Copyright (c) 2016, 2019 IBM Corp. and others
+Copyright (c) 2016, 2020 IBM Corp. and others
 
 This program and the accompanying materials are made available under
 the terms of the Eclipse Public License 2.0 which accompanies this
@@ -178,6 +178,9 @@ You can easily switch this to the version of Visual Studio you would like to use
 
 Where can I learn more?
 ===============================
+ * [The OMR website](https://www.eclipse.org/omr/)
+ * [The OMR blog](https://eclipse-omr.org/)
+ * [The OMR Youtube channel](https://www.youtube.com/channel/UCO8MkTRrFnLefi5nqReOMMA/)
 
 Presentations about Eclipse OMR
 -------------------------------
@@ -188,8 +191,6 @@ Presentations about Eclipse OMR
   [Beyond the Coffee Cup: Leveraging Java Runtime Technologies for the Polyglot](http://www.slideshare.net/0xdaryl/javaone-2015-con7547-beyond-the-coffee-cup-leveraging-java-runtime-technologies-for-polyglot?related=1)
 * Charlie Gracie's slides from Java One in October, 2015:
   [What's in an Object? Java Garbage Collection for the Polyglot](http://www.slideshare.net/charliegracie1/javaone-whats-in-an-object)
-* Angela Lin, Robert Young, Craig Lehmann and Xiaoli Liang CASCON Workshop in November, 2015
-  [Building Your Own Runtime](https://ibm.box.com/s/7xdg25we2ezmdjjbqdys30d7dl1iyo49)
 * Charlie Gracie's talk from FOSDEM in February, 2016:
   [Ruby and OMR: Experiments in utilizing OMR technologies in MRI](http://bofh.nikhef.nl/events/FOSDEM/2016/h2213/ruby-and-omr.mp4)
 * Charlie Gracie's slides from jFokus in February, 2016
@@ -197,10 +198,11 @@ Presentations about Eclipse OMR
 * Mark Stoodley's slides from EclipseCON in March, 2016
   [Eclipse OMR: a modern toolkit for building language runtimes](http://www.slideshare.net/MarkStoodley/omr-a-modern-toolkit-for-building-language-runtimes)
 
-Blog Posts about OMR technologies
+Articles about OMR technologies
 ---------------------------------
 
-* [Introducing Eclipse OMR: Building Language Runtimes](https://developer.ibm.com/code/2016/03/08/introducing-omr-building-language-runtimes/)
-* [JitBuilder Library and Eclipse OMR: Just-In-Time Compilers made easy](https://developer.ibm.com/code/2016/07/19/jitbuilder-library-and-eclipse-omr-just-in-time-compilers-made-easy/)
+* [Eclipse OMR: Building Language Runtimes for the Cloud](https://www.eclipse.org/community/eclipse_newsletter/2016/october/article5.php)
+* [SPLASH 2018: Building Language Runtimes with Eclipse OMR](https://2018.splashcon.org/track/turbo-2018-tutorial)
 
-(c) Copyright IBM Corp. 2016, 2019
+
+(c) Copyright IBM Corp. 2016, 2020
