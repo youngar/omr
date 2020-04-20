@@ -261,6 +261,8 @@ public:
 		case COMP:
 			return ObjectHeader<COMP>((uint32_t)slot).objectSizeInBytes();
 #endif /* defined(OMR_GC_COMPRESSED_POINTERS) */
+		default:
+			return 0;
 		}
 	}
 
@@ -295,7 +297,7 @@ public:
 	/**
 	 * The model is set during startup
 	 */
-	void setModel(PointerModel model) { _pointerModel = model; }
+	void setPointerModel(PointerModel pointerModel) { _pointerModel = pointerModel; }
 
 #endif /* defined(OMR_GC_MODRON_SCAVENGER) */
 

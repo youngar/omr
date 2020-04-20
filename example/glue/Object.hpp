@@ -267,9 +267,9 @@ objectAllocSize(PointerModel pointerModel, size_t nslots)
 }
 
 inline uintptr_t
-objectHeaderSizeInBytes(PointerModel model)
+objectHeaderSizeInBytes(PointerModel pointerModel)
 {
-	switch(model.mode()) {
+	switch(pointerModel.mode()) {
 #if defined(OMR_GC_FULL_POINTERS)
 	case FULL:
 		return sizeof(ObjectHeader<FULL>);
@@ -286,8 +286,8 @@ objectHeaderSizeInBytes(PointerModel model)
 class ObjectHandle
 {
 public:
-	ObjectHandle(ObjectBase *object, PointerModel model)
-		: _object(object), _pointerModel(model) {}
+	ObjectHandle(ObjectBase *object, PointerModel pointerModel)
+		: _object(object), _pointerModel(pointerModel) {}
 
 	fomrobject_t *
 	begin() const
