@@ -248,7 +248,7 @@ ObjectBase::toComp()
 inline const Object<COMP> *
 ObjectBase::toComp() const
 {
-	return static_cast<Object<COMP>*>(object);
+	return static_cast<const Object<COMP>*>(this);
 }
 #endif /* OMR_GC_COMPRESSED_POINTERS */
 

@@ -50,7 +50,6 @@
 #include "ObjectModel.hpp"
 #include "omr.h"
 #include "omrExampleVM.hpp"
-#include "omrgctypes.h"
 #include "omrvm.h"
 #include "OMRVMInterface.hpp"
 #include "ParallelGlobalGC.hpp"
@@ -198,7 +197,9 @@ MM_ScavengerDelegate::fixupDestroyedSlot(MM_EnvironmentBase *env, MM_ForwardedHe
 	if ((0 != forwardedHeader->getPreservedOverlap()) && !_extensions->objectModel.isIndexable(forwardedHeader)) {
 		OMR_VM* omrVM = _extensions->getOmrVM();
 		/* Get the uncompressed reference from the slot */
-		omrobjectptr_t survivingCopyAddress = GC_SlotObject::convertPointerFromToken(omrVM, forwardedHeader->getPreservedOverlap());
+		uint32_t preservedOverlap = forwardedHeader->getPreservedOverlap();
+		GC_SlotObject preservedSlotObject(omrVM, (fomrobject_t *) &preservedOverlap);
+		omrobjectptr_t survivingCopyAddress = preservedSlotObject.readReferenceFromSlot();
 		/* Check if the address we want to read is aligned (since mis-aligned reads may still be less than a top address but extend beyond it) */
 		if (0 == ((uintptr_t)survivingCopyAddress & (_extensions->getObjectAlignmentInBytes() - 1))) {
 			/* Ensure that the address we want to read is within part of the heap which could contain copied objects (tenure or survivor) */
@@ -208,8 +209,10 @@ MM_ScavengerDelegate::fixupDestroyedSlot(MM_EnvironmentBase *env, MM_ForwardedHe
 				MM_ForwardedHeader reverseForwardedHeader(survivingCopyAddress, compressed);
 				if (reverseForwardedHeader.isReverseForwardedPointer()) {
 					/* overlapped slot must be fixed up */
-					omrobjecttoken_t fixupSlot = GC_SlotObject::convertTokenFromPointer(omrVM, reverseForwardedHeader.getReverseForwardedPointer());
-					forwardedHeader->restoreDestroyedOverlap((uint32_t)fixupSlot);
+					uint32_t fixupSlot = 0;
+					GC_SlotObject fixupSlotObject(omrVM, (fomrobject_t *) &fixupSlot);
+					fixupSlotObject.writeReferenceToSlot(reverseForwardedHeader.getReverseForwardedPointer());
+					forwardedHeader->restoreDestroyedOverlap(fixupSlot);
 				}
 			}
 		}
