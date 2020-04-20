@@ -23,6 +23,8 @@
 #if !defined(OBJECTMODELBASE_HPP_)
 #define OBJECTMODELBASE_HPP_
 
+#include "omrcfg.h"
+
 #if defined(OMR_EXAMPLE)
 #define OBJECT_MODEL_MODRON_ASSERTIONS
 #endif /* defined(OMR_EXAMPLE) */

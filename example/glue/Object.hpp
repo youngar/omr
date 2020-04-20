@@ -41,50 +41,41 @@ enum RefMode
 #endif /* defined(OMR_GC_COMPRESSED_POINTERS) */
 };
 
-class Model
+class PointerModel
 {
 public:
-	Model() {}
+	PointerModel() {}
 
-	Model(bool compressed)
-	{
-#if defined(OMR_GC_FULL_POINTERS)
-#if defined(OMR_GC_COMPRESSED_POINTERS)
-		_mode = FULL;
-		if (compressed) {
-			_mode = COMP;
-		}
-#endif /* defined(OMR_GC_COMPRESSED_POINTERS) */
-#endif /* defined(OMR_GC_FULL_POINTERS) */
-	}
+#if defined(OMR_GC_FULL_POINTERS) && defined(OMR_GC_COMPRESSED_POINTERS)
+	PointerModel(bool compressed) : _mode(compressed ? COMP : FULL) {}
+#else /* defined(OMR_GC_FULL_POINTERS) && defined(OMR_GC_COMPRESSED_POINTERS) */
+	PointerModel(bool) {}
+#endif /* defined(OMR_GC_FULL_POINTERS) && defined(OMR_GC_COMPRESSED_POINTERS) */
 
 	RefMode
 	mode() const
 	{
-#if defined(OMR_GC_FULL_POINTERS)
 #if defined(OMR_GC_COMPRESSED_POINTERS)
-	return _mode;
-#else /* defined(OMR_GC_COMPRESSED_POINTERS) */
-	return FULL;
-#endif /* defined(OMR_GC_COMPRESSED_POINTERS) */
+#if defined(OMR_GC_FULL_POINTERS)
+		return _mode;
 #else /* defined(OMR_GC_FULL_POINTERS) */
-	return COMP;
+		return COMP;
 #endif /* defined(OMR_GC_FULL_POINTERS) */
+#else /* defined(OMR_GC_COMPRESSED_POINTERS) */
+		return FULL;
+#endif /* defined(OMR_GC_COMPRESSED_POINTERS) */
 	}
 
 private:
-#if defined(OMR_GC_FULL_POINTERS)
-#if defined(OMR_GC_COMPRESSED_POINTERS)
+#if defined(OMR_GC_FULL_POINTERS) && defined(OMR_GC_COMPRESSED_POINTERS)
 	RefMode _mode;
-#endif /* defined(OMR_GC_COMPRESSED_POINTERS) */
-#endif /* defined(OMR_GC_FULL_POINTERS) */
+#endif /* defined(OMR_GC_FULL_POINTERS) && defined(OMR_GC_COMPRESSED_POINTERS) */
 };
 
 /**
- * The GC flags in the ObjectHeader
+ * The GC flags in the ObjectHeader.
  */
 typedef uint8_t ObjectFlags;
-
 
 /**
  * The size of an object in bytes.
@@ -93,33 +84,64 @@ typedef uint8_t ObjectFlags;
 typedef uintptr_t ObjectSize;
 #else /* defined(OMR_GC_FULL_POINTERS) */
 typedef uint32_t ObjectSize;
-#endif
+#endif /* defined(OMR_GC_FULL_POINTERS) */
 
+#define OBJECT_HEADER_FLAGS_SHIFT 0
+#define OBJECT_HEADER_SIZE_SHIFT 8
 
 /**
- * The header of an object. Stores the GC flags and object size
+ * A header containing basic information about an object. Contains the object's size and an 8 bit object flag.
+ * The size and flags are masked together into a single value of size T.
  */
-template <RefMode M>
-struct ObjectHeader;
-
-#if defined(OMR_GC_FULL_POINTERS)
-
-template <>
-struct ObjectHeader<FULL>
+template<typename T>
+class ObjectHeaderBase
 {
-	uintptr_t _value;
+public:
+	ObjectHeaderBase() : _value(0) {}
+
+	ObjectHeaderBase(T value) : _value(value) {}
+
+	ObjectHeaderBase(ObjectSize size, ObjectFlags flags)
+	{
+		assign(size, flags);
+	}
+
+	ObjectFlags flags() const { return (ObjectFlags)_value; }
+
+	void flags(ObjectFlags value) { assign(objectSizeInBytes(), value); }
+
+	ObjectSize objectSizeInBytes() const { return _value >> OBJECT_HEADER_SIZE_SHIFT; }
+
+	void objectSizeInBytes(ObjectSize value) { assign(value, flags()); }
+
+private:
+	void assign(ObjectSize sizeInBytes, ObjectFlags flags) { _value = (sizeInBytes << OBJECT_HEADER_SIZE_SHIFT) | flags; }
+
+	T _value;
 };
 
+/**
+ * The header of an object. Stores the GC flags and object size.
+ */
+template <RefMode M>
+class ObjectHeader;
+
+#if defined(OMR_GC_FULL_POINTERS)
+template <>
+class ObjectHeader<FULL> : public ObjectHeaderBase<uintptr_t>
+{
+public:
+	using ObjectHeaderBase::ObjectHeaderBase;
+};
 #endif /* defined(OMR_GC_FULL_POINTERS) */
 
 #if defined(OMR_GC_COMPRESSED_POINTERS)
-
 template <>
-struct ObjectHeader<COMP>
+class ObjectHeader<COMP> : public ObjectHeaderBase<uint32_t>
 {
-	uint32_t _value;
+public:
+	using ObjectHeaderBase::ObjectHeaderBase;
 };
-
 #endif /* defined(OMR_GC_COMPRESSED_POINTERS) */
 
 /**
@@ -148,52 +170,44 @@ struct Slot<COMP>
 
 #endif /* defined(OMR_GC_COMPRESSED_POINTERS) */
 
+template <RefMode>
+class Object;
+
 class ObjectBase
 {
 public:
-	static uintptr_t getObjectHeaderSlotOffset() { return HEADER_OFFSET; }
+#if defined(OMR_GC_FULL_POINTERS)
+	Object<FULL> *toFull();
+	const Object<FULL> *toFull() const;
+#endif /* defined(OMR_GC_FULL_POINTERS) */
 
-	static uintptr_t getObjectHeaderSlotFlagsShift() { return HEADER_FLAGS_SHIFT; }
-
-	static uintptr_t getObjectHeaderSlotSizeShift() { return HEADER_SIZE_SHIFT; }
-
-private:
-
-	static const uintptr_t HEADER_OFFSET = 0;
-	static const uintptr_t HEADER_FLAGS_SHIFT = 0;
-	static const uintptr_t HEADER_SIZE_SHIFT = 8;
+#if defined(OMR_GC_COMPRESSED_POINTERS)
+	Object<COMP> *toComp();
+	const Object<COMP> *toComp() const;
+#endif /* OMR_GC_COMPRESSED_POINTERS */
 };
 
-/**
- * A header containing basic information about an object. Contains the object's size and an 8 bit object flag.
- * The size and flags are masked together into a single fomrobjectptr_t.
- */
 template <RefMode M>
 class Object : public ObjectBase
 {
 public:
-	static ObjectSize 
+	static ObjectSize
 	allocSize(ObjectSize nslots)
 	{
-		return ObjectSize(sizeof(ObjectHeader<M>) + sizeof(Slot<M>) * nslots);
+		return ObjectSize(sizeof(ObjectHeader<M>) + (sizeof(Slot<M>) * nslots));
 	}
 
-	Object(ObjectSize sizeInBytes, ObjectFlags flags = 0) 
-	{
-		assign(sizeInBytes, flags);
-	}
+	Object(ObjectSize sizeInBytes, ObjectFlags flags = 0) : _header(sizeInBytes, flags) {}
 
-	ObjectFlags flags() const { return _header._value; }
+	ObjectFlags flags() const { return _header.flags(); }
 
-	void flags(ObjectFlags value) { assign(sizeInBytes(), value); }
+	void flags(ObjectFlags value) { _header.flags(value); }
 
-	ObjectSize sizeInBytes() const { return _header._value >> SIZE_SHIFT; }
+	ObjectSize sizeInBytes() const { return _header.objectSizeInBytes(); }
 
-	void sizeInBytes(ObjectSize value) { assign(value, flags()); }
+	void sizeInBytes(ObjectSize value) { _header.objectSizeInBytes(value); }
 
-	static size_t sizeOfHeaderInBytes() { return sizeof(ObjectHeader<M>); }
-
-	size_t sizeOfSlotsInBytes() const { return sizeInBytes() - sizeOfHeaderInBytes(); }
+	size_t sizeOfSlotsInBytes() const { return sizeInBytes() - sizeof(ObjectHeader<M>); }
 
 	size_t slotCount() const { return sizeOfSlotsInBytes() / sizeof(Slot<M>); }
 
@@ -204,79 +218,88 @@ public:
 	fomrobject_t* end() { return (fomrobject_t *)(slots() + slotCount()); }
 
 private:
-	void assign(ObjectSize sizeInBytes, ObjectFlags flags) { _header._value = (sizeInBytes << SIZE_SHIFT) | flags; }
-
-	static const size_t SIZE_SHIFT = sizeof(ObjectFlags) * 8;
-	
 	ObjectHeader<M> _header;
 };
 
+#if defined(OMR_GC_FULL_POINTERS)
+inline Object<FULL> *
+ObjectBase::toFull()
+{
+	return static_cast<Object<FULL>*>(this);
+}
+
+inline const Object<FULL> *
+ObjectBase::toFull() const
+{
+	return static_cast<const Object<FULL>*>(this);
+}
+#endif /* defined(OMR_GC_FULL_POINTERS) */
+
 #if defined(OMR_GC_COMPRESSED_POINTERS)
 inline Object<COMP> *
-toComp(ObjectBase *object)
+ObjectBase::toComp()
+{
+	return static_cast<Object<COMP>*>(this);
+}
+
+inline const Object<COMP> *
+ObjectBase::toComp() const
 {
 	return static_cast<Object<COMP>*>(object);
 }
-#endif
+#endif /* OMR_GC_COMPRESSED_POINTERS */
 
-#if defined(OMR_GC_FULL_POINTERS)
-inline Object<FULL> *
-toFull(ObjectBase *object)
+inline ObjectSize
+objectAllocSize(PointerModel pointerModel, size_t nslots)
 {
-	return static_cast<Object<FULL>*>(object);
+	switch(pointerModel.mode()) {
+#if defined(OMR_GC_FULL_POINTERS)
+	case FULL:
+		return Object<FULL>::allocSize(nslots);
+#endif /* defined(OMR_GC_FULL_POINTERS) */
+#if defined(OMR_GC_COMPRESSED_POINTERS)
+	case COMP:
+		return Object<COMP>::allocSize(nslots);
+#endif /* defined(OMR_GC_COMPRESSED_POINTERS) */
+	default:
+		return 0;
+	}
 }
-#endif
+
+inline uintptr_t
+objectHeaderSizeInBytes(PointerModel model)
+{
+	switch(model.mode()) {
+#if defined(OMR_GC_FULL_POINTERS)
+	case FULL:
+		return sizeof(ObjectHeader<FULL>);
+#endif /* defined(OMR_GC_FULL_POINTERS) */
+#if defined(OMR_GC_COMPRESSED_POINTERS)
+	case COMP:
+		return sizeof(ObjectHeader<COMP>);
+#endif /* defined(OMR_GC_COMPRESSED_POINTERS) */
+	default:
+		return 0;
+	}
+}
 
 class ObjectHandle
 {
 public:
-	ObjectHandle(ObjectBase *object, RefMode mode)
-		: _object(object), _mode(mode) {}
-
-	static ObjectSize 
-	allocSize(RefMode mode, ObjectSize nslots)
-	{
-		switch(mode) {
-#if defined(OMR_GC_FULL_POINTERS)
-		case FULL:
-			return Object<FULL>::allocSize(nslots);
-#endif /* defined(OMR_GC_FULL_POINTERS) */
-#if defined(OMR_GC_COMPRESSED_POINTERS)
-		case COMP:
-			return Object<COMP>::allocSize(nslots);
-#endif /* defined(OMR_GC_COMPRESSED_POINTERS) */
-		default:
-			return 0;
-		}
-	}
-
-	static uintptr_t
-	sizeOfHeaderInBytes(RefMode mode)
-	{
-		switch(mode) {
-#if defined(OMR_GC_FULL_POINTERS)
-		case FULL:
-			return Object<FULL>::sizeOfHeaderInBytes();
-#endif /* defined(OMR_GC_FULL_POINTERS) */
-#if defined(OMR_GC_COMPRESSED_POINTERS)
-		case COMP:
-			return Object<COMP>::sizeOfHeaderInBytes();
-#endif /* defined(OMR_GC_COMPRESSED_POINTERS) */
-		default:
-			return 0;
-		}
-	}
+	ObjectHandle(ObjectBase *object, PointerModel model)
+		: _object(object), _pointerModel(model) {}
 
 	fomrobject_t *
-	begin() const {
-		switch(_mode) {
+	begin() const
+	{
+		switch(_pointerModel.mode()) {
 #if defined(OMR_GC_FULL_POINTERS)
 		case FULL:
-			return (fomrobject_t *)toFull(_object)->begin();
+			return _object->toFull()->begin();
 #endif /* defined(OMR_GC_FULL_POINTERS) */
 #if defined(OMR_GC_COMPRESSED_POINTERS)
 		case COMP:
-			return (fomrobject_t *)toComp(_object)->begin();
+			return _object->toComp()->begin();
 #endif /* defined(OMR_GC_COMPRESSED_POINTERS) */
 		default:
 			return NULL;
@@ -284,15 +307,16 @@ public:
 	}
 
 	fomrobject_t *
-	end() const {
-		switch(_mode) {
+	end() const
+	{
+		switch(_pointerModel.mode()) {
 #if defined(OMR_GC_FULL_POINTERS)
 		case FULL:
-			return (fomrobject_t *)toFull(_object)->end();
+			return _object->toFull()->end();
 #endif /* defined(OMR_GC_FULL_POINTERS) */
 #if defined(OMR_GC_COMPRESSED_POINTERS)
 		case COMP:
-			return (fomrobject_t *)toComp(_object)->end();
+			return _object->toComp()->end();
 #endif /* defined(OMR_GC_COMPRESSED_POINTERS) */
 		default:
 			return NULL;
@@ -302,14 +326,14 @@ public:
 	ObjectSize
 	sizeInBytes() const
 	{
-		switch(_mode) {
+		switch(_pointerModel.mode()) {
 #if defined(OMR_GC_FULL_POINTERS)
 		case FULL:
-			return toFull(_object)->sizeInBytes();
+			return _object->toFull()->sizeInBytes();
 #endif /* defined(OMR_GC_FULL_POINTERS) */
 #if defined(OMR_GC_COMPRESSED_POINTERS)
 		case COMP:
-			return toComp(_object)->sizeInBytes();
+			return _object->toComp()->sizeInBytes();
 #endif /* defined(OMR_GC_COMPRESSED_POINTERS) */
 		default:
 			return 0;
@@ -319,14 +343,14 @@ public:
 	void
 	sizeInBytes(ObjectSize objectSize)
 	{
-		switch(_mode) {
+		switch(_pointerModel.mode()) {
 #if defined(OMR_GC_FULL_POINTERS)
 		case FULL:
-			return toFull(_object)->sizeInBytes(objectSize);
+			return _object->toFull()->sizeInBytes(objectSize);
 #endif /* defined(OMR_GC_FULL_POINTERS) */
 #if defined(OMR_GC_COMPRESSED_POINTERS)
 		case COMP:
-			return toComp(_object)->sizeInBytes(objectSize);
+			return _object->toComp()->sizeInBytes(objectSize);
 #endif /* defined(OMR_GC_COMPRESSED_POINTERS) */
 		default:
 			return;
@@ -336,14 +360,14 @@ public:
 	ObjectFlags
 	flags() const
 	{
-		switch(_mode) {
+		switch(_pointerModel.mode()) {
 #if defined(OMR_GC_FULL_POINTERS)
 		case FULL:
-			return toFull(_object)->flags();
+			return _object->toFull()->flags();
 #endif /* defined(OMR_GC_FULL_POINTERS) */
 #if defined(OMR_GC_COMPRESSED_POINTERS)
 		case COMP:
-			return toComp(_object)->flags();
+			return _object->toComp()->flags();
 #endif /* defined(OMR_GC_COMPRESSED_POINTERS) */
 		default:
 			return 0;
@@ -353,14 +377,14 @@ public:
 	void
 	flags(ObjectFlags objectFlags)
 	{
-		switch(_mode) {
+		switch(_pointerModel.mode()) {
 #if defined(OMR_GC_FULL_POINTERS)
 		case FULL:
-			return toFull(_object)->flags(objectFlags);
+			return _object->toFull()->flags(objectFlags);
 #endif /* defined(OMR_GC_FULL_POINTERS) */
 #if defined(OMR_GC_COMPRESSED_POINTERS)
 		case COMP:
-			return toComp(_object)->flags(objectFlags);
+			return _object->toComp()->flags(objectFlags);
 #endif /* defined(OMR_GC_COMPRESSED_POINTERS) */
 		default:
 			return;
@@ -370,14 +394,14 @@ public:
 	size_t 
 	slotCount() const
 	{
-		switch(_mode) {
+		switch(_pointerModel.mode()) {
 #if defined(OMR_GC_FULL_POINTERS)
 		case FULL:
-			return toFull(_object)->slotCount();
+			return _object->toFull()->slotCount();
 #endif /* defined(OMR_GC_FULL_POINTERS) */
 #if defined(OMR_GC_COMPRESSED_POINTERS)
 		case COMP:
-			return toComp(_object)->slotCount();
+			return _object->toComp()->slotCount();
 #endif /* defined(OMR_GC_COMPRESSED_POINTERS) */
 		default:
 			return 0;
@@ -387,12 +411,12 @@ public:
 	size_t
 	sizeOfSlotsInBytes() const
 	{
-		return sizeInBytes() - sizeOfHeaderInBytes(_mode);
+		return sizeInBytes() - objectHeaderSizeInBytes(_pointerModel);
 	}
 
 private:
 	ObjectBase *_object;
-	RefMode _mode;
+	PointerModel _pointerModel;
 };
 
 #endif /* OBJECT_HPP_ */

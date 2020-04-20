@@ -472,7 +472,7 @@ GCConfigTest::processObjNode(pugi::xml_node node, const char *namePrefixStr, OMR
 	/* Create objects and store them in the root table or the slot object based on objType. */
 	if ((ROOT == objType) || (GARBAGE_ROOT == objType)) {
 		for (int32_t i = 0; i < breadthElem->value; i++) {
-			uintptr_t sizeCalculated = ObjectHandle::allocSize(model.mode(), numOfFieldsElem->value);
+			uintptr_t sizeCalculated = objectAllocSize(pointerModel, numOfFieldsElem->value);
 			ObjectEntry *objectEntry = createObject(namePrefixStr, objType, 0, i, sizeCalculated);
 			if (NULL == objectEntry) {
 				goto done;
@@ -499,7 +499,7 @@ GCConfigTest::processObjNode(pugi::xml_node node, const char *namePrefixStr, OMR
 		char parentName[MAX_NAME_LENGTH];
 		omrstr_printf(parentName, MAX_NAME_LENGTH, "%s_%d_%d", node.parent().attribute(xs.namePrefix).value(), 0, 0);
 		for (int32_t i = 0; i < breadthElem->value; i++) {
-			uintptr_t sizeCalculated = ObjectHandle::allocSize(model.mode(), numOfFieldsElem->value);
+			uintptr_t sizeCalculated = objectAllocSize(pointerModel, numOfFieldsElem->value);
 			ObjectEntry *childEntry = createObject(namePrefixStr, objType, 0, i, sizeCalculated);
 			if (NULL == childEntry) {
 				goto done;
@@ -538,7 +538,7 @@ GCConfigTest::processObjNode(pugi::xml_node node, const char *namePrefixStr, OMR
 			char parentName[MAX_NAME_LENGTH];
 			omrstr_printf(parentName, sizeof(parentName), "%s_%d_%d", namePrefixStr, (i - 1), j);
 			for (int32_t k = 0; k < breadthElem->value; k++) {
-				uintptr_t sizeCalculated = ObjectHandle::allocSize(model.mode(), numOfFieldsElem->value);
+				uintptr_t sizeCalculated = objectAllocSize(pointerModel, numOfFieldsElem->value);
 				ObjectEntry *childEntry = createObject(namePrefixStr, objType, i, nthInRow, sizeCalculated);
 				if (NULL == childEntry) {
 					goto done;
@@ -613,7 +613,7 @@ GCConfigTest::attachChildEntry(ObjectEntry *parentEntry, ObjectEntry *childEntry
 	bool compressed = extensions->compressObjectReferences();
 	uintptr_t size = extensions->objectModel.getConsumedSizeInBytesWithHeader(parentEntry->objPtr);
 	omrobjectptr_t objectPtr = parentEntry->objPtr;
-	ObjectHandle objectHandle (parentEntry->objPtr, model.mode());
+	ObjectHandle objectHandle (parentEntry->objPtr, pointerModel);
 	fomrobject_t *firstSlot = objectHandle.begin();
 	uintptr_t slotCount =  objectHandle.slotCount();
 
@@ -679,7 +679,7 @@ GCConfigTest::removeObjectFromParentSlot(const char *name, ObjectEntry *parentEn
 	MM_GCExtensionsBase *extensions = (MM_GCExtensionsBase *)exampleVM->_omrVM->_gcOmrVMExtensions;
 	bool compressed = extensions->compressObjectReferences();
 
-	ObjectHandle objectHandle (parentEntry->objPtr, model.mode());
+	ObjectHandle objectHandle (parentEntry->objPtr, pointerModel);
 	fomrobject_t *currentSlot = objectHandle.begin();
 	fomrobject_t *endSlot = objectHandle.end();
 

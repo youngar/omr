@@ -43,7 +43,7 @@ private:
 	 * The model is specific to the GC Example.  It keeps track of whether we 
 	 * are using full or compressed references.
 	 */
-	Model _model;
+	PointerModel _pointerModel;
 
 protected:
 public:
@@ -73,14 +73,14 @@ public:
 	MMINLINE fomrobject_t *
 	getHeadlessObject(omrobjectptr_t objectPtr)
 	{
-		ObjectHandle objectHandle(objectPtr, _model.mode());
+		ObjectHandle objectHandle(objectPtr, _pointerModel);
 		return objectHandle.begin();
 	}
 
 	MMINLINE fomrobject_t*
 	getEnd(omrobjectptr_t objectPtr)
 	{
-		ObjectHandle objectHandle(objectPtr, _model.mode());
+		ObjectHandle objectHandle(objectPtr, _pointerModel);
 		return objectHandle.end();
 	}
 
@@ -107,7 +107,7 @@ public:
 	MMINLINE uintptr_t
 	getObjectHeaderSlotOffset()
 	{
-		return ObjectBase::getObjectHeaderSlotOffset();
+		return 0;
 	}
 
 	/**
@@ -116,7 +116,7 @@ public:
 	MMINLINE uintptr_t
 	getObjectHeaderSlotFlagsShift()
 	{
-		return ObjectBase::getObjectHeaderSlotFlagsShift();
+		return OBJECT_HEADER_FLAGS_SHIFT;
 	}
 
 	/**
@@ -125,7 +125,7 @@ public:
 	MMINLINE uintptr_t
 	getObjectHeaderSizeInBytes(omrobjectptr_t objectPtr)
 	{
-		return ObjectHandle::sizeOfHeaderInBytes(_model.mode());
+		return objectHeaderSizeInBytes(_pointerModel);
 	}
 
 	/**
@@ -139,7 +139,7 @@ public:
 	MMINLINE uintptr_t
 	getObjectSizeInBytesWithoutHeader(omrobjectptr_t objectPtr)
 	{
-		ObjectHandle objectHandle(objectPtr, _model.mode());
+		ObjectHandle objectHandle(objectPtr, _pointerModel);
 		return objectHandle.sizeOfSlotsInBytes();
 	}
 
@@ -154,28 +154,28 @@ public:
 	MMINLINE uintptr_t
 	getObjectSizeInBytesWithHeader(omrobjectptr_t objectPtr)
 	{
-		ObjectHandle objectHandle(objectPtr, _model.mode());
+		ObjectHandle objectHandle(objectPtr, _pointerModel);
 		return objectHandle.sizeInBytes();
 	}
 
 	MMINLINE void
 	setSizeInBytes(omrobjectptr_t objectPtr, ObjectSize objectSize)
 	{
-		ObjectHandle objectHandle(objectPtr, _model.mode());
+		ObjectHandle objectHandle(objectPtr, _pointerModel);
 		return objectHandle.sizeInBytes(objectSize);
 	}
 
 	MMINLINE ObjectFlags
 	getFlags(omrobjectptr_t objectPtr)
 	{
-		ObjectHandle objectHandle(objectPtr, _model.mode());
+		ObjectHandle objectHandle(objectPtr, _pointerModel);
 		return objectHandle.flags();
 	}
 
 	MMINLINE void
 	setFlags(omrobjectptr_t objectPtr, ObjectFlags objectFlags)
 	{
-		ObjectHandle objectHandle(objectPtr, _model.mode());
+		ObjectHandle objectHandle(objectPtr, _pointerModel);
 		return objectHandle.flags(objectFlags);
 	}
 
@@ -251,8 +251,17 @@ public:
 	MMINLINE uintptr_t
 	getForwardedObjectSizeInBytes(MM_ForwardedHeader *forwardedHeader)
 	{
-		ObjectHandle objectHandle((ObjectBase *)forwardedHeader->getPreservedSlot(), _model.mode());
-		return objectHandle.sizeInBytes();
+		uintptr_t slot = forwardedHeader->getPreservedSlot();
+		switch (_pointerModel.mode()) {
+#if defined(OMR_GC_FULL_POINTERS)
+		case FULL:
+			return ObjectHeader<FULL>(slot).objectSizeInBytes();
+#endif /* defined(OMR_GC_FULL_POINTERS) */
+#if defined(OMR_GC_COMPRESSED_POINTERS)
+		case COMP:
+			return ObjectHeader<COMP>((uint32_t)slot).objectSizeInBytes();
+#endif /* defined(OMR_GC_COMPRESSED_POINTERS) */
+		}
 	}
 
 	/**
@@ -286,7 +295,7 @@ public:
 	/**
 	 * The model is set during startup
 	 */
-	void setModel(Model model) { _model = model; }
+	void setModel(PointerModel model) { _pointerModel = model; }
 
 #endif /* defined(OMR_GC_MODRON_SCAVENGER) */
 

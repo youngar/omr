@@ -82,7 +82,7 @@ protected:
 	pugi::xml_document doc;
 	GarbagePolicy gp;
 	XmlStr xs;
-	Model model;
+	PointerModel pointerModel;
 
 	/* verbose log options */
 	MM_VerboseManager *verboseManager;

@@ -27,7 +27,7 @@
 bool
 GC_ObjectModel::initialize(MM_GCExtensionsBase *extensions)
 {
-	Model model(extensions->compressObjectReferences());
+	PointerModel model(extensions->compressObjectReferences());
 	getObjectModelDelegate()->setModel(model);
 	return true;
 }
