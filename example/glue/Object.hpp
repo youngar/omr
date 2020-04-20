@@ -31,7 +31,7 @@
 /**
  * Represents if references are in compressed or full pointer mode
  */
-enum RefMode
+enum PointerMode
 {
 #if defined(OMR_GC_FULL_POINTERS)
 	FULL,
@@ -41,6 +41,9 @@ enum RefMode
 #endif /* defined(OMR_GC_COMPRESSED_POINTERS) */
 };
 
+/**
+ * Answers properties about the format of references between objects.
+ */
 class PointerModel
 {
 public:
@@ -52,7 +55,7 @@ public:
 	PointerModel(bool) {}
 #endif /* defined(OMR_GC_FULL_POINTERS) && defined(OMR_GC_COMPRESSED_POINTERS) */
 
-	RefMode
+	PointerMode
 	mode() const
 	{
 #if defined(OMR_GC_COMPRESSED_POINTERS)
@@ -68,7 +71,7 @@ public:
 
 private:
 #if defined(OMR_GC_FULL_POINTERS) && defined(OMR_GC_COMPRESSED_POINTERS)
-	RefMode _mode;
+	PointerMode _mode;
 #endif /* defined(OMR_GC_FULL_POINTERS) && defined(OMR_GC_COMPRESSED_POINTERS) */
 };
 
@@ -123,7 +126,7 @@ private:
 /**
  * The header of an object. Stores the GC flags and object size.
  */
-template <RefMode M>
+template <PointerMode M>
 class ObjectHeader;
 
 #if defined(OMR_GC_FULL_POINTERS)
@@ -147,7 +150,7 @@ public:
 /**
  * A slot in the object.
  */
-template <RefMode M>
+template <PointerMode M>
 struct Slot;
 
 #if defined(OMR_GC_FULL_POINTERS)
@@ -170,7 +173,7 @@ struct Slot<COMP>
 
 #endif /* defined(OMR_GC_COMPRESSED_POINTERS) */
 
-template <RefMode>
+template <PointerMode>
 class Object;
 
 class ObjectBase
@@ -187,7 +190,7 @@ public:
 #endif /* OMR_GC_COMPRESSED_POINTERS */
 };
 
-template <RefMode M>
+template <PointerMode M>
 class Object : public ObjectBase
 {
 public:
