@@ -134,7 +134,8 @@ template <>
 class ObjectHeader<FULL> : public ObjectHeaderBase<uintptr_t>
 {
 public:
-	using ObjectHeaderBase::ObjectHeaderBase;
+	ObjectHeader(uintptr_t value) 
+		: ObjectHeaderBase<uintptr_t>(value) {}
 };
 #endif /* defined(OMR_GC_FULL_POINTERS) */
 
@@ -143,7 +144,8 @@ template <>
 class ObjectHeader<COMP> : public ObjectHeaderBase<uint32_t>
 {
 public:
-	using ObjectHeaderBase::ObjectHeaderBase;
+	ObjectHeader(uint32_t value) 
+		: ObjectHeaderBase<uint32_t>(value) {}
 };
 #endif /* defined(OMR_GC_COMPRESSED_POINTERS) */
 

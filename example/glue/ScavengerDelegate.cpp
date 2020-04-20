@@ -171,7 +171,7 @@ MM_ScavengerDelegate::reverseForwardedObject(MM_EnvironmentBase *env, MM_Forward
 		/* Restore the original object header from the forwarded object */
 		GC_ObjectModel *objectModel = &(_extensions->objectModel);
 		objectModel->setSizeInBytes(originalObject, objectModel->getConsumedSizeInBytesWithHeader(forwardedObject));
-		objectModel->setFlags(originalObject, objectModel->getObjectFlags(forwardedObject));
+		objectModel->setFlags(originalObject, (ObjectFlags) objectModel->getObjectFlags(forwardedObject));
 
 #if defined (OMR_GC_COMPRESSED_POINTERS)
 		if (env->compressObjectReferences()) {

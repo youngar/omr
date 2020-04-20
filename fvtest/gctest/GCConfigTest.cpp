@@ -611,8 +611,6 @@ GCConfigTest::attachChildEntry(ObjectEntry *parentEntry, ObjectEntry *childEntry
 	int32_t rc = 0;
 	MM_GCExtensionsBase *extensions = (MM_GCExtensionsBase *)exampleVM->_omrVM->_gcOmrVMExtensions;
 	bool compressed = extensions->compressObjectReferences();
-	uintptr_t size = extensions->objectModel.getConsumedSizeInBytesWithHeader(parentEntry->objPtr);
-	omrobjectptr_t objectPtr = parentEntry->objPtr;
 	ObjectHandle objectHandle (parentEntry->objPtr, pointerModel);
 	fomrobject_t *firstSlot = objectHandle.begin();
 	uintptr_t slotCount =  objectHandle.slotCount();
