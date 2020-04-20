@@ -38,20 +38,38 @@ class GC_ObjectIterator
 private:
 protected:
 	GC_SlotObject _slotObject; /**< Create own SlotObject class to provide output */
-	fomrobject_t *_scanPtr;	 /**< current scan pointer */
+	fomrobject_t *_scanPtr; /**< current scan pointer */
 	fomrobject_t *_endPtr; /**< end scan pointer */
+#if defined(OMR_GC_FULL_POINTERS) && defined(OMR_GC_COMPRESSED_POINTERS)
 	bool _compressed; /**< If compressed pointers is enabled */
+#endif /* defined(OMR_GC_FULL_POINTERS) && defined(OMR_GC_COMPRESSED_POINTERS) */
 public:
 
 /* Member Functions */
 private:
+	MMINLINE bool
+	compressed()
+	{
+#if defined(OMR_GC_FULL_POINTERS)
+#if defined(OMR_GC_COMPRESSED_POINTERS)
+		return _compressed;
+#else /* defined(OMR_GC_COMPRESSED_POINTERS) */
+		return false;
+#endif /* defined(OMR_GC_COMPRESSED_POINTERS) */
+#else /* defined(OMR_GC_FULL_POINTERS) */
+		return true;
+#endif /* defined(OMR_GC_FULL_POINTERS) */
+	}
+
 	MMINLINE void
 	initialize(OMR_VM *omrVM, omrobjectptr_t objectPtr)
 	{
 		MM_GCExtensionsBase *extensions = (MM_GCExtensionsBase *)omrVM->_gcOmrVMExtensions;
 
+#if defined(OMR_GC_FULL_POINTERS) && defined(OMR_GC_COMPRESSED_POINTERS)
 		_compressed = extensions->compressObjectReferences();
-		
+#endif /* defined(OMR_GC_FULL_POINTERS) && defined(OMR_GC_COMPRESSED_POINTERS) */
+
 		/* Start _scanPtr after header */
 		_scanPtr = extensions->objectModel.getHeadlessObject(objectPtr);
 		_endPtr = extensions->objectModel.getEnd(objectPtr);
@@ -68,7 +86,7 @@ public:
 	{
 		if (_scanPtr < _endPtr) {
 			_slotObject.writeAddressToSlot(_scanPtr);
-			GC_SlotObject::addToSlotAddress(_scanPtr, 1, _compressed);
+			GC_SlotObject::addToSlotAddress(_scanPtr, 1, compressed());
 			return &_slotObject;
 		}
 		return NULL;
@@ -80,7 +98,7 @@ public:
 	 */
 	MMINLINE void restore(int32_t index)
 	{
-		_scanPtr = GC_SlotObject::addToSlotAddress(_scanPtr, index, _compressed);
+		_scanPtr = GC_SlotObject::addToSlotAddress(_scanPtr, index, compressed());
 	}
 
 	/**
@@ -91,6 +109,9 @@ public:
 		: _slotObject(GC_SlotObject(omrVM, NULL))
 		, _scanPtr(NULL)
 		, _endPtr(NULL)
+#if defined(OMR_GC_FULL_POINTERS) && defined(OMR_GC_COMPRESSED_POINTERS)
+		, _compressed(FALSE)
+#endif /* defined(OMR_GC_FULL_POINTERS) && defined(OMR_GC_COMPRESSED_POINTERS) */
 	{
 		initialize(omrVM, objectPtr);
 	}
